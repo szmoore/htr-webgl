@@ -9,8 +9,7 @@
  * One day it'll probably get rewritten in C++ where it belongs.
  * 
  * Credits:
- * Sprites were taken from an artificial life simulator called "Biots". Unfortunately the site shutdown some time in 2012.
- * I am not sure what the license on the sprites was, but no one has sued me yet.
+ * Sprites are from Biots.
  *
  * Sam Moore, 2014
  */
@@ -59,11 +58,11 @@ function Entity(position, velocity)
 {
 	this.position = position;
 	this.velocity = velocity;
-	this.frame = null;
 }
 
 /**
  * Step
+ * TODO: Split into helpers?
  */
 Entity.prototype.Step = function()
 {
@@ -76,6 +75,13 @@ Entity.prototype.Step = function()
 	var delta = currentTime - this.lastUpdateTime;
 
 	this.lastPosition = []; for (var i in this.position) this.lastPosition[i] = this.position[i];
+
+	// Update velocity
+	if (this.acceleration)
+	{
+		for (var i in this.velocity)
+			this.velocity[i] += delta * this.acceleration[i] / 1000;
+	}
 
 	// Update position
 	for (var i in this.position)
@@ -100,9 +106,36 @@ Entity.prototype.Step = function()
 	else if (this.position[1] > 1)
 		this.Bounce([0,-1]);
 
+	// Change sprite based on direction
+	if (this.frameBase)
+	{
+		if (this.velocity[1] == 0)
+		{
+			if (this.velocity[0] == 0)
+				this.frames = this.frameBase.rest;
+			else
+				this.frames = (this.velocity[0] > 0) ? this.frameBase.right : this.frameBase.left;
+		}
+		else if (this.velocity[1] > 0)
+		{
+			if (this.velocity[0] == 0)
+				this.frames = this.frameBase.up;
+			else
+				this.frames = (this.velocity[0] > 0) ? this.frameBase.upRight : this.frameBase.upLeft;
+		}
+		else if (this.velocity[1] < 0)
+		{
+			if (this.velocity[0] == 0)
+				this.frames = this.frameBase.down;
+			else
+				this.frames = (this.velocity[0] > 0) ? this.frameBase.downRight : this.frameBase.downLeft;
+		}
+	}
+
 	// Update frame
 	if (this.frames && this.frameRate)
 	{
+		if (!this.frameNumber) this.frameNumber = 0;
 		this.frameNumber += delta * this.frameRate / 1000;
 		this.frame = this.frames[Math.floor(this.frameNumber) % this.frames.length]
 	}
@@ -195,6 +228,25 @@ Entity.prototype.Draw = function()
 }
 
 /**
+ * Load sprites from a directory
+ */
+Entity.prototype.LoadSprites = function(imageDir)
+{
+	this.frameBase = {
+		"rest" : [LoadTexture(imageDir+"/rest.gif")],
+		"left" : [LoadTexture(imageDir+"/left1.gif"), LoadTexture(imageDir+"/left2.gif")],
+		"right" : [LoadTexture(imageDir+"/right1.gif"), LoadTexture(imageDir+"/right2.gif")],
+		"down" : [LoadTexture(imageDir+"/down.gif")],
+		"up" : [LoadTexture(imageDir+"/up.gif")],
+		"downLeft" : [LoadTexture(imageDir+"/down_left.gif")],
+		"downRight" : [LoadTexture(imageDir+"/down_right.gif")],
+		"upLeft" : [LoadTexture(imageDir+"/up_left.gif")],
+		"upRight" : [LoadTexture(imageDir+"/up_right.gif")]
+	};
+}
+
+
+/**
  * The main function
  */
 function main() 
@@ -217,23 +269,16 @@ function main()
 	
 	gEntities = [];
 
-	var rabbit = new Entity([0,0], [0,0]);
-
-	var texture = gl.createTexture();
-	var image = new Image();
-	image.src = "data/rabbit/left1.gif";
-	image.onload = function() {HandleTextureLoaded(image, texture);}
-	var tex2 = gl.createTexture();
-	var image2 = new Image();
-	image2.src = "data/rabbit/left2.gif";
-	image2.onload = function() {HandleTextureLoaded(image2, tex2);}
-
-	rabbit.frames = [texture, tex2];
-	rabbit.frame = texture;
-	rabbit.frameNumber = 0;
+	var rabbit = new Entity([0,0],[0.5,0]);
+	rabbit.LoadSprites("data/rabbit");
+	
+//	rabbit.frame = rabbit.frames[0]; 
 	rabbit.frameRate = 3;
+	rabbit.acceleration = [0,0.1];
 
 	rabbit.bounds = {min : [0,0], max : [1,1]};
+
+	//rabbit.Step = function() {Entity.prototype.Step(); Debug("Rabbit step", true);};
 
 	gEntities[gEntities.length] = rabbit;
 
@@ -271,6 +316,20 @@ function InitWebGL()
 		alert("Unable to initialize WebGL. Your browser may not support it.");
 
 }
+
+/**
+ * Load textures
+ */
+function LoadTexture(src)
+{
+	var texture = gl.createTexture();
+	var image = new Image();
+	image.src = src; 
+	image.onload = function() {HandleTextureLoaded(image, texture);}
+	return texture;
+}
+
+
 
 /**
  * When a texture is loaded, do this
