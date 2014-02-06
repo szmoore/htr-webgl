@@ -100,12 +100,19 @@ Entity.prototype.Step = function()
 	else if (this.position[1] > 1)
 		this.Bounce([0,-1]);
 
+	// Update frame
+	if (this.frames && this.frameRate)
+	{
+		this.frameNumber += delta * this.frameRate / 1000;
+		this.frame = this.frames[Math.floor(this.frameNumber) % this.frames.length]
+	}
 
 	// Finalise step
 	this.lastUpdateTime = currentTime;
 	for (var i in this.position) this.lastPosition[i] = this.position[i];
 
 	Debug("<p>Position: ["+this.position+"]</p><p>Velocity: ["+this.velocity+"]</p>",true);
+	Debug("<p>FrameNum: "+this.frameNumber+"</p>");
 }
 
 /**
@@ -216,7 +223,15 @@ function main()
 	var image = new Image();
 	image.src = "data/rabbit/left1.gif";
 	image.onload = function() {HandleTextureLoaded(image, texture);}
+	var tex2 = gl.createTexture();
+	var image2 = new Image();
+	image2.src = "data/rabbit/left2.gif";
+	image2.onload = function() {HandleTextureLoaded(image2, tex2);}
+
+	rabbit.frames = [texture, tex2];
 	rabbit.frame = texture;
+	rabbit.frameNumber = 0;
+	rabbit.frameRate = 3;
 
 	rabbit.bounds = {min : [0,0], max : [1,1]};
 
@@ -257,11 +272,12 @@ function InitWebGL()
 
 }
 
+/**
+ * When a texture is loaded, do this
+ */
 function HandleTextureLoaded(image, texture)
 {
-	alert("load tex");
 	gl.bindTexture(gl.TEXTURE_2D, texture);
-
 	gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
 	gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
 	gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
@@ -272,7 +288,6 @@ function HandleTextureLoaded(image, texture)
 
 
 /**
- * Init Buffers
  * Initialises buffers that will be sent to the shaders
  */
 function InitBuffers()
