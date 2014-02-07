@@ -44,7 +44,8 @@ var player;
 var gravity = 1.0;
 
 var drawSceneTimer;
-var addBoxTimer;
+var addEnemyTimer;
+var addEnemyCount = 0;
 
 /**
  * Debug; display information on the page (for most things this is much nicer than Alt-Tabbing to and fro with Firebug)
@@ -53,9 +54,9 @@ function Debug(html, clear)
 {
 	var div = document.getElementById("debug");
 	if (clear)
-		div.innerHTML = html;
+		div.innerHTML = "<p align=center>"+html+"</p>";
 	else
-		div.innerHTML += html;
+		div.innerHTML += "<p align=center>"+html+"</p>";
 }
 
 /**
@@ -164,12 +165,6 @@ Entity.prototype.Step = function()
 	// Finalise step
 	this.lastUpdateTime = currentTime;
 	for (var i in this.position) this.lastPosition[i] = this.position[i];
-
-	if (this.debug)
-	{
-		Debug("<p>Position: ["+this.position+"]</p><p>Velocity: ["+this.velocity+"]</p>",true);
-		Debug("<p>FrameNum: "+this.frameNumber+"</p>");
-	}
 }
 
 Entity.prototype.Top = function() {return this.position[1] + this.bounds.max[1];}
@@ -207,6 +202,7 @@ Entity.prototype.Collision = function()
 	for (var i in gEntities)
 	{
 		if (gEntities[i] === this) continue;
+		if (this.ignoreCollisions && this.ignoreCollisions[gEntities[i].GetName()]) continue;
 		if (this.Collides(gEntities[i])) return gEntities[i];
 	}
 }
@@ -235,7 +231,7 @@ Entity.prototype.Collides = function(other)
  */
 Entity.prototype.HandleCollision = function(other, instigator)
 {
-	
+	if (this.ignoreCollisions && this.ignoreCollisions[other.GetName()]) return false;	
 	if (instigator)
 		other.HandleCollision(this, false);
 	if (typeof(this.canJump) !== "undefined") 
@@ -273,6 +269,21 @@ Entity.prototype.Bounce = function(n, reflect)
 	this.canJump = (typeof(this.canJump) !== "undefined")
 }
 
+/**
+ * Remove entity
+ */
+Entity.prototype.Die = function()
+{
+	var index = gEntities.indexOf(this);
+	if (index > -1 && index < gEntities.length)
+	{
+		gEntities.splice(index, 1);
+	}
+	else
+	{
+		alert("Entities can't die in IE<9 because IE is dumb.");
+	}	
+}
 
 
 /**
@@ -308,7 +319,6 @@ Entity.prototype.Draw = function()
 	gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, gVerticesIndexBuffer);
 	gl.drawElements(gl.TRIANGLES, 6, gl.UNSIGNED_SHORT,0);
 
-	//Debug("<p>Position: ["+this.position+"]</p><p>Velocity: ["+this.velocity+"]</p>",true);
 }
 
 /**
@@ -348,6 +358,11 @@ function FoxStep()
 	// Ho! ho! ho! ... I am talking to myself in JavaScript comments...
 	// If you read this please send help, I am trapped in a pun factory.
 
+	if (!player)
+	{
+		return Entity.prototype.Step.call(this);
+	}
+
 	// Calculate displacement and distance from player
 	var r = [];
 	var r2 = 0;
@@ -361,11 +376,11 @@ function FoxStep()
 	if (r2 < 10*this.Width())
 	{
 		// If not moving and super close, randomly move
-		if (Math.abs(r[0]) < 0.5*this.Width())
+		/*if (Math.abs(r[0]) < 0.5*this.Width())
 		{
 			this.velocity[0] = 0;
-		}
-		else if (r2 < 4*this.Width() && this.velocity[0] == 0)
+		}*/
+		if (Math.abs(r[0]) < 1.5*this.Width() && Math.abs(this.velocity[0]) < 0.5*this.speed)
 		{
 			this.velocity[0] = (Math.random() > 0.5) ? -this.speed : this.speed;
 		}
@@ -395,22 +410,56 @@ function FoxStep()
 }
 
 /**
+ * Box Collision
+ */
+function BoxHandleCollision(other, instigator)
+{
+	if (!instigator)
+	{
+		if (other.GetName() == "Box" && other.Top() > this.Top())
+		{
+			this.health -= Math.min(1.0, Math.abs(Math.random()*other.velocity[1]));
+			if (this.health <= 0)
+			{
+				this.Die();
+			}
+		}
+	}
+	return Entity.prototype.HandleCollision.call(this,other,instigator);
+}
+
+/**
  * Add a Box
  */
 function AddBox()
 {
 	Debug("Box Time!", true);
 	setTimeout(function() {Debug("",true)}, 200*stepRate);
-	var box = new Entity([player.position[0],1],[0,0]);
+	var box = new Entity([player.position[0],1.1],[0,0]);
 	box.frame = LoadTexture("data/box/box1.gif");
 	box.acceleration = [0,-gravity];
 	box.bounds = {min: [-32/canvas.width, -32/canvas.height], max: [32/canvas.width, 32/canvas.height]};
 	box.name = "Box";
-
+	box.ignoreCollisions = {"Roof" : true};
+	box.health = 5;
+	box.HandleCollision = BoxHandleCollision;
 	box.Step = BoxStep;
 	gEntities.push(box);
 	return box;
 }
+
+/**
+ * Add Enemy
+ */
+function AddEnemy()
+{
+	addEnemyCount += 1;
+	if (addEnemyCount % 5 == 0)
+		AddFox();
+	else
+		AddBox();
+}
+
 
 /**
  * A Fox collided with something 
@@ -418,15 +467,15 @@ function AddBox()
 function FoxHandleCollision(other, instigator)
 {
 	if (other === player && instigator)
-	{
+	{	
+		//Debug((this.velocity[1] < 0 && other.position[1] <= this.position[1]), true);
 		// Erm... Only eat the player if moving directly towards them.
 		if (((this.velocity[0] > 0 && other.position[0] >= this.position[0])
 			|| (this.velocity[0] < 0 && other.position[0] <= this.position[0]))
-			&& ((this.velocity[1] > 0 && other.position[1] >= this.position[1])
+			|| ((this.velocity[1] > 0 && other.position[1] >= this.position[1])
 			|| (this.velocity[1] < 0 && other.position[1] <= this.position[1])))
 		{
-//			player.Death("YOU GOT EATEN!");
-			Debug("YOU GOT EATEN", true);
+			player.Death("EATEN");
 		}
 	}	
 	else if (other.GetName() == "Box")
@@ -434,15 +483,7 @@ function FoxHandleCollision(other, instigator)
 		if (!instigator && other.velocity[1] <= -0.1)
 		{
 			Debug(this.GetName() + " got squished!", true);
-			var index = gEntities.indexOf(this);
-			if (index > -1 && index < gEntities.length)
-			{
-				gEntities.splice(index, 1);
-			}
-			else
-			{
-				Debug("... Or not? ERROR", false);
-			}	
+			this.Die();
 			setTimeout(function() {Debug("",true)}, 2000);
 			return false;
 		}
@@ -476,6 +517,7 @@ function AddFox()
 	fox.speed = 0.5;
 	fox.jumpSpeed = 0.5;
 	fox.canJump = true;
+	fox.ignoreCollisions = {"Roof" : true};
 	gEntities.push(fox);
 	return fox;
 }
@@ -511,7 +553,10 @@ function LoadEntities()
 	{
 		PauseGame();
 		player = undefined;
-		DeathScreen(cause);
+		if (cause == "EATEN")
+			EatenScreen("YOU GOT EATEN!");
+		else
+			SquishScreen("YOU GOT SQUISHED");
 		setTimeout(StartGame,2000);
 	}
 	// Handle collision with box
@@ -520,7 +565,7 @@ function LoadEntities()
 		if (other.GetName() == "Box")
 		{
 			if (!instigator && other.velocity[1] < -0.1)
-				this.Death("YOU GOT SQUISHED!");
+				this.Death("SQUISHED");
 			else if (this.Bottom() < other.Top() && this.Top() > other.Bottom())
 			{
 				other.velocity[0] = this.velocity[0] / 2;
@@ -548,37 +593,43 @@ function LoadEntities()
 	rightWall.Bounce = function() {};
 	rightWall.name = "RightWall";
 
-	
+	var roof = new Entity([-1,0.9],[0,0]);
+	roof.bounds = {min : [-Infinity,0], max:[Infinity,Infinity]};	
+	roof.name = "Roof";
 
 	
 	gEntities.push(player);
 	gEntities.push(ground);
 	gEntities.push(leftWall);
 	gEntities.push(rightWall);
+	gEntities.push(roof);
 }
 
-function DeathScreen(text) {SplashScreen([0,0,0,1],[1,0,0,1], text)}
-function StartScreen() {SplashScreen([0.9,0.9,0.9,1],[1,1,1,1], "Humphrey The Rabbit")}
-function VictoryScreen() {SplashScreen([0.5,1,0.5,1],[0,0,1,1], "YOU WON!")}
+function SquishScreen(text) {SplashScreen([0,0,0,1],[1,0,0,1], "rabbit", text)}
+function EatenScreen(text) {SplashScreen([0,0,0,1],[1,1,1,1], "fox", text)}
+function StartScreen() {SplashScreen([0.9,0.9,0.9,1],[1,1,1,1], "rabbit", "Humphrey The Rabbit")}
+function VictoryScreen() {SplashScreen([0.5,1,0.5,1],[1,1,1,1], "rabbit", "YOU WON!")}
 
-function SplashScreen(background, blend, text)
+function SplashScreen(background, blend, type, text)
 {
-	if (drawSceneTimer) clearTimeout(drawSceneTimer);
-	if (addBoxTimer) clearTimeout(addBoxTimer);
-
-
 	var screen = new Entity([0,0], [0,0]);
-	var X = Math.round(1 + (Math.random()*6));
-	screen.frame = LoadTexture("data/rabbit/drawing"+X+".svg", function() {
+	var file = "data/fox/drawing1.svg";
+	if (type != "fox")
+	{
+		var X = Math.round(1 + (Math.random()*6));
+		file = "data/rabbit/drawing"+X+".svg";	
+	}
+	screen.scale = [0.6, 0.6]; 
+
+	screen.frame = LoadTexture(file, function() {
+		var ratio = (screen.frame.img.width / screen.frame.img.height);
 		gl.clearColor(background[0], background[1], background[2], background[3]);
 		gl.clear(gl.COLOR_BUFFER_BIT);
-		var ratio = (screen.frame.img.width / screen.frame.img.height);
-		screen.scale = [0.6*ratio, 0.6*ratio]; 
 		gl.uniform4f(uColour, blend[0], blend[1], blend[2], blend[3]);
 		screen.Draw();
 		gl.uniform4f(uColour,1,1,1,1); 
 		if (text)
-			Debug("<p align=center><b><i>"+text+"</i></b></p>", true);
+			Debug("<b><i>"+text+"</i></b>", true);
 	});
 }
 
@@ -599,7 +650,8 @@ function StartGame()
 function PauseGame()
 {
 	if (drawSceneTimer) clearTimeout(drawSceneTimer);
-	if (addBoxTimer) clearTimeout(addBoxTimer);
+	if (addEnemyTimer) clearTimeout(addEnemyTimer);
+
 	var audio = document.getElementById("theme"); 
 	if (audio)
 	{
@@ -623,9 +675,9 @@ function ResumeGame()
 {
 	gl.clearColor(0.9,0.9,1,1);
 	if (drawSceneTimer) clearTimeout(drawSceneTimer);
-	if (addBoxTimer) clearTimeout(addBoxTimer);
+	if (addEnemyTimer) clearTimeout(addEnemyTimer);
 	drawSceneTimer = setInterval(DrawScene, stepRate);
-	//addBoxTimer = setInterval(AddBox, stepRate*1000);
+	addEnemyTimer = setInterval(AddEnemy, stepRate*300);
 
 	var audio = document.getElementById("theme"); 
 	if (audio)
@@ -653,12 +705,12 @@ function Victory()
 	PauseGame();
 	VictoryScreen();
 	setTimeout(function() {
-		Debug("<p align=centre><i><b>...</b></i></p>",true);
+		Debug("<i><b>...</b></i>",true);
 		setTimeout(function() {
-			Debug("<p align=centre>Or did you?</p>",true);
+			Debug("Or did you?",true);
 			setTimeout(function() {
-				Debug("<p align=centre><i><b>THERE IS NO ESCAPE</b></i></p>", true)
-				setTimeout(StartGame, 2000);
+				Debug("<i><b>THERE IS NO ESCAPE</b></i>", true)
+				setTimeout(ResumeGame, 2000);
 			}, 2000);
 		}, 2000);
 	}, 1000);
@@ -695,6 +747,7 @@ function main()
 	document.onkeydown = function(event) {keysPressed[event.keyCode] = true};
 	document.onkeyup = function(event) {keysPressed[event.keyCode] = false};
 
+	/*
 	canvas.onmousedown = function(event)
 	{	
 		if (typeof(player) === "undefined")
@@ -713,6 +766,7 @@ function main()
 			thing.position = [x,y];
 		}
 	}
+	*/
 
 	// Start the Game.
 	StartScreen();
