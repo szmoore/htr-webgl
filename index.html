@@ -21,9 +21,10 @@
       varying highp vec2 vTextureCoord;
       
       uniform sampler2D uSampler;
+	  uniform highp vec4 uColour;
       
       void main(void) {
-        gl_FragColor = texture2D(uSampler, vec2(vTextureCoord.s, vTextureCoord.t));
+        gl_FragColor = texture2D(uSampler, vec2(vTextureCoord.s, vTextureCoord.t)) * uColour;
       }
     </script>
     
@@ -33,7 +34,7 @@
 	attribute vec2 aVertexPosition;
 	attribute vec2 aTextureCoord;
 	uniform vec2 uPosition;   
-	uniform float uScale;
+	uniform vec2 uScale;
 	uniform float uAspectRatio; 
       //uniform mat4 uMVMatrix;
       //uniform mat4 uPMatrix;
@@ -41,7 +42,7 @@
       varying highp vec2 vTextureCoord;
     
       void main(void) {
-        gl_Position = vec4(aVertexPosition.x*uScale + uPosition.x, aVertexPosition.y * uAspectRatio * uScale + uPosition.y, 0, 1);
+        gl_Position = vec4(aVertexPosition.x*uScale.x + uPosition.x, aVertexPosition.y * uAspectRatio * uScale.y + uPosition.y, 0, 1);
         vTextureCoord = aTextureCoord;
       }
     </script>
@@ -62,12 +63,14 @@
 	</div>
 	<!-- Links and Info -->
 	<div id="other">
+		<!--
 		<ul>
 			<li> Graphics by A. Joseph Rheaume from <a href="http://web.archive.org/web/20111107025829/http://www.scarybug.org/biots/">"Biots"</a> </li>
 			<li> <a href="data/theme.mid">Original music</a> composed by me (favourably compared to "a crime against humanity"). </li>
 			<li> <a href="htr.py">Python version</a> (requires pygame) </li>
 			<li> <a href="data/rabbit/drawing2.svg">Hand drawn graphics</a> abandoned because it was too much work </li>
 		</ul>
+		-->
 	</div>
   </body>
 </html>
