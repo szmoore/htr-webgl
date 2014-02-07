@@ -599,7 +599,20 @@ function PauseGame()
 {
 	if (drawSceneTimer) clearTimeout(drawSceneTimer);
 	if (addBoxTimer) clearTimeout(addBoxTimer);
-
+	var audio = document.getElementById("theme"); 
+	if (audio)
+	{
+		audio.pause();
+	}
+	
+	var resume = document.getElementById("pause");
+	if (resume)
+	{
+		resume.innerHTML = "resume";
+		resume.onclick = ResumeGame;
+	}
+	
+	
 }
 
 /**
@@ -612,6 +625,21 @@ function ResumeGame()
 	if (addBoxTimer) clearTimeout(addBoxTimer);
 	drawSceneTimer = setInterval(DrawScene, stepRate);
 	//addBoxTimer = setInterval(AddBox, stepRate*1000);
+
+	var audio = document.getElementById("theme"); 
+	if (audio)
+	{
+		audio.pause();
+		audio.currentTime = 0;
+		setTimeout(function() {audio.play()}, 200);
+	}
+	var pause = document.getElementById("pause");
+	if (pause)
+	{
+		pause.innerHTML = "pause";
+		pause.onclick = PauseGame;
+	}
+	
 }
 
 
@@ -620,8 +648,10 @@ function ResumeGame()
  */
 function main() 
 {
+
 	canvas = document.getElementById("glcanvas");
 	InitWebGL(canvas);      // Initialize the GL context
+
 
 	gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
 	gl.enable(gl.BLEND);

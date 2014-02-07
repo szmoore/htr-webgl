@@ -51,7 +51,10 @@
 
   <body onload="main()">
 	<!-- Introduction -->
-
+	<audio preload="auto" id="theme">
+		<source src="data/theme.ogg" type="audio/ogg">
+		Your browser does not support the <code>audio</code> tag.
+	</audio>
 	<!-- The canvas -->
     <canvas id="glcanvas" width="640" height="480">
 		The <code>canvas</code> tag isn't supported, <b>or</b> you have disabled scripts.
@@ -72,5 +75,6 @@
 		</ul>
 		-->
 	</div>
+	<p id="playback-title"></p>
   </body>
 </html>
