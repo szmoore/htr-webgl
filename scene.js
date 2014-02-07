@@ -559,6 +559,7 @@ function LoadEntities()
 
 function DeathScreen(text) {SplashScreen([0,0,0,1],[1,0,0,1], text)}
 function StartScreen() {SplashScreen([0.9,0.9,0.9,1],[1,1,1,1], "Humphrey The Rabbit")}
+function VictoryScreen() {SplashScreen([0.5,1,0.5,1],[0,0,1,1], "YOU WON!")}
 
 function SplashScreen(background, blend, text)
 {
@@ -642,13 +643,35 @@ function ResumeGame()
 	
 }
 
+/**
+ * You win!
+ * ...
+ * Or did you?
+ */
+function Victory()
+{
+	PauseGame();
+	VictoryScreen();
+	setTimeout(function() {
+		Debug("<p align=centre><i><b>...</b></i></p>",true);
+		setTimeout(function() {
+			Debug("<p align=centre>Or did you?</p>",true);
+			setTimeout(function() {
+				Debug("<p align=centre><i><b>THERE IS NO ESCAPE</b></i></p>", true)
+				setTimeout(StartGame, 2000);
+			}, 2000);
+		}, 2000);
+	}, 1000);
+}
 
 /**
  * The main function
  */
 function main() 
 {
-
+	var audio = document.getElementById("theme");
+	if (audio)
+		audio.addEventListener("ended", Victory);
 	canvas = document.getElementById("glcanvas");
 	InitWebGL(canvas);      // Initialize the GL context
 
