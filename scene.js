@@ -176,6 +176,8 @@ Entity.prototype.Top = function() {return this.position[1] + this.bounds.max[1];
 Entity.prototype.Bottom = function() {return this.position[1] + this.bounds.min[1];}
 Entity.prototype.Left = function() {return this.position[0] + this.bounds.min[0];}
 Entity.prototype.Right = function() {return this.position[0] + this.bounds.max[0];}
+Entity.prototype.Width = function() {return this.bounds.max[0] - this.bounds.min[0]}
+Entity.prototype.Height = function() {return this.bounds.max[1] - this.bounds.min[1]}
 
 /**
  * Get the actual bounding box
@@ -236,7 +238,10 @@ Entity.prototype.HandleCollision = function(other, instigator)
 	
 	if (instigator)
 		other.HandleCollision(this, false);
-	if (typeof(this.canJump) !== "undefined") this.canJump = true;
+	if (typeof(this.canJump) !== "undefined") 
+	{
+		this.canJump = (other.Bottom() <= this.Top());
+	}	
 	return true;
 }
 
@@ -335,6 +340,61 @@ function BoxStep()
 }
 
 /**
+ * WHAT DOES THE FOX STEP
+ */
+function FoxStep()
+{
+	//Alternate joke... it's like DubStep mixed with the FoxTrot
+	// Ho! ho! ho! ... I am talking to myself in JavaScript comments...
+	// If you read this please send help, I am trapped in a pun factory.
+
+	// Calculate displacement and distance from player
+	var r = [];
+	var r2 = 0;
+	for (var i in this.position) 
+	{
+		r[i] = player.position[i] - this.position[i];
+		r2 += Math.pow(r[i],2);
+	}
+
+	// If closer than a 100 FoxWidths (an SI unit)...
+	if (r2 < 10*this.Width())
+	{
+		// If not moving and super close, randomly move
+		if (Math.abs(r[0]) < 0.5*this.Width())
+		{
+			this.velocity[0] = 0;
+		}
+		else if (r2 < 4*this.Width() && this.velocity[0] == 0)
+		{
+			this.velocity[0] = (Math.random() > 0.5) ? -this.speed : this.speed;
+		}
+		else
+		{
+			// Move towards player
+			if (player.position[0] < this.position[0])
+				this.velocity[0] = -this.speed;
+			else if (player.position[0] > this.position[0])
+				this.velocity[0] = +this.speed;
+		}
+
+		// Jump!
+		if (player.Bottom() > this.Top())
+		{
+			if (this.canJump)
+			{
+				this.canJump = false;
+				this.velocity[1] = this.jumpSpeed;
+			}
+		}
+	}
+	else
+		this.velocity[0] = 0;	
+
+	Entity.prototype.Step.call(this);
+}
+
+/**
  * Add a Box
  */
 function AddBox()
@@ -349,7 +409,75 @@ function AddBox()
 
 	box.Step = BoxStep;
 	gEntities.push(box);
+	return box;
+}
 
+/**
+ * A Fox collided with something 
+ */
+function FoxHandleCollision(other, instigator)
+{
+	if (other === player && instigator)
+	{
+		// Erm... Only eat the player if moving directly towards them.
+		if (((this.velocity[0] > 0 && other.position[0] >= this.position[0])
+			|| (this.velocity[0] < 0 && other.position[0] <= this.position[0]))
+			&& ((this.velocity[1] > 0 && other.position[1] >= this.position[1])
+			|| (this.velocity[1] < 0 && other.position[1] <= this.position[1])))
+		{
+//			player.Death("YOU GOT EATEN!");
+			Debug("YOU GOT EATEN", true);
+		}
+	}	
+	else if (other.GetName() == "Box")
+	{
+		if (!instigator && other.velocity[1] <= -0.1)
+		{
+			Debug(this.GetName() + " got squished!", true);
+			var index = gEntities.indexOf(this);
+			if (index > -1 && index < gEntities.length)
+			{
+				gEntities.splice(index, 1);
+			}
+			else
+			{
+				Debug("... Or not? ERROR", false);
+			}	
+			setTimeout(function() {Debug("",true)}, 2000);
+			return false;
+		}
+		if (this.canJump)
+		{
+			this.canJump = false;
+			this.velocity[1] = this.jumpSpeed;
+		}
+		else
+			this.canJump = true;
+		return false;
+	}
+	return Entity.prototype.HandleCollision.call(this, other, instigator);
+}
+
+/**
+ * Add a Fox
+ */
+function AddFox()
+{
+	Debug("Fox Time!", true);
+	setTimeout(function() {Debug("",true)}, 200*stepRate);
+	var fox = new Entity([player.position[0],1],[0,0]);
+	fox.LoadSprites("data/fox");
+	fox.acceleration = [0,-gravity];
+	fox.bounds = {min: [-32/canvas.width, -32/canvas.height], max: [32/canvas.width,32/canvas.height]};
+	fox.name = "Fox";
+	fox.frameRate = 3;
+	fox.Step = FoxStep;
+	fox.HandleCollision = FoxHandleCollision;
+	fox.speed = 0.5;
+	fox.jumpSpeed = 0.5;
+	fox.canJump = true;
+	gEntities.push(fox);
+	return fox;
 }
 
 /**
@@ -378,22 +506,28 @@ function LoadEntities()
 			this.canJump = false;
 		}
 	}
+
+	player.Death = function(cause)
+	{
+		PauseGame();
+		player = undefined;
+		DeathScreen(cause);
+		setTimeout(StartGame,2000);
+	}
 	// Handle collision with box
 	player.HandleCollision = function(other, instigator)
 	{
-		if (!instigator && other.velocity[1] < -1e-2)
+		if (other.GetName() == "Box")
 		{
-			Debug("YOU GOT SQUISHED!", true);
-			PauseGame();
-			DeathScreen();
-			setTimeout(StartGame,2000);
-		}
-		else if (this.Bottom() < other.Top() && this.Top() > other.Bottom())
-		{
-			other.velocity[0] = this.velocity[0] / 2;
-			// Behold... inheritence implemented in JavaScript (Yuk)
-			Entity.prototype.HandleCollision.call(this,other, instigator);
-			return false;
+			if (!instigator && other.velocity[1] < -0.1)
+				this.Death("YOU GOT SQUISHED!");
+			else if (this.Bottom() < other.Top() && this.Top() > other.Bottom())
+			{
+				other.velocity[0] = this.velocity[0] / 2;
+				// Behold... inheritence implemented in JavaScript (Yuk)
+				Entity.prototype.HandleCollision.call(this,other, instigator);
+				return false;
+			}
 		}
 		return Entity.prototype.HandleCollision.call(this,other, instigator);
 	}
@@ -423,7 +557,7 @@ function LoadEntities()
 	gEntities.push(rightWall);
 }
 
-function DeathScreen() {SplashScreen([0,0,0,1],[1,0,0,1], "DEATH")}
+function DeathScreen(text) {SplashScreen([0,0,0,1],[1,0,0,1], text)}
 function StartScreen() {SplashScreen([0.9,0.9,0.9,1],[1,1,1,1], "Humphrey The Rabbit")}
 
 function SplashScreen(background, blend, text)
@@ -442,7 +576,8 @@ function SplashScreen(background, blend, text)
 		gl.uniform4f(uColour, blend[0], blend[1], blend[2], blend[3]);
 		screen.Draw();
 		gl.uniform4f(uColour,1,1,1,1); 
-		Debug("<p align=center><b><i>"+text+"</i></b></p>", true);
+		if (text)
+			Debug("<p align=center><b><i>"+text+"</i></b></p>", true);
 	});
 }
 
@@ -451,19 +586,10 @@ function SplashScreen(background, blend, text)
  */
 function StartGame()
 {
-	if (drawSceneTimer) clearTimeout(drawSceneTimer);
-	if (addBoxTimer) clearTimeout(addBoxTimer);
-
-	gl.clearColor(0.9,0.9,1,1);
-
+	LoadEntities();
 	Debug("GET READY!",true);
 	setTimeout(function() {Debug("",true)}, stepRate*500);
-	// Load entities
-	LoadEntities();
-	// Draw the Scene every stepRate ms	
-	drawSceneTimer = setInterval(DrawScene, stepRate);
-	// Drop a box every 1000 steps
-	addBoxTimer = setInterval(AddBox, stepRate*1000);
+	ResumeGame();
 }
 
 /**
@@ -474,6 +600,18 @@ function PauseGame()
 	if (drawSceneTimer) clearTimeout(drawSceneTimer);
 	if (addBoxTimer) clearTimeout(addBoxTimer);
 
+}
+
+/**
+ * Resume the game
+ */
+function ResumeGame()
+{
+	gl.clearColor(0.9,0.9,1,1);
+	if (drawSceneTimer) clearTimeout(drawSceneTimer);
+	if (addBoxTimer) clearTimeout(addBoxTimer);
+	drawSceneTimer = setInterval(DrawScene, stepRate);
+	//addBoxTimer = setInterval(AddBox, stepRate*1000);
 }
 
 
@@ -504,10 +642,36 @@ function main()
 	document.onkeydown = function(event) {keysPressed[event.keyCode] = true};
 	document.onkeyup = function(event) {keysPressed[event.keyCode] = false};
 
+	canvas.onmousedown = function(event)
+	{	
+		if (typeof(player) === "undefined")
+			return;
+
+		var thing;
+		if (event.which === 1)
+			thing = AddFox();
+		else if (event.which === 2)
+			thing = AddBox();	
+		
+		if (thing)
+		{
+			var x = -1 + 2*(event.clientX/canvas.width);
+			var y = 1 - 2*(event.clientY/canvas.height);
+			thing.position = [x,y];
+		}
+	}
+
 	// Start the Game.
-//	StartGame();
 	StartScreen();
-	setTimeout(StartGame, 2000);
+	setTimeout(StartGame, 500);
+}
+
+function About()
+{
+	PauseGame();
+	StartScreen();
+	alert("Humphrey The Rabbit: WebGL\n\nProgramming: Sam Moore\nGraphics: Nekopets, A Joseph Reume, Sam Moore\nMusic: Sam Moore\n\nControls: arrows\n\n\"Avoid the Foxes and Boxes\"\n\nGitHub: https://github.com/szmoore/HtR_WebGL\n\nLicense: GPL 2");
+	ResumeGame();
 }
 
 /**
@@ -518,8 +682,8 @@ function DrawScene()
 	gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 	for (var i in gEntities)
 	{
-		gEntities[i].Step();
 		gEntities[i].Draw();
+		gEntities[i].Step();
 	}
 }
 
