@@ -131,10 +131,12 @@ Entity.prototype.Step = function()
 	// Change sprite based on direction
 	if (this.frameBase)
 	{
-		if (this.velocity[1] == 0)
+		if (this.sleep && this.sleep > 0)
+			this.frames = this.frameBase.sleep;
+		else if (this.velocity[1] == 0)
 		{
 			if (this.velocity[0] == 0)
-				this.frames = this.frameBase.rest;
+				this.frames = this.frameBase.rest; 
 			else
 				this.frames = (this.velocity[0] > 0) ? this.frameBase.right : this.frameBase.left;
 		}
@@ -335,7 +337,8 @@ Entity.prototype.LoadSprites = function(imageDir)
 		"downLeft" : [LoadTexture(imageDir+"/down_left.gif")],
 		"downRight" : [LoadTexture(imageDir+"/down_right.gif")],
 		"upLeft" : [LoadTexture(imageDir+"/up_left.gif")],
-		"upRight" : [LoadTexture(imageDir+"/up_right.gif")]
+		"upRight" : [LoadTexture(imageDir+"/up_right.gif")],
+		"sleep" : [LoadTexture(imageDir+"/sleep1.gif"), LoadTexture(imageDir+"/sleep2.gif")]
 	};
 }
 
@@ -357,12 +360,13 @@ function FoxStep()
 	//Alternate joke... it's like DubStep mixed with the FoxTrot
 	// Ho! ho! ho! ... I am talking to myself in JavaScript comments...
 	// If you read this please send help, I am trapped in a pun factory.
+	if (this.dazed && this.dazed > 0)
+		this.dazed -= this.delta/1000;
 
-	if (!player)
+	if (!player || (this.sleep && this.sleep > 0) || (this.dazed && this.dazed > 0))
 	{
-		return Entity.prototype.Step.call(this);
+		return BoxStep.call(this);
 	}
-
 	// Calculate displacement and distance from player
 	var r = [];
 	var r2 = 0;
@@ -372,8 +376,8 @@ function FoxStep()
 		r2 += Math.pow(r[i],2);
 	}
 
-	// If closer than a 100 FoxWidths (an SI unit)...
-	if (r2 < 10*this.Width())
+	// If closer than a 225 FoxWidths (an SI unit)...
+	if (r2 < 15*this.Width())
 	{
 		// If not moving and super close, randomly move
 		/*if (Math.abs(r[0]) < 0.5*this.Width())
@@ -384,7 +388,7 @@ function FoxStep()
 		{
 			this.velocity[0] = (Math.random() > 0.5) ? -this.speed : this.speed;
 		}
-		else
+		else if (Math.abs(r[0]) > this.Width())
 		{
 			// Move towards player
 			if (player.position[0] < this.position[0])
@@ -467,13 +471,18 @@ function AddEnemy()
 function FoxHandleCollision(other, instigator)
 {
 	if (other === player && instigator)
-	{	
+	{
+		
+		if (this.dazed && this.dazed > 0)
+		{
+		//	Debug("dazy fox " + this.dazed);
+		}
 		//Debug((this.velocity[1] < 0 && other.position[1] <= this.position[1]), true);
 		// Erm... Only eat the player if moving directly towards them.
-		if (((this.velocity[0] > 0 && other.position[0] >= this.position[0])
+		else if (((this.velocity[0] > 0 && other.position[0] >= this.position[0])
 			|| (this.velocity[0] < 0 && other.position[0] <= this.position[0]))
 			|| ((this.velocity[1] > 0 && other.position[1] >= this.position[1])
-			|| (this.velocity[1] < 0 && other.position[1] <= this.position[1])))
+			|| (this.velocity[1] < 0 && other.position[1] <= this.position[1]))) 
 		{
 			player.Death("EATEN");
 		}
@@ -540,13 +549,15 @@ function LoadEntities()
 	player.handleKeys = function(keys)
 	{
 		this.velocity[0] = 0;
-		if (keys[37]) this.velocity[0] -= 0.5;
-		if (keys[39]) this.velocity[0] += 0.5;
+		if (keys[37]) this.velocity[0] -= 0.7;
+		if (keys[39]) this.velocity[0] += 0.7;
 		if (this.canJump && keys[38])
 		{
-			this.velocity[1] = 1;
+			this.velocity[1] = 1.2;
 			this.canJump = false;
 		}
+		if (keys[40] && this.velocity[1] > -3)
+			this.velocity[1] -= 0.2;
 	}
 
 	player.Death = function(cause)
@@ -565,15 +576,33 @@ function LoadEntities()
 		if (other.GetName() == "Box")
 		{
 			if (!instigator && other.velocity[1] < -0.1)
-				this.Death("SQUISHED");
-			else if (this.Bottom() < other.Top() && this.Top() > other.Bottom())
 			{
-				other.velocity[0] = this.velocity[0] / 2;
-				// Behold... inheritence implemented in JavaScript (Yuk)
-				Entity.prototype.HandleCollision.call(this,other, instigator);
-				return false;
+				this.Death("SQUISHED");
+				return true;
 			}
 		}
+		else if (other.GetName() == "Fox" && instigator)
+		{
+			if ((this.Bottom() >= other.Top()-0.1*other.Height()) && (this.velocity[1] < -2.5))
+			{
+				other.sleep = Math.random() * Math.abs(this.velocity[1] - other.velocity[1]) * 5;
+			}
+		}
+		
+		if (instigator && this.Bottom() < other.Top() && this.Top() > other.Bottom())
+		{
+			if (other.GetName() == "Box" || other.sleep) other.velocity[0] = this.velocity[0] / 2;
+			if (other.sleep && other.sleep > 0)
+			{
+				other.sleep -= this.velocity[0] / 2;
+				if (other.sleep < 0)
+					other.dazed = 0.5 + Math.random();
+			}
+			// Behold... inheritence implemented in JavaScript (Yuk)
+			Entity.prototype.HandleCollision.call(this,other, instigator);
+			return false;
+		}
+		
 		return Entity.prototype.HandleCollision.call(this,other, instigator);
 	}
 	player.name = "Humphrey";
