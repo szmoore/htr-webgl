@@ -46,6 +46,7 @@ var gravity = 1.0;
 var drawSceneTimer;
 var addEnemyTimer;
 var addEnemyCount = 0;
+var runTime = 0;
 
 /**
  * Debug; display information on the page (for most things this is much nicer than Alt-Tabbing to and fro with Firebug)
@@ -53,10 +54,12 @@ var addEnemyCount = 0;
 function Debug(html, clear)
 {
 	var div = document.getElementById("debug");
-	if (clear)
-		div.innerHTML = "<p align=center>"+html+"</p>";
-	else
-		div.innerHTML += "<p align=center>"+html+"</p>";
+	if (div)
+	{
+		div.innerHTML = html;
+		if (html == "")
+			div.innerHTML="<font color=\"white\">...</font>"
+	}
 }
 
 /**
@@ -496,7 +499,8 @@ function FoxHandleCollision(other, instigator)
 			setTimeout(function() {Debug("",true)}, 2000);
 			return false;
 		}
-		if (this.canJump)
+		// Non sleepy foxes can jump over boxes.
+		if (this.canJump && (!this.sleep || this.sleep < 0) && (!this.dazed || this.dazed < 0))
 		{
 			this.canJump = false;
 			this.velocity[1] = this.jumpSpeed;
@@ -626,12 +630,54 @@ function LoadEntities()
 	roof.bounds = {min : [-Infinity,0], max:[Infinity,Infinity]};	
 	roof.name = "Roof";
 
-	
+	if (typeof(AIStep) === "function")
+	{
+		var controller = new Entity([-2,-2],[0,0]);
+		controller.Step = function()
+		{
+			var player = CopyEntitiesByName("Humphrey");
+			var foxes = CopyEntitiesByName("Fox");
+			var boxes = CopyEntitiesByName("Box");
+			var directions = AIStep(player, foxes, boxes);
+			keysPressed[37] = (directions.right === true);
+			keysPressed[38] = (directions.up === true);
+			keysPressed[39] = (directions.left === true);
+			keysPressed[40] = (directions.down === true);	
+		}
+		gEntities.push(controller);	
+	}
 	gEntities.push(player);
 	gEntities.push(ground);
 	gEntities.push(leftWall);
 	gEntities.push(rightWall);
 	gEntities.push(roof);
+}
+
+function CopyEntitiesByName(name)
+{
+	var result = [];
+	for (var i in gEntities)
+	{
+		if (gEntities[i].GetName() === name)
+		{
+			var topush = {
+				x : gEntities[i].position[0],
+				y : gEntities[i].position[1],
+				vx : gEntities[i].velocity[0],
+				vy : gEntities[i].velocity[1],
+				top : gEntities[i].Top(),
+				bottom : gEntities[i].Bottom(),
+				left : gEntities[i].Left(),
+				right : gEntities[i].Right(),
+				width : gEntities[i].Width(),
+				height : gEntities[i].Height(),
+				canJump : gEntities[i].canJump,
+				asleep : (gEntities[i].sleep && gEntities[i].sleep > 0)
+			};
+			result.push(topush);
+		}
+	}
+	return result;
 }
 
 function SquishScreen(text) {SplashScreen([0,0,0,1],[1,0,0,1], "rabbit", text)}
@@ -667,6 +713,7 @@ function SplashScreen(background, blend, type, text)
  */
 function StartGame()
 {
+	runTime = 0;
 	LoadEntities();
 	Debug("GET READY!",true);
 	setTimeout(function() {Debug("",true)}, stepRate*500);
@@ -815,7 +862,22 @@ function About()
  */
 function DrawScene()
 {
+	var curTime = (new Date()).getTime();
+	if (!this.lastTime)
+	{
+		runTime += stepRate/1000;
+	}
+	else
+	{
+		runTime += curTime - this.lastTime;
+	}
+	this.lastTime = curTime;
+	var rt = document.getElementById("runtime");
+	if (rt) rt.innerHTML=(""+runTime/1000).toHHMMSS();
+	
+	gl.clearColor(0.9,0.9,1,1);
 	gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+
 	for (var i in gEntities)
 	{
 		gEntities[i].Draw();
@@ -1028,3 +1090,18 @@ function GetShader(gl, id) {
   
   return shader;
 }
+
+// Le sigh date formatting
+String.prototype.toHHMMSS = function () {
+    var sec_num = parseInt(this, 10); // don't forget the second param
+    var hours   = Math.floor(sec_num / 3600);
+    var minutes = Math.floor((sec_num - (hours * 3600)) / 60);
+    var seconds = sec_num - (hours * 3600) - (minutes * 60);
+
+    if (hours   < 10) {hours   = "0"+hours;}
+    if (minutes < 10) {minutes = "0"+minutes;}
+    if (seconds < 10) {seconds = "0"+seconds;}
+    var time    = hours+':'+minutes+':'+seconds;
+    return time;
+}
+
