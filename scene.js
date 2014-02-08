@@ -48,6 +48,12 @@ var addEnemyTimer;
 var addEnemyCount = 0;
 var runTime = 0;
 
+var startTime;
+var stepCount = 0;
+var foxesSquished = 0;
+var foxesDazed = 0;
+var boxesSquished = 0;
+
 /**
  * Debug; display information on the page (for most things this is much nicer than Alt-Tabbing to and fro with Firebug)
  */
@@ -428,6 +434,7 @@ function BoxHandleCollision(other, instigator)
 			this.health -= Math.min(1.0, Math.abs(Math.random()*other.velocity[1]));
 			if (this.health <= 0)
 			{
+				boxesSquished += 1;
 				this.Die();
 			}
 		}
@@ -494,6 +501,7 @@ function FoxHandleCollision(other, instigator)
 	{
 		if (!instigator && other.velocity[1] <= -0.1)
 		{
+			foxesSquished += 1;
 			Debug(this.GetName() + " got squished!", true);
 			this.Die();
 			setTimeout(function() {Debug("",true)}, 2000);
@@ -572,6 +580,26 @@ function LoadEntities()
 			EatenScreen("YOU GOT EATEN!");
 		else
 			SquishScreen("YOU GOT SQUISHED");
+		
+		// Send results to the stat collecting script
+		var xmlhttp = new XMLHttpRequest(); // IE<7 won't WebGL anyway, screw compatibility
+		
+		xmlhttp.onreadystatechange = function() {
+			// Don't really need to do anything.
+		};
+		var request = "death="+cause;
+		request += "&x="+this.position[0]+"&y="+this.position[1];
+		request += "&start="+startTime.getTime()+"&runtime="+runTime;
+		request += "&steps="+stepCount;
+		request += "&foxesSquished="+foxesSquished+"&foxesDazed="+foxesDazed;
+		request += "&boxesSquished="+boxesSquished;
+		xmlhttp.open("POST", "stats.py", true); //POST just because its BIG
+		xmlhttp.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
+		xmlhttp.setRequestHeader("Content-length", request.length);
+		xmlhttp.setRequestHeader("Connection", "close");
+		xmlhttp.send(request);		
+
+		// Restart the game
 		setTimeout(StartGame,2000);
 	}
 	// Handle collision with box
@@ -589,6 +617,7 @@ function LoadEntities()
 		{
 			if ((this.Bottom() >= other.Top()-0.1*other.Height()) && (this.velocity[1] < -2.5))
 			{
+				foxesDazed += 1;
 				other.sleep = Math.random() * Math.abs(this.velocity[1] - other.velocity[1]) * 5;
 			}
 		}
@@ -713,6 +742,14 @@ function SplashScreen(background, blend, type, text)
  */
 function StartGame()
 {
+	startTime = new Date;
+	stepCount = 0;
+	foxesSquished = 0;
+	foxesDazed = 0;
+	boxesSquished = 0;
+	
+
+
 	runTime = 0;
 	LoadEntities();
 	Debug("GET READY!",true);
@@ -883,6 +920,7 @@ function DrawScene()
 		gEntities[i].Draw();
 		gEntities[i].Step();
 	}
+	stepCount += 1;
 }
 
 /**
