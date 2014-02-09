@@ -27,6 +27,8 @@ if __name__ == "__main__":
 		try:
 			cookie = Cookie.SimpleCookie()
 			cookie["identity"] = hashlib.md5(str(datetime.datetime.now())).hexdigest()
+			expires = datetime.datetime.now() + datetime.timedelta(days=10000)
+			cookie["identity"]["expires"] = expires.strftime('%a, %d %b %Y %H:%M:%S')
 			print(cookie.output())
 			cookie_warn = True
 		except:
