@@ -13,6 +13,8 @@ import hashlib
 
 
 if __name__ == "__main__":
+
+	site = "http://" + os.environ["SERVER_NAME"] + os.path.dirname(os.environ["REQUEST_URI"])
 	print("Content-type: text/html")
 	cookie_warn = False
 	try:
@@ -38,7 +40,7 @@ if __name__ == "__main__":
 		print(game.read())
 		if cookie_warn:
 			# Warn about cookies. No other websites EVER seem to do this but we will be nice.
-			print("<script type=\"text/javascript\">alert(\"A cookie has been set!\\nYour player identity is: %s\\n\\nYou can use this at /stats.py to keep track of your scores.\\n\\nThe cookie can't be used to personally identify you.\\nIf you are still not OK with this, feel free to disable cookies.\\n\\nThe game will work exactly the same with or without cookies.\\nIf you do disable cookies, visit /game.html directly to avoid this message.\");</script>" % (cookie["identity"].value))
+			print("<script type=\"text/javascript\">alert(\"A cookie has been set!\\nYour player identity is: %s\\n\\nYou can use this at %s/stats.py to keep track of your scores.\\n\\nThe cookie can't be used to personally identify you.\\nIf you are still not OK with this, feel free to disable cookies.\\n\\nThe game will work exactly the same with or without cookies.\\nVisit %s/game.html directly to avoid this message.\");</script>" % (cookie["identity"].value, site,site))
 	except:
 		print("<p> Something went wrong! Don't panic, this is just a hacky CGI script. The actual game is <a href=\"game.html\">here</a> </p>")
 		sys.exit(0)

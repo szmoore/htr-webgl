@@ -19,6 +19,9 @@ if __name__ == "__main__":
 	
 	#sys.stderr = open(sys.argv[0]+".err", "w");
 
+	site = "http://" + os.environ["SERVER_NAME"] + os.path.dirname(os.environ["REQUEST_URI"]) + "/" 
+	print("Content-type: text/plain\n\n")
+
 	# Setup database if it doesn't exist
 	try:
 		f = open("stats.db", "r")
@@ -54,9 +57,10 @@ if __name__ == "__main__":
 	# Send response
 	if len(values) == 0:
 		print("Content-type: text/plain\n")
-		print("# You are: %s\n\n" % identity);
+		print("# You are: %s\n" % identity);
+		print("# Get the SQlite DB from: %s\n" % (site+"stats.db"))
 
-		print(("# identity\t" + "\t".join(fields)+"\n"))
+		print("# identity\t" + "\t".join(fields)+"\n")
 		conn = sqlite3.connect("stats.db")
 		cursor = conn.cursor()
 		for row in cursor.execute("SELECT * FROM stats"):
@@ -81,6 +85,14 @@ if __name__ == "__main__":
 
 	conn = sqlite3.connect("stats.db")
 	cursor = conn.cursor()
+	# Check size of DB
+	cursor.execute("SELECT Count(*) FROM stats")
+	count = cursor.fetchall()[0][0]
+
+	# Delete earliest record if necessary
+	if count > 5000:
+		cursor.execute("DELETE FROM stats WHERE start = (SELECT MIN(start) FROM stats)")
+
 
 	cursor.execute("INSERT INTO stats VALUES (?"+"".join([",?" for _ in xrange(len(fields))])+")", [identity] + values)
 	
