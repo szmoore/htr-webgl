@@ -57,12 +57,12 @@ if __name__ == "__main__":
 	if len(values) == 0:
 		print("Content-type: text/plain\n")
 		print("# You are: %s\n" % identity);
-		print("# Get the SQlite DB from: %s\n" % (site+"stats.db"))
-
+		print("# Get the full SQlite DB from: %s\n" % (site+"stats.db"))
+		print("# TOP 100 Runs\n")
 		print("# identity\t" + "\t".join(fields)+"\n")
 		conn = sqlite3.connect("stats.db")
 		cursor = conn.cursor()
-		for row in cursor.execute("SELECT * FROM stats"):
+		for row in cursor.execute("SELECT * FROM stats ORDER BY runtime DESC LIMIT 100"):
 			s = ""
 			for field in row:
 				s += field + "\t"
