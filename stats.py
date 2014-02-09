@@ -20,7 +20,6 @@ if __name__ == "__main__":
 	#sys.stderr = open(sys.argv[0]+".err", "w");
 
 	site = "http://" + os.environ["SERVER_NAME"] + os.path.dirname(os.environ["REQUEST_URI"]) + "/" 
-	print("Content-type: text/plain\n\n")
 
 	# Setup database if it doesn't exist
 	try:
