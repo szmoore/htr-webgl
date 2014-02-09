@@ -1,21 +1,37 @@
 #!/usr/bin/python
 
+"""
+	Record and/or return statistics about HtR deaths.
+	Uses a Cookie to identify players.
+"""
+
 import sys
 import os
 import cgi
 import Cookie
+import sqlite3
 #import cgitb
 #cgitb.enable()
-
-# yeah this is horribly inefficient... and terrible
-# It also might explode if there is a collision.
-# But I doubt HtR will get high enough load for it to be a problem.
 
 
 
 if __name__ == "__main__":
 	
 	#sys.stderr = open(sys.argv[0]+".err", "w");
+
+	# Setup database if it doesn't exist
+	try:
+		f = open("stats.db", "r")
+	except IOError:
+		conn = sqlite3.connect("stats.db")
+		c = conn.cursor()
+		c.execute("CREATE TABLE stats (identity, start, runtime, steps, death, x, y, foxesSquished, foxesDazed, boxesSquished)")
+		conn.commit()
+		conn.close()
+	else:
+		f.close()
+
+	# Get the cookie
 	identity = ""
 	try:
 		http_cookie = os.environ["HTTP_COOKIE"]
@@ -25,28 +41,33 @@ if __name__ == "__main__":
 		identity = "<anonymous>"
 
 
+	# Get CGI fields
 	form = cgi.FieldStorage()
+	fields = ["start", "runtime", "steps", "death", "x", "y", "foxesSquished", "foxesDazed", "boxesSquished"]
 
 
-	fields = ["death", "x", "y", "start", "runtime", "steps", "foxesSquished", "foxesDazed", "boxesSquished"]
-
-	gotFields = 0 
+	values = []
 	for f in fields:
 		if form.has_key(f):
-			gotFields += 1
+			values += [form[f].value]
 
-	if gotFields == 0:
-		#TODO: PLOT instead of spitting back raw data
+	# Send response
+	if len(values) == 0:
 		print("Content-type: text/plain\n")
-		print("You are: %s\n" % identity);
-		try:
-			for line in open("stats.dat", "r"):
-				print(line)
-		except IOError:
-			pass
-		#sys.stderr.write("No fields\n")
+		print("# You are: %s\n\n" % identity);
+
+		print(("# identity\t" + "\t".join(fields)+"\n"))
+		conn = sqlite3.connect("stats.db")
+		cursor = conn.cursor()
+		for row in cursor.execute("SELECT * FROM stats"):
+			s = ""
+			for field in row:
+				s += field + "\t"
+			print(s)
+
+		conn.close()
 		sys.exit(0)
-	elif gotFields != len(fields):
+	elif len(values) != len(fields):
 		print("Content-type: text/plain\n")
 		#sys.stderr.write("Wrong number of fields\n");
 		sys.exit(0)
@@ -58,42 +79,13 @@ if __name__ == "__main__":
 		print("Content-type: text/plain\n")
 		sys.exit(0)
 
-	try:
-		try:
-			counterFile = open("stats.count", "r");
-			count = int(counterFile.read())
-			counterFile.close()
-		except IOError, TypeError:
-			count = 0
-		counterFile = open("stats.count", "w");
-		counterFile.write(str(count+1))
-		try:
-			statsFile = open("stats.dat", "r")
-			lines = statsFile.readlines()[-5000:] # Keep at most 5000 lines.
-			lines[0] = ("#" + ("\t".join(fields))+"\tidentity\n")
-			statsFile.close()
-			#sys.stderr.write("Open existing stats\n");
-		except IOError:
-			#sys.stderr.write("Open new stats\n");
-			lines = ["#" + ("\t".join(fields))+"\n"]
+	conn = sqlite3.connect("stats.db")
+	cursor = conn.cursor()
 
-		newRecord = ""
-		for f in fields:
-			newRecord += str(form[f].value) + "\t"
-
-		newRecord += identity
-		newRecord += "\n"		
-
-		lines += [newRecord]
-
-		statsFile = open("stats.dat", "w")
-		for l in lines:
-			statsFile.write(l)
-		statsFile.close()
-		#sys.stderr.write("Done\n");
-
-	except IOError:
-		pass
+	cursor.execute("INSERT INTO stats VALUES (?"+"".join([",?" for _ in xrange(len(fields))])+")", [identity] + values)
+	
+	conn.commit()
+	conn.close()
 
 	print("Content-type: text/plain\n")
 	sys.exit(0)

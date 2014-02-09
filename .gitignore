@@ -1,4 +1,5 @@
 *~
 *.swp
-stats.dat
-stats.count
+*.dat
+*.count
+*.db
