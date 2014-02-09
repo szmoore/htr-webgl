@@ -537,7 +537,7 @@ function AddFox()
 	fox.HandleCollision = FoxHandleCollision;
 	fox.speed = 0.5;
 	fox.jumpSpeed = 0.5;
-	fox.canJump = true;
+	fox.canJump = false; // Foxes jumping at birth is hard.
 	fox.ignoreCollisions = {"Roof" : true};
 	gEntities.push(fox);
 	return fox;
