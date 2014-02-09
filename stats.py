@@ -3,10 +3,12 @@
 import sys
 import os
 import cgi
+import Cookie
 #import cgitb
 #cgitb.enable()
 
 # yeah this is horribly inefficient... and terrible
+# It also might explode if there is a collision.
 # But I doubt HtR will get high enough load for it to be a problem.
 
 
@@ -14,6 +16,14 @@ import cgi
 if __name__ == "__main__":
 	
 	#sys.stderr = open(sys.argv[0]+".err", "w");
+	identity = ""
+	try:
+		http_cookie = os.environ["HTTP_COOKIE"]
+		cookie = Cookie.SimpleCookie(http_cookie)
+		identity = cookie["identity"].value
+	except KeyError, Cookie.CookieError:
+		identity = "<anonymous>"
+
 
 	form = cgi.FieldStorage()
 
@@ -28,6 +38,7 @@ if __name__ == "__main__":
 	if gotFields == 0:
 		#TODO: PLOT instead of spitting back raw data
 		print("Content-type: text/plain\n")
+		print("You are: %s\n" % identity);
 		try:
 			for line in open("stats.dat", "r"):
 				print(line)
@@ -59,7 +70,7 @@ if __name__ == "__main__":
 		try:
 			statsFile = open("stats.dat", "r")
 			lines = statsFile.readlines()[-5000:] # Keep at most 5000 lines.
-			lines[0] = ("#" + ("\t".join(fields))+"\n")
+			lines[0] = ("#" + ("\t".join(fields))+"\tidentity\n")
 			statsFile.close()
 			#sys.stderr.write("Open existing stats\n");
 		except IOError:
@@ -69,9 +80,9 @@ if __name__ == "__main__":
 		newRecord = ""
 		for f in fields:
 			newRecord += str(form[f].value) + "\t"
-		newRecord += "\n"
-		# Might be unethical to do this. Motivation was for geographic profiling of who plays it.
-		#newRecord += str(os.environ["REMOTE_ADDR"]) + "\n"
+
+		newRecord += identity
+		newRecord += "\n"		
 
 		lines += [newRecord]
 

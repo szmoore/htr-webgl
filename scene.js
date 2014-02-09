@@ -48,12 +48,12 @@ var addEnemyTimer;
 var addEnemyCount = 0;
 var runTime = 0;
 
+var gEntities = [];
 var startTime;
 var stepCount = 0;
 var foxesSquished = 0;
 var foxesDazed = 0;
 var boxesSquished = 0;
-
 /**
  * Debug; display information on the page (for most things this is much nicer than Alt-Tabbing to and fro with Firebug)
  */
@@ -472,6 +472,8 @@ function AddEnemy()
 		AddFox();
 	else
 		AddBox();
+
+	//AddCloud();
 }
 
 
@@ -519,6 +521,31 @@ function FoxHandleCollision(other, instigator)
 	}
 	return Entity.prototype.HandleCollision.call(this, other, instigator);
 }
+
+/**
+ * Add a cloud
+ */
+function AddCloud()
+{
+	Debug("Cloud Time!", true);
+	setTimeout(function() {Debug("",true)}, 200*stepRate);
+	var x = -0.9; if (Math.random() > 0.5) x = +0.9;
+	var vx = ((x > 0) ? -0.5 : 0.5);
+	var cloud = new Entity([x, 2*Math.random()-1], [vx, 0]);
+	cloud.frame = LoadTexture("data/box/box1.gif");
+	cloud.bounds = {min : [-32/canvas.width, -32/canvas.height], max: [32/canvas.width,32/canvas.height]};
+	cloud.name = "Cloud";
+	cloud.HandleCollision = function(other, instigator) {
+		if (instigator && (other.GetName() == "RightWall" || other.GetName() == "LeftWall"))
+		{
+			setTimeout(function() {this.Die()}, 500+1500*Math.random());
+			return false;
+		}	
+	};
+
+	gEntities.push(cloud);
+	return cloud;
+} 
 
 /**
  * Add a Fox
@@ -860,12 +887,14 @@ function main()
 	document.onkeydown = function(event) {keysPressed[event.keyCode] = true};
 	document.onkeyup = function(event) {keysPressed[event.keyCode] = false};
 
-	/*
+	
 	canvas.onmousedown = function(event)
 	{	
 		if (typeof(player) === "undefined")
 			return;
 
+		About();
+		/*
 		var thing;
 		if (event.which === 1)
 			thing = AddFox();
@@ -878,10 +907,12 @@ function main()
 			var y = 1 - 2*(event.clientY/canvas.height);
 			thing.position = [x,y];
 		}
+		*/
 	}
-	*/
+	
 
 	// Start the Game.
+	About();
 	StartScreen();
 	setTimeout(StartGame, 500);
 }
@@ -890,7 +921,7 @@ function About()
 {
 	PauseGame();
 	StartScreen();
-	alert("Humphrey The Rabbit: WebGL\n\nProgramming: Sam Moore\nGraphics: Nekopets, A Joseph Reume, Sam Moore\nMusic: Sam Moore\n\nControls: arrows\n\n\"Avoid the Foxes and Boxes\"\n\nGitHub: https://github.com/szmoore/HtR_WebGL\n\nLicense: GPL 2");
+	alert("Humphrey The Rabbit: WebGL\n\nProgramming: Sam Moore\nGraphics: Nekopets, A Joseph Reume, Sam Moore\nMusic: Sam Moore\n\nControls: arrows\n\n\"Avoid the Foxes and Boxes\"\n\nGitHub: https://github.com/szmoore/htr-webgl\n\nLicense: Code - MIT, Graphics/Music - CC-SA");
 	ResumeGame();
 }
 

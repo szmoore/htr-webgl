@@ -1,0 +1,77 @@
+<html>
+  <head>
+    <title>Humphrey The Rabbit - WebGL Version</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <link rel="stylesheet" href="webgl.css" type="text/css">
+<!--    <script src="sylvester.js" type="text/javascript"></script>
+    <script src="glUtils.js" type="text/javascript"></script>
+	<script src="underconstruction.js" type="text/javascript"></script> 
+	<script src="webgl-debug.js" type="text/javascript"></script> -->
+	<script src="scene.js" type="text/javascript"></script>
+
+	<noscript>
+		<p> Don't like scripts? You can get a Python version of this game <a href="htr.py">here</a>. </p>
+		<p></p>
+		<p> Don't like Python? There isn't a C/C++ version of this game. Because I have <pun>two many</pun> versions. As it is. Try <a href="/Astral/">Astral</a> instead. </p>
+	</noscript>
+
+    <!-- Fragment shader program -->
+
+    <script id="shader-fs" type="x-shader/x-fragment">
+      varying highp vec2 vTextureCoord;
+      
+      uniform sampler2D uSampler;
+	  uniform highp vec4 uColour;
+      
+      void main(void) {
+        gl_FragColor = texture2D(uSampler, vec2(vTextureCoord.s, vTextureCoord.t)) * uColour;
+      }
+    </script>
+    
+    <!-- Vertex shader program -->
+    
+    <script id="shader-vs" type="x-shader/x-vertex">
+	attribute vec2 aVertexPosition;
+	attribute vec2 aTextureCoord;
+	uniform vec2 uPosition;   
+	uniform vec2 uScale;
+	uniform float uAspectRatio; 
+      //uniform mat4 uMVMatrix;
+      //uniform mat4 uPMatrix;
+      
+      varying highp vec2 vTextureCoord;
+    
+      void main(void) {
+        gl_Position = vec4(aVertexPosition.x*uScale.x + uPosition.x, aVertexPosition.y * uAspectRatio * uScale.y + uPosition.y, 0, 1);
+        vTextureCoord = aTextureCoord;
+      }
+    </script>
+  </head>
+  
+
+  <body onload="main()">
+	<!-- Introduction -->
+	<audio preload="auto" id="theme">
+		<source src="data/theme.ogg" type="audio/ogg">
+		Your browser does not support the <code>audio</code> tag.
+	</audio>
+	<!-- The canvas -->
+    <canvas id="glcanvas" width="640" height="480">
+		The <code>canvas</code> tag isn't supported, <b>or</b> you have disabled scripts.
+    </canvas>
+
+	<!-- Links and Info -->
+	<div id="other">
+		<p align=center id="debug"></p>
+		<p align=center id=runtime></p>
+		<!--
+			<li> Graphics by A. Joseph Rheaume from <a href="http://web.archive.org/web/20111107025829/http://www.scarybug.org/biots/">"Biots"</a> </li>
+			<li> <a href="data/theme.mid">Original music</a> composed by me (favourably compared to "a crime against humanity"). </li>
+			<li> <a href="htr.py">Python version</a> (requires pygame) </li>
+			<li> <a href="data/rabbit/drawing2.svg">Hand drawn graphics</a> abandoned because it was too much work </li>
+		</ul>
+		-->
+	</div>
+	<p id="playback-title"></p>
+  </body>
+</html>
