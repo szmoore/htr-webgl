@@ -13,13 +13,15 @@ import sqlite3
 #import cgitb
 #cgitb.enable()
 
+import helpers
+
 
 
 if __name__ == "__main__":
 	
 	#sys.stderr = open(sys.argv[0]+".err", "w");
 
-	site = "http://" + os.environ["SERVER_NAME"] + os.path.dirname(os.environ["REQUEST_URI"]) + "/" 
+	site = helpers.GetSite()
 
 	# Setup database if it doesn't exist
 	try:
@@ -34,13 +36,7 @@ if __name__ == "__main__":
 		f.close()
 
 	# Get the cookie
-	identity = ""
-	try:
-		http_cookie = os.environ["HTTP_COOKIE"]
-		cookie = Cookie.SimpleCookie(http_cookie)
-		identity = cookie["identity"].value
-	except KeyError, Cookie.CookieError:
-		identity = "<anonymous>"
+	identity = helpers.GetIdentity()
 
 
 	# Get CGI fields
@@ -51,13 +47,18 @@ if __name__ == "__main__":
 	values = []
 	for f in fields:
 		if form.has_key(f):
-			values += [form[f].value]
+			try:
+				v = float(form[f].value)
+			except:
+				v = form[f].value
+			values += [v]
 
 	# Send response
 	if len(values) == 0:
 		print("Content-type: text/plain\n")
 		print("# You are: %s\n" % identity);
-		print("# Get the full SQlite DB from: %s\n" % (site+"stats.db"))
+		print("# Get the full SQlite DB from: %s\n" % (site+"/stats.db"))
+		print("# Expecting plots? This is the wrong place. Visit: %s\n" %(site+"/view.py?query=highscores"))
 		print("# TOP 100 Runs\n")
 		print("# identity\t" + "\t".join(fields)+"\n")
 		conn = sqlite3.connect("stats.db")
@@ -65,7 +66,7 @@ if __name__ == "__main__":
 		for row in cursor.execute("SELECT * FROM stats ORDER BY runtime DESC LIMIT 100"):
 			s = ""
 			for field in row:
-				s += field + "\t"
+				s += str(field) + "\t"
 			print(s)
 
 		conn.close()
