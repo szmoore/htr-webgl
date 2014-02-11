@@ -5,6 +5,7 @@ import os
 import cgi
 import Cookie
 import sqlite3
+import datetime
 
 def GetIdentity():
 	try:
@@ -29,4 +30,17 @@ def DataBaseExists():
 		f.close()
 	return True
 
+# Link to the player
+def LinkToYou():
+	you = GetIdentity()
+	print("<p><b>You:</b> <a href=\"#%s\">%s</a> " % (you,you))	
+	print(" - <a href=\"view.py?query=players\"> Player List</a></p>")
+
+def IdentifyYou(ident):
+	if ident == GetIdentity():
+		return "<b><i>YOU</i></b>"
+	return ident
+
+def ReadableDate(timestamp):
+	return datetime.datetime.fromtimestamp(float(timestamp)/1e3).strftime("%Y-%m-%d %H:%M")
 

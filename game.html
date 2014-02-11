@@ -55,10 +55,22 @@
 		<source src="data/theme.ogg" type="audio/ogg">
 		Your browser does not support the <code>audio</code> tag.
 	</audio>
-	<!-- The canvas -->
-    <canvas id="glcanvas" width="640" height="480">
-		The <code>canvas</code> tag isn't supported, <b>or</b> you have disabled scripts.
-    </canvas>
+	<div id="container" style="width:100%;">
+		<div id="status" style="float:left; width:auto; border:0px solid black;">
+			<!-- Some sort of menu/status thing will go here. Maybe -->
+		</div>
+
+		<div id="middle" style="margin:0 auto; width:650px; border:0px solid blue;">
+			<!-- The canvas -->
+			<canvas id="glcanvas" width="640" height="480">
+				The <code>canvas</code> tag isn't supported, <b>or</b> you have disabled scripts.
+			</canvas>
+		</div>
+
+		<div id="blank" style="float:right; width:auto; border:0px solid blue;">
+			<!-- Not sure if anything will go here. Want to keep it simple after all. -->
+		</div>
+	</div>
 
 	<!-- Links and Info -->
 	<div id="other">
