@@ -6,3 +6,4 @@
 fixdb.py
 dumpdb.py
 *.pyc
+*.rg
