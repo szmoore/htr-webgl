@@ -54,6 +54,7 @@ var stepCount = 0;
 var foxesSquished = 0;
 var foxesDazed = 0;
 var boxesSquished = 0;
+var level = 1;
 /**
  * Debug; display information on the page (for most things this is much nicer than Alt-Tabbing to and fro with Firebug)
  */
@@ -357,8 +358,8 @@ function BoxStep()
 	Entity.prototype.Step.call(this);
 	if (this.velocity[0] < 1e-2)
 		this.velocity[0] = 0;
-	else
-		this.velocity[0] /= 4;
+	//else if (this.velocity[0] < 0.5)
+	//	this.velocity[0] /= 4;
 }
 
 /**
@@ -409,10 +410,17 @@ function FoxStep()
 		// Jump!
 		if (player.Bottom() > this.Top())
 		{
-			if (this.canJump)
+			//HACKY HACK HACK
+			if (this.canJump && this.GetName() == "Fox")
 			{
 				this.canJump = false;
 				this.velocity[1] = this.jumpSpeed;
+			}
+			else if (this.canJump && this.MovingTowards(player) && r2 < 1.5*this.Width())
+			{
+				this.canJump = false;
+				this.velocity[1] = this.jumpSpeed;
+				this.velocity[0] *= 1.1;
 			}
 		}
 	}
@@ -439,6 +447,11 @@ function BoxHandleCollision(other, instigator)
 			}
 		}
 	}
+	if (instigator && other.GetName() == "dwGround")
+	{
+		if (this.velocity[0] > 0.5)
+			this.velocity[0] /= 4;
+	}
 	return Entity.prototype.HandleCollision.call(this,other,instigator);
 }
 
@@ -458,6 +471,24 @@ function AddBox()
 	box.health = 5;
 	box.HandleCollision = BoxHandleCollision;
 	box.Step = BoxStep;
+	// SUPA BOX
+	//if (level >= 2 && Math.random() > 0.5)
+	if (true)
+	{
+		box.frame = LoadTexture("data/box/box2.gif");
+		box.Die = function() {this.health = 0};
+		var x = box.position[0]
+		if (Math.random() > 0.5)
+		{
+			x = (Math.random() > 0.5) ? -1.1 : 1.1;
+			var vx = (x < 0) ? 1 : -1;
+			//vx = vx * Math.random() * 2;
+			box.position = [x, -0.5+0.5*Math.random()];
+			box.velocity = [vx,0];
+		}
+		box.ignoreCollisions = {"LeftWall" : (x < 1), "RightWall" : (x > 1), "Roof" : true}; 
+		setTimeout(function() {box.ignoreCollisions = {};}, 2000);
+	}
 	gEntities.push(box);
 	return box;
 }
@@ -473,8 +504,116 @@ function AddEnemy()
 	else
 		AddBox();
 
+	//AddOx();
+
 	//AddCloud();
 }
+
+Entity.prototype.MovingTowards = function(other)
+{
+	return (((this.velocity[0] > 0 && other.position[0] >= this.position[0])
+		|| (this.velocity[0] < 0 && other.position[0] <= this.position[0]))
+		|| ((this.velocity[1] > 0 && other.position[1] >= this.position[1])
+		|| (this.velocity[1] < 0 && other.position[1] <= this.position[1]))); 
+}
+
+Entity.prototype.RelativeSpeed = function(other)
+{
+	var s = 0;
+	for (var i in this.velocity)
+		s += Math.pow(this.velocity[i] - other.velocity[i], 2)
+	return Math.pow(s, 0.5);
+}
+
+Entity.prototype.MurderPlayer = function(other, killtype)
+{
+	if (this.MovingTowards(other) && killtype)
+	{
+		if (this.dazed && this.dazed > 0)
+		{
+
+		}
+		else
+		{
+			other.Death(killtype);
+		}
+	}
+}
+
+Entity.prototype.CollideBox = function(other, instigator)
+{
+	if (other.velocity[1] < -0.1 && other.Bottom() > this.Top() && !instigator)
+	{
+		var boxh = other.health;
+		if (this.health)
+		{
+			this.health -= other.health;
+			other.health -= this.health;
+		}
+
+		if (!this.health || this.health <= 0)
+		{
+			foxesSquished += 1; // Yeah, everything is a fox...
+			Debug(this.GetName() + " got squished!", true);
+			this.Die()
+			setTimeout(function() {Debug("", true)}, 2000);	
+		}
+		else
+		{
+			this.dazed += Math.random()*boxh;
+		}
+		return false;
+	}
+	return true;
+
+}
+
+Entity.prototype.TryToJump = function(other, instigator)
+{
+	// Can jump over boxes if not dazed
+	if (this.canJump && (!this.sleep || this.sleep < 0) && (!this.dazed || this.dazed < 0))
+	{
+		this.canJump = false;
+		this.velocity[1] = this.jumpSpeed;
+	}
+	else
+		this.canJump = true;
+}
+
+
+/**
+ * Ox collision
+ * Really need to refactor so I'm not just copying FoxHandleCOllision
+ */
+function OxHandleCollision(other, instigator)
+{
+	if (other === player && instigator)
+		return this.MurderPlayer(other, "STABBED");
+	else if (other.GetName() == "Box")
+	{
+		this.CollideBox(other, instigator);
+	}
+
+	if (this.MovingTowards(other) && (other.GetName() == "Box" || (other.sleep && other.sleep > 0)))
+	{
+		this.canJump = false;
+		other.health -= 0.5;
+		var s = (this.velocity[0] > 0) ? 1 : -1;
+		if (this.velocity[0] == 0) s = 0;
+		this.velocity[0] = this.speed * s;
+		other.velocity[0] = this.velocity[0];
+		if (other.health < 0)
+		{
+			if (other.GetName() != "Box") foxesSquished += 1;
+			other.Die();
+		}
+		return false;
+	}
+
+	
+	return Entity.prototype.HandleCollision.call(this,other,instigator); // Ain't nothing can stop an Ox	
+}
+
 
 
 /**
@@ -483,69 +622,51 @@ function AddEnemy()
 function FoxHandleCollision(other, instigator)
 {
 	if (other === player && instigator)
-	{
-		
-		if (this.dazed && this.dazed > 0)
-		{
-		//	Debug("dazy fox " + this.dazed);
-		}
-		//Debug((this.velocity[1] < 0 && other.position[1] <= this.position[1]), true);
-		// Erm... Only eat the player if moving directly towards them.
-		else if (((this.velocity[0] > 0 && other.position[0] >= this.position[0])
-			|| (this.velocity[0] < 0 && other.position[0] <= this.position[0]))
-			|| ((this.velocity[1] > 0 && other.position[1] >= this.position[1])
-			|| (this.velocity[1] < 0 && other.position[1] <= this.position[1]))) 
-		{
-			player.Death("EATEN");
-		}
-	}	
+		return this.MurderPlayer(other, "EATEN");
 	else if (other.GetName() == "Box")
+		if (this.CollideBox(other, instigator))
+			this.TryToJump();
+	else if (other.GetName() == "Ox" && instigator)
 	{
-		if (!instigator && other.velocity[1] <= -0.1)
-		{
-			foxesSquished += 1;
-			Debug(this.GetName() + " got squished!", true);
-			this.Die();
-			setTimeout(function() {Debug("",true)}, 2000);
-			return false;
-		}
-		// Non sleepy foxes can jump over boxes.
-		if (this.canJump && (!this.sleep || this.sleep < 0) && (!this.dazed || this.dazed < 0))
-		{
-			this.canJump = false;
-			this.velocity[1] = this.jumpSpeed;
-		}
-		else
-			this.canJump = true;
+		this.velocity[0] = -this.velocity[0];
+		this.TryJump();
 		return false;
 	}
 	return Entity.prototype.HandleCollision.call(this, other, instigator);
 }
 
-/**
- * Add a cloud
- */
-function AddCloud()
-{
-	Debug("Cloud Time!", true);
-	setTimeout(function() {Debug("",true)}, 200*stepRate);
-	var x = -0.9; if (Math.random() > 0.5) x = +0.9;
-	var vx = ((x > 0) ? -0.5 : 0.5);
-	var cloud = new Entity([x, 2*Math.random()-1], [vx, 0]);
-	cloud.frame = LoadTexture("data/box/box1.gif");
-	cloud.bounds = {min : [-32/canvas.width, -32/canvas.height], max: [32/canvas.width,32/canvas.height]};
-	cloud.name = "Cloud";
-	cloud.HandleCollision = function(other, instigator) {
-		if (instigator && (other.GetName() == "RightWall" || other.GetName() == "LeftWall"))
-		{
-			setTimeout(function() {this.Die()}, 500+1500*Math.random());
-			return false;
-		}	
-	};
 
-	gEntities.push(cloud);
-	return cloud;
-} 
+/**
+ * Add an Ox
+ */
+function AddOx()
+{
+	Debug("Ox Time!", true)
+	setTimeout(function() {Debug("",true)}, 200*stepRate);
+	var x = (Math.random() > 0.5) ? -0.8 : 0.8;
+	var y = (-0.8 + 1.6*Math.random());
+	var ox = new Entity([x,y],[0,0]);
+	ox.LoadSprites("data/ox");
+	ox.acceleration = [0,-gravity];
+	ox.bounds = {min: [-48/canvas.width, -48/canvas.height], max: [48/canvas.width, 48/canvas.height]};
+	ox.scale = [48/canvas.width, 48/canvas.height];
+	ox.name = "Ox";
+	ox.frameRate = 3;
+	ox.Step = FoxStep;
+	ox.HandleCollision = OxHandleCollision;
+	ox.health = 7;
+	ox.speed = 0.6;
+	ox.canJump = true;
+
+	ox.jumpSpeed = 0.4;
+	ox.ignoreCollisions = {};
+	ox.Die = function() {
+		setTimeout(AddOx, Math.random()*10000);
+		Entity.prototype.Die.call(this);
+	}
+	gEntities.push(ox);
+	return ox;
+}
 
 /**
  * Add a Fox
@@ -564,6 +685,7 @@ function AddFox()
 	fox.HandleCollision = FoxHandleCollision;
 	fox.speed = 0.5;
 	fox.jumpSpeed = 0.5;
+	fox.health = 1;
 	fox.canJump = false; // Foxes jumping at birth is hard.
 	fox.ignoreCollisions = {"Roof" : true};
 	gEntities.push(fox);
@@ -588,15 +710,15 @@ function LoadEntities()
 	player.handleKeys = function(keys)
 	{
 		this.velocity[0] = 0;
-		if (keys[37]) this.velocity[0] -= 0.7;
-		if (keys[39]) this.velocity[0] += 0.7;
+		if (keys[37]) this.velocity[0] -= 1.7;
+		if (keys[39]) this.velocity[0] += 1.7;
 		if (this.canJump && keys[38])
 		{
-			this.velocity[1] = 1.2;
+			this.velocity[1] = 1.8;
 			this.canJump = false;
 		}
 		if (keys[40] && this.velocity[1] > -3)
-			this.velocity[1] -= 0.2;
+			this.velocity[1] -= 0.5;
 	}
 
 	player.Death = function(cause)
@@ -605,6 +727,8 @@ function LoadEntities()
 		player = undefined;
 		if (cause == "EATEN")
 			EatenScreen("YOU GOT EATEN!");
+		else if (cause == "STABBED")
+			StabbedScreen("YOU GOT STABBED");
 		else
 			SquishScreen("YOU GOT SQUISHED");
 		
@@ -634,7 +758,7 @@ function LoadEntities()
 	{
 		if (other.GetName() == "Box")
 		{
-			if (!instigator && other.velocity[1] < -0.1)
+			if (!instigator && other.MovingTowards(this) && other.RelativeSpeed(this) > 1)
 			{
 				this.Death("SQUISHED");
 				return true;
@@ -737,6 +861,7 @@ function CopyEntitiesByName(name)
 }
 
 function SquishScreen(text) {SplashScreen([0,0,0,1],[1,0,0,1], "rabbit", text)}
+function StabbedScreen(text) {SplashScreen([0,0,0,1],[1,1,1,1], "ox", text)}
 function EatenScreen(text) {SplashScreen([0,0,0,1],[1,1,1,1], "fox", text)}
 function StartScreen() {SplashScreen([0.9,0.9,0.9,1],[1,1,1,1], "rabbit", "Humphrey The Rabbit")}
 function VictoryScreen() {SplashScreen([0.5,1,0.5,1],[1,1,1,1], "rabbit", "YOU WON!")}
@@ -745,12 +870,18 @@ function SplashScreen(background, blend, type, text)
 {
 	var screen = new Entity([0,0], [0,0]);
 	var file = "data/fox/drawing1.svg";
-	if (type != "fox")
+
+	screen.scale = [0.6, 0.6]; 
+	if (type == "rabbit")
 	{
 		var X = Math.round(1 + (Math.random()*6));
 		file = "data/rabbit/drawing"+X+".svg";	
 	}
-	screen.scale = [0.6, 0.6]; 
+	else if (type == "ox")
+	{
+		file = "data/ox/drawing1.svg";
+		screen.scale = [0.8,0.7];
+	}
 
 	screen.frame = LoadTexture(file, function() {
 		var ratio = (screen.frame.img.width / screen.frame.img.height);
@@ -769,12 +900,19 @@ function SplashScreen(background, blend, type, text)
  */
 function StartGame()
 {
+	var audio = document.getElementById("theme");
+	if (audio)
+	{
+		audio.src = "data/theme.ogg";
+		audio.load();
+	}
 	startTime = new Date;
 	stepCount = 0;
 	foxesSquished = 0;
 	foxesDazed = 0;
 	boxesSquished = 0;
 	
+	level = 1;
 
 
 	runTime = 0;
@@ -782,6 +920,9 @@ function StartGame()
 	Debug("GET READY!",true);
 	setTimeout(function() {Debug("",true)}, stepRate*500);
 	ResumeGame();
+	AddBox();
+	AddBox();
+	AddBox();
 }
 
 /**
@@ -817,14 +958,12 @@ function ResumeGame()
 	if (drawSceneTimer) clearTimeout(drawSceneTimer);
 	if (addEnemyTimer) clearTimeout(addEnemyTimer);
 	drawSceneTimer = setInterval(DrawScene, stepRate);
-	addEnemyTimer = setInterval(AddEnemy, stepRate*300);
+	addEnemyTimer = setInterval(AddEnemy, stepRate*300/Math.pow(level,0.5));
 
 	var audio = document.getElementById("theme"); 
 	if (audio)
 	{
-		audio.pause();
-		audio.currentTime = 0;
-		setTimeout(function() {audio.play()}, 200);
+		audio.play();
 	}
 	var pause = document.getElementById("pause");
 	if (pause)
@@ -832,7 +971,6 @@ function ResumeGame()
 		pause.innerHTML = "pause";
 		pause.onclick = PauseGame;
 	}
-	
 }
 
 /**
@@ -842,18 +980,46 @@ function ResumeGame()
  */
 function Victory()
 {
+	if (level > 3)
+		return;
+
 	PauseGame();
-	VictoryScreen();
-	setTimeout(function() {
-		Debug("<i><b>...</b></i>",true);
+	if (level == 1) 
+	{
+		gEntities = [];
+		LoadEntities();
+		SplashScreen([1,0,0,1],[1,1,1,1],"ox", "OX TIME!");
+		var audio = document.getElementById("theme");
+		if (audio)
+		{
+			audio.src = "data/theme2.ogg";
+			audio.load();
+			audio.pause();
+		}
+		setTimeout(function() {ResumeGame(); AddOx()}, 2000);
+		level += 1;
+	}
+	else if (level == 2)
+	{
+		VictoryScreen();
 		setTimeout(function() {
-			Debug("Or did you?",true);
+			Debug("<i><b>...</b></i>",true);
 			setTimeout(function() {
-				Debug("<i><b>THERE IS NO ESCAPE</b></i>", true)
-				setTimeout(ResumeGame, 2000);
+				Debug("Or did you?",true);
+				setTimeout(function() {
+					Debug("<i><b>THERE IS NO ESCAPE</b></i>", true)
+					if (confirm("Epillepsy Warning: The next level contains flashing lights.\nContinue?"))
+					{
+						setInterval(function() {gl.clearColor(Math.random(), Math.random(), Math.random(), 1)}, 500);
+					}
+					level += 1;
+					setTimeout(function() {ResumeGame(); AddOx(); AddFox(); AddOx()}, 2000);
+				}, 2000);
 			}, 2000);
-		}, 2000);
-	}, 1000);
+		}, 3000);
+	}
+	else
+		ResumeGame();
 }
 
 /**
@@ -863,7 +1029,10 @@ function main()
 {
 	var audio = document.getElementById("theme");
 	if (audio)
+	{
 		audio.addEventListener("ended", Victory);
+		audio.load()
+	}
 	canvas = document.getElementById("glcanvas");
 	InitWebGL(canvas);      // Initialize the GL context
 
@@ -942,8 +1111,12 @@ function DrawScene()
 	this.lastTime = curTime;
 	var rt = document.getElementById("runtime");
 	if (rt) rt.innerHTML=(""+runTime/1000).toHHMMSS();
-	
-	gl.clearColor(0.9,0.9,1,1);
+
+	if (level == 1)
+		gl.clearColor(0.9,0.9,1,1);
+//	else if (level == 2)
+//		gl.clearColor(0.9,0.45,0.5,1);
+		
 	gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
 	for (var i in gEntities)
@@ -1171,6 +1344,5 @@ String.prototype.toHHMMSS = function () {
     if (minutes < 10) {minutes = "0"+minutes;}
     if (seconds < 10) {seconds = "0"+seconds;}
     var time    = hours+':'+minutes+':'+seconds;
-    return time;
-}
+    return time;}
 
