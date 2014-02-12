@@ -1062,7 +1062,7 @@ function main()
 		if (typeof(player) === "undefined")
 			return;
 
-		About();
+//		About();
 		/*
 		var thing;
 		if (event.which === 1)
@@ -1081,9 +1081,9 @@ function main()
 	
 
 	// Start the Game.
-	About();
+//	About();
 	StartScreen();
-	setTimeout(StartGame, 500);
+	setTimeout(StartGame, 4000);
 }
 
 function About()
