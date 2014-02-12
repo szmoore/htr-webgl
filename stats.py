@@ -78,7 +78,7 @@ if __name__ == "__main__":
 
 	# Someone could just leave their browser on the page not actually playing.
 	# So only record games >10s
-	elif int(form["runtime"].value) < 10000:
+	elif int(float(form["runtime"].value)) < 10000:
 
 		print("Content-type: text/plain\n")
 		sys.exit(0)
