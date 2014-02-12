@@ -359,7 +359,7 @@ function BoxStep()
 	Entity.prototype.Step.call(this);
 	if (Math.abs(this.velocity[0]) < 1e-2)
 		this.velocity[0] = 0;
-	else if (Math.abs(this.velocity[0]) < 0.5)
+	else if (Math.abs(this.velocity[0]) < 0.5 && Math.abs(this.acceleration[0]) < 1e-12)
 		this.velocity[0] /= 4;
 }
 
@@ -447,6 +447,12 @@ function BoxHandleCollision(other, instigator)
 				this.Die();
 			}
 		}
+		if (other.GetName() == "LeftWall" || other.GetName() == "RightWall")
+		{
+			if (this.position[0] > 1) this.position[0] = 0.9;
+			if (this.position[0] < -1) this.position[0] = -0.9;
+			return false;
+		}
 	}
 	else 
 	{
@@ -473,26 +479,32 @@ function AddBox()
 	box.HandleCollision = BoxHandleCollision;
 	box.Step = BoxStep;
 	// SUPA BOX
-	//if (level >= 2 && Math.random() > 0.5)
+	if (level >= 2)
 	{
 		var x = box.position[0]
 		if (Math.random() > 0.5)
 		{
-			x = (Math.random() > 0.5) ? 1.1 : -1.1;
+			x = (Math.random() > 0.5) ? 1.05 : -1.05;
 			var vx = (x < 0) ? 1 : -1;
-			vx = vx * Math.random() * 2;
+			vx = vx * (0.5 + Math.random());
 			box.position = [x, -0.5+Math.random()];
 			box.velocity = [vx,0];
+			box.ignoreCollisions = {"LeftWall" : (x < 1), "RightWall" : (x > 1), "Roof" : true}; 
+			if (Math.random() > 0.2)
+			{
+				box.acceleration[1] = 0;
+				box.velocity[0] *= 0.7;
+				setTimeout(function() {box.acceleration[1] = -gravity}, Math.random()*10000);
+			}
+			setTimeout(function() {box.ignoreCollisions = {};}, 7000);
 		}
-		box.ignoreCollisions = {"LeftWall" : (x < 1), "RightWall" : (x > 1), "Roof" : true}; 
-		setTimeout(function() {box.ignoreCollisions = {};}, 5000);
 		if (Math.random() > 0.8)
 		{
 			box.frame = LoadTexture("data/box/box2.gif");
 			box.health = 20;
 		}
 	}
-	
+	console.log("Added box at ["+box.position+"] move ["+box.velocity+"]");	
 	gEntities.push(box);
 	return box;
 }
@@ -503,9 +515,9 @@ function AddBox()
 function AddEnemy()
 {
 	addEnemyCount += 1;
-//	if (addEnemyCount % 5 == 0)
-//		AddFox();
-//	else
+	if (addEnemyCount % 5 == 0)
+		AddFox();
+	else
 	AddBox();
 
 	//AddOx();
@@ -519,6 +531,16 @@ Entity.prototype.MovingTowards = function(other)
 		|| (this.velocity[0] < 0 && other.position[0] <= this.position[0]))
 		|| ((this.velocity[1] > 0 && other.position[1] >= this.position[1])
 		|| (this.velocity[1] < 0 && other.position[1] <= this.position[1]))); 
+}
+
+Entity.prototype.Above = function(other)
+{
+	return (this.Bottom() < (other.Top() + 0.05*other.Height()));
+}
+
+Entity.prototype.Below = function(other)
+{
+	return other.Above(this);
 }
 
 Entity.prototype.RelativeSpeed = function(other)
@@ -546,7 +568,8 @@ Entity.prototype.MurderPlayer = function(other, killtype)
 
 Entity.prototype.CollideBox = function(other, instigator)
 {
-	if (other.velocity[1] < -0.1 && other.Bottom() > this.Top() && !instigator)
+	//if (other.velocity[1] < -0.1 && other.Bottom() > this.Top() && !instigator)
+	if (!instigator && other.MovingTowards(this) && other.Above(this) && other.RelativeSpeed(this) > 0.5)
 	{
 		var boxh = other.health;
 		if (this.health)
@@ -658,7 +681,7 @@ function AddOx()
 	ox.frameRate = 3;
 	ox.Step = FoxStep;
 	ox.HandleCollision = OxHandleCollision;
-	ox.health = 10;
+	ox.health = 100;
 	ox.speed = 0.6;
 	ox.canJump = true;
 
@@ -688,7 +711,7 @@ function AddFox()
 	fox.Step = FoxStep;
 	fox.HandleCollision = FoxHandleCollision;
 	fox.speed = 0.5;
-	fox.jumpSpeed = 0.5;
+	fox.jumpSpeed = 0.5 * Math.pow(level, 1/3);
 	fox.health = 1;
 	fox.canJump = false; // Foxes jumping at birth is hard.
 	fox.ignoreCollisions = {"Roof" : true};
@@ -724,7 +747,7 @@ function LoadEntities()
 		if (keys[40] && this.velocity[1] > -3)
 			this.velocity[1] -= 0.2;
 	}
-
+	
 	player.Death = function(cause)
 	{
 		PauseGame();
@@ -757,17 +780,15 @@ function LoadEntities()
 		// Restart the game
 		setTimeout(StartGame,2000);
 	}
+	//player.Death = function(cause) {}
 	// Handle collision with box
 	player.HandleCollision = function(other, instigator)
 	{
 		if (other.GetName() == "Box")
 		{
-			if (!instigator && other.MovingTowards(this))
+			if (!instigator && other.MovingTowards(this) && other.Above(this) && other.RelativeSpeed(this) > 0.5)
 			{
-				if (other.RelativeSpeed(this) > 0.5)
-				{
-					this.Death("SQUISHED");
-				}
+				this.Death("SQUISHED");
 				return true;
 			}
 		}
@@ -962,7 +983,7 @@ function ResumeGame()
 	if (drawSceneTimer) clearTimeout(drawSceneTimer);
 	if (addEnemyTimer) clearTimeout(addEnemyTimer);
 	drawSceneTimer = setInterval(DrawScene, stepRate);
-//	addEnemyTimer = setInterval(AddEnemy, stepRate*300/Math.pow(level,0.5));
+	addEnemyTimer = setInterval(AddEnemy, stepRate*300/Math.pow(level,0.5));
 
 	var audio = document.getElementById("theme"); 
 	if (audio)
@@ -1000,6 +1021,7 @@ function Victory()
 			audio.load();
 			audio.pause();
 		}
+
 		setTimeout(function() {ResumeGame(); AddOx()}, 2000);
 		level += 1;
 	}
@@ -1065,23 +1087,15 @@ function main()
 	{	
 		if (typeof(player) === "undefined")
 			return;
-		AddBox();
+		
 
 //		About();
-		/*
+	/*
 		var thing;
 		if (event.which === 1)
-			thing = AddFox();
+			thing = AddOx();
 		else if (event.which === 2)
-			thing = AddBox();	
-		
-		if (thing)
-		{
-			var x = -1 + 2*(event.clientX/canvas.width);
-			var y = 1 - 2*(event.clientY/canvas.height);
-			thing.position = [x,y];
-		}
-		*/
+	*/
 	}
 	
 
@@ -1119,8 +1133,8 @@ function DrawScene()
 
 	if (level == 1)
 		gl.clearColor(0.9,0.9,1,1);
-//	else if (level == 2)
-//		gl.clearColor(0.9,0.45,0.5,1);
+	else if (level == 2)
+		gl.clearColor(0.8,0.6,0.6,1);
 		
 	gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
@@ -1158,7 +1172,7 @@ function LoadTexture(src, lambda)
 {
 	if (src in gTextures)
 	{
-		if (lambda) lambda();
+		if (lambda) {setTimeout(lambda, 500)}
 		return gTextures[src];
 	}
 	
