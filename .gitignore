@@ -3,8 +3,7 @@
 *.dat
 *.count
 *.db
-fixdb.py
-dumpdb.py
+*.bk
 *.pyc
 *.rg
 *.wav

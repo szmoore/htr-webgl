@@ -10,6 +10,7 @@ import cgi
 import Cookie
 import datetime
 import hashlib
+import sqlite3
 
 import helpers
 
@@ -19,10 +20,14 @@ if __name__ == "__main__":
 	site = "http://" + os.environ["SERVER_NAME"] + os.path.dirname(os.environ["REQUEST_URI"])
 	print("Content-type: text/html")
 	cookie_warn = False
-	if helpers.GetIdentity() == "<anonymous>":
+	returning_player = True
+	identity = helpers.GetIdentity()
+	if identity == "<anonymous>":
+		returning_player = False
 		try:
 			cookie = Cookie.SimpleCookie()
 			cookie["identity"] = hashlib.md5(str(datetime.datetime.now())).hexdigest()
+			identity = cookie["identity"].value
 			expires = datetime.datetime.now() + datetime.timedelta(days=10000)
 			cookie["identity"]["expires"] = expires.strftime('%a, %d %b %Y %H:%M:%S')
 			print(cookie.output())
@@ -31,15 +36,45 @@ if __name__ == "__main__":
 			# Couldn't set the cookie, don't bother warning them.
 			cookie_warn = False
 
-	try:
-		print("\n")
-		# Should I use a redirect instead? It is more typing? But I just typed this comment...
-		game = open("game.html", "r")
-		print(game.read())
-		if cookie_warn:
-			# Warn about cookies. No other websites EVER seem to do this but we will be nice.
-			print("<script type=\"text/javascript\">alert(\"A cookie has been set!\\nYour player identity is: %s\\n\\nYou can use this at %s/view.py to keep track of your scores.\\n\\nThe cookie can't be used to personally identify you.\\nIf you are still not OK with this, feel free to disable cookies.\\n\\nThe game will work exactly the same with or without cookies.\\nVisit %s/game.html directly to avoid this message.\");</script>" % (cookie["identity"].value, site,site))
-	except:
-		print("<p> Something went wrong! Don't panic, this is just a hacky CGI script. The actual game is <a href=\"game.html\">here</a> </p>")
-		sys.exit(0)
+	form = cgi.FieldStorage()
+	timestamp = helpers.FloatNow();
+	level = 1
+	print("\n")
+	game = open("game.html", "r")
+	lines = game.readlines()
+	game.close()
+	for l in lines[0:-2]:
+		print(str(l))
+	print("<script type=\"text/javascript\">")
+	print("serverTime = %f;" % timestamp)
+
+	if (helpers.DataBaseExists()):
+		conn = sqlite3.connect("stats.db")
+		c = conn.cursor()
+		if returning_player == True:
+			c.execute("SELECT level FROM players WHERE identity=?",(identity,))
+			level = c.fetchone()
+			if level != None:
+				level = level[0]
+				c.execute("UPDATE players SET lastContact=? WHERE identity=?", (timestamp,identity))
+
+		if cookie_warn or level == None:
+			c.execute("INSERT INTO players(identity,created,lastContact,level) VALUES (?,?,?,1)", (identity,timestamp,timestamp))
+
+		conn.commit()
+		conn.close()
+
+	if form.has_key("level"):
+		level = min(int(float(level)), int(float(form["level"].value)))
+
+	print("level = %d;" % level)
+	print("</script>")
+
+
+	if cookie_warn:
+		# Warn about cookies. No other websites EVER seem to do this but we will be nice.
+		print("<script type=\"text/javascript\">alert(\"A cookie has been set!\\nYour player identity is: %s\\n\\nYou can use this at %s/view.py to keep track of your scores.\\n\\nThe cookie can't be used to personally identify you.\\nIf you are still not OK with this, feel free to disable cookies.\\n\\nThe game will work exactly the same with or without cookies.\\nVisit %s/game.html directly to avoid this message.\");</script>" % (cookie["identity"].value, site,site))
+	
+	for l in lines[-2:]:
+		print(str(l))
 

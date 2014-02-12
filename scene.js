@@ -48,6 +48,8 @@ var addEnemyTimer;
 var addEnemyCount = 0;
 var runTime = 0;
 
+var serverTime = (new Date).getTime();
+var offsetTime = 0;
 var gEntities = [];
 var gTextures = {};
 var startTime;
@@ -719,6 +721,27 @@ function AddFox()
 	return fox;
 }
 
+function PostStats(player, cause)
+{
+	// Send results to the stat collecting script
+	var xmlhttp = new XMLHttpRequest(); // IE<7 won't WebGL anyway, screw compatibility
+		
+	xmlhttp.onreadystatechange = function() {
+		// Don't really need to do anything.
+	};
+	var request = "death="+cause;
+	request += "&x="+player.position[0]+"&y="+player.position[1];
+	request += "&start="+startTime.getTime()+"&runtime="+runTime;
+	request += "&steps="+stepCount;
+	request += "&foxesSquished="+foxesSquished+"&foxesDazed="+foxesDazed;
+	request += "&boxesSquished="+boxesSquished;
+	request += "&level="+level;
+	xmlhttp.open("POST", "stats.py", true); //POST just because its BIG
+	xmlhttp.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
+	xmlhttp.setRequestHeader("Content-length", request.length);
+	xmlhttp.setRequestHeader("Connection", "close");
+	xmlhttp.send(request);		
+}
 /**
  * Load the initial Entities
  */
@@ -758,25 +781,8 @@ function LoadEntities()
 			StabbedScreen("YOU GOT STABBED");
 		else
 			SquishScreen("YOU GOT SQUISHED");
-		
-		// Send results to the stat collecting script
-		var xmlhttp = new XMLHttpRequest(); // IE<7 won't WebGL anyway, screw compatibility
-		
-		xmlhttp.onreadystatechange = function() {
-			// Don't really need to do anything.
-		};
-		var request = "death="+cause;
-		request += "&x="+this.position[0]+"&y="+this.position[1];
-		request += "&start="+startTime.getTime()+"&runtime="+runTime;
-		request += "&steps="+stepCount;
-		request += "&foxesSquished="+foxesSquished+"&foxesDazed="+foxesDazed;
-		request += "&boxesSquished="+boxesSquished;
-		xmlhttp.open("POST", "stats.py", true); //POST just because its BIG
-		xmlhttp.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
-		xmlhttp.setRequestHeader("Content-length", request.length);
-		xmlhttp.setRequestHeader("Connection", "close");
-		xmlhttp.send(request);		
-
+	
+		PostStats(this, cause);
 		// Restart the game
 		setTimeout(StartGame,2000);
 	}
@@ -922,32 +928,48 @@ function SplashScreen(background, blend, type, text)
 			Debug("<b><i>"+text+"</i></b>", true);
 	});
 }
+/**
+ * Set the level
+ */
+function SetLevel(l)
+{
+	startTime = new Date;
+	stepCount = 0;
+	foxesSquished = 0;
+	foxesDazed = 0;
+	boxesSquished = 0;
+	runTime = 0;
+
+	level = l;
+	PauseGame();
+	gEntities = [];
+	LoadEntities();
+	var audio = document.getElementById("theme");
+	if (audio)
+	{
+		audio.src = (level <= 1) ? "data/theme.ogg" : "data/theme"+level+".ogg";
+		audio.load();
+		audio.pause();
+	}
+
+	if (level == 2)
+	{
+		AddOx();
+	}
+
+	ResumeGame();
+}
+
 
 /**
  * Start the game
  */
 function StartGame()
 {
-	var audio = document.getElementById("theme");
-	if (audio)
-	{
-		audio.src = "data/theme.ogg";
-		audio.load();
-	}
-	startTime = new Date;
-	stepCount = 0;
-	foxesSquished = 0;
-	foxesDazed = 0;
-	boxesSquished = 0;
-	
-	level = 1;
-
-
-	runTime = 0;
-	LoadEntities();
+		
 	Debug("GET READY!",true);
 	setTimeout(function() {Debug("",true)}, stepRate*500);
-	ResumeGame();
+	SetLevel(level);
 }
 
 /**
@@ -997,7 +1019,6 @@ function ResumeGame()
 		pause.onclick = PauseGame;
 	}
 }
-
 /**
  * You win!
  * ...
@@ -1008,22 +1029,13 @@ function Victory()
 	if (level > 3)
 		return;
 
+	PostStats(player, "NEXT LEVEL");
+
 	PauseGame();
 	if (level == 1) 
 	{
-		gEntities = [];
-		LoadEntities();
 		SplashScreen([1,0,0,1],[1,1,1,1],"ox", "OX TIME!");
-		var audio = document.getElementById("theme");
-		if (audio)
-		{
-			audio.src = "data/theme2.ogg";
-			audio.load();
-			audio.pause();
-		}
-
-		setTimeout(function() {ResumeGame(); AddOx()}, 2000);
-		level += 1;
+		setTimeout(function() {SetLevel(level+1)}, 2000);
 	}
 	else if (level == 2)
 	{
@@ -1034,7 +1046,7 @@ function Victory()
 				Debug("Or did you?",true);
 				setTimeout(function() {
 					Debug("<i><b>THERE IS NO ESCAPE</b></i>", true)
-					if (confirm("Epillepsy Warning: The next level contains flashing lights.\nContinue?"))
+					if (confirm("Epillepsy Warning: .\nContinue?"))
 					{
 						setInterval(function() {gl.clearColor(Math.random(), Math.random(), Math.random(), 1)}, 500);
 					}
@@ -1044,8 +1056,6 @@ function Victory()
 			}, 2000);
 		}, 3000);
 	}
-	else
-		ResumeGame();
 }
 
 /**
@@ -1053,6 +1063,8 @@ function Victory()
  */
 function main() 
 {
+	offsetTime = (new Date).getTime() - serverTime;
+
 	var audio = document.getElementById("theme");
 	if (audio)
 	{

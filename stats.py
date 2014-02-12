@@ -12,10 +12,37 @@ import Cookie
 import sqlite3
 #import cgitb
 #cgitb.enable()
+import datetime
 
 import helpers
 
+def Sanity(fields):
+	identity = helpers.GetIdentity()
+	if identity == "<anonymous>":
+		return "<anonymouse>"
 
+	if fields["level"] not in [1,2]:
+		return "Bad level"
+
+	if fields["death"] not in ["SQUISHED", "STABBED", "EATEN", "NEXT LEVEL"]:
+		return "Invalid death"
+
+	x = fields["x"]
+	y = fields["y"]
+	if x > 1 or x < -1 or y > 1 or y < -1:
+		return "Invalid coords"
+
+	last_active = helpers.LastContact(identity)
+	if last_active == None:
+		return str(identity) + " hasn't been active"
+	start = fields["start"]
+	runtime = fields["runtime"]
+	if start < last_active:
+		return "Start before last active"
+	now = helpers.FloatNow()
+	if (start+runtime)/1e3 > (5+now/1e3): 
+		return "Impossible runtime; start %f + runtime %f = %f > %f" % (start, runtime, start+runtime, now)
+	return True
 
 if __name__ == "__main__":
 	
@@ -24,16 +51,8 @@ if __name__ == "__main__":
 	site = helpers.GetSite()
 
 	# Setup database if it doesn't exist
-	try:
-		f = open("stats.db", "r")
-	except IOError:
-		conn = sqlite3.connect("stats.db")
-		c = conn.cursor()
-		c.execute("CREATE TABLE stats (identity, start, runtime, steps, death, x, y, foxesSquished, foxesDazed, boxesSquished)")
-		conn.commit()
-		conn.close()
-	else:
-		f.close()
+	if helpers.DataBaseExists() == False:
+		helpers.FixDB() # Should create it.
 
 	# Get the cookie
 	identity = helpers.GetIdentity()
@@ -41,17 +60,17 @@ if __name__ == "__main__":
 
 	# Get CGI fields
 	form = cgi.FieldStorage()
-	fields = ["start", "runtime", "steps", "death", "x", "y", "foxesSquished", "foxesDazed", "boxesSquished"]
+	fields = ["start", "runtime", "steps", "death", "x", "y", "foxesSquished", "foxesDazed", "boxesSquished", "level"]
 
 
-	values = []
+	values = {}
 	for f in fields:
 		if form.has_key(f):
 			try:
 				v = float(form[f].value)
 			except:
 				v = form[f].value
-			values += [v]
+			values.update({ f : v })
 
 	# Send response
 	if len(values) == 0:
@@ -63,7 +82,7 @@ if __name__ == "__main__":
 		print("# identity\t" + "\t".join(fields)+"\n")
 		conn = sqlite3.connect("stats.db")
 		cursor = conn.cursor()
-		for row in cursor.execute("SELECT * FROM stats ORDER BY runtime DESC LIMIT 100"):
+		for row in cursor.execute("SELECT " + ", ".join(["identity"] + fields)+" FROM stats ORDER BY runtime DESC LIMIT 100"):
 			s = ""
 			for field in row:
 				s += str(field) + "\t"
@@ -73,18 +92,33 @@ if __name__ == "__main__":
 		sys.exit(0)
 	elif len(values) != len(fields):
 		print("Content-type: text/plain\n")
+		print("Wrong number of fields")
+		for i in fields:
+			if i not in values:
+				print("Missing: %s" % str(i))
 		#sys.stderr.write("Wrong number of fields\n");
 		sys.exit(0)
 
 	# Someone could just leave their browser on the page not actually playing.
 	# So only record games >10s
-	elif int(float(form["runtime"].value)) < 10000:
-
+	s = Sanity(values)
+	if s != True:
 		print("Content-type: text/plain\n")
+		print("ArE yOu InSaNe?!\n")
+		print(str(s))
 		sys.exit(0)
+
 
 	conn = sqlite3.connect("stats.db")
 	cursor = conn.cursor()
+	cursor.execute("UPDATE players SET lastContact=? WHERE identity=?", (helpers.FloatNow(), identity))
+	
+	if int(float(form["runtime"].value)) < 10000:
+		print("Content-type: text/plain\n")
+		print("Game too short!")
+		sys.exit(0)
+
+
 	# Check size of DB
 	cursor.execute("SELECT Count(*) FROM stats")
 	count = cursor.fetchall()[0][0]
@@ -94,7 +128,14 @@ if __name__ == "__main__":
 		cursor.execute("DELETE FROM stats WHERE start = (SELECT MIN(start) FROM stats)")
 
 
-	cursor.execute("INSERT INTO stats VALUES (?"+"".join([",?" for _ in xrange(len(fields))])+")", [identity] + values)
+	cursor.execute("INSERT INTO stats VALUES (?"+"".join([",?" for _ in xrange(len(fields))])+")", [identity] + [values[f] for f in fields])
+
+
+	# Get current Level
+	cursor.execute("SELECT level FROM players WHERE identity = ?", (identity,))
+	l = cursor.fetchall()
+	if len(l) > 0 and l[0][0] < values["level"]:
+		cursor.execute("UPDATE players SET level=? WHERE identity=?", (values["level"], identity))
 	
 	conn.commit()
 	conn.close()
