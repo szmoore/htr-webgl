@@ -49,6 +49,7 @@ var addEnemyCount = 0;
 var runTime = 0;
 
 var gEntities = [];
+var gTextures = {};
 var startTime;
 var stepCount = 0;
 var foxesSquished = 0;
@@ -356,10 +357,10 @@ Entity.prototype.LoadSprites = function(imageDir)
 function BoxStep()
 {
 	Entity.prototype.Step.call(this);
-	if (this.velocity[0] < 1e-2)
+	if (Math.abs(this.velocity[0]) < 1e-2)
 		this.velocity[0] = 0;
-	//else if (this.velocity[0] < 0.5)
-	//	this.velocity[0] /= 4;
+	else if (Math.abs(this.velocity[0]) < 0.5)
+		this.velocity[0] /= 4;
 }
 
 /**
@@ -447,10 +448,10 @@ function BoxHandleCollision(other, instigator)
 			}
 		}
 	}
-	if (instigator && other.GetName() == "dwGround")
+	else 
 	{
-		if (this.velocity[0] > 0.5)
-			this.velocity[0] /= 4;
+		if (Math.abs(this.velocity[0]) > 0)
+			this.velocity[0] /= 2;
 	}
 	return Entity.prototype.HandleCollision.call(this,other,instigator);
 }
@@ -473,22 +474,25 @@ function AddBox()
 	box.Step = BoxStep;
 	// SUPA BOX
 	//if (level >= 2 && Math.random() > 0.5)
-	if (true)
 	{
-		box.frame = LoadTexture("data/box/box2.gif");
-		box.Die = function() {this.health = 0};
 		var x = box.position[0]
 		if (Math.random() > 0.5)
 		{
-			x = (Math.random() > 0.5) ? -1.1 : 1.1;
+			x = (Math.random() > 0.5) ? 1.1 : -1.1;
 			var vx = (x < 0) ? 1 : -1;
-			//vx = vx * Math.random() * 2;
-			box.position = [x, -0.5+0.5*Math.random()];
+			vx = vx * Math.random() * 2;
+			box.position = [x, -0.5+Math.random()];
 			box.velocity = [vx,0];
 		}
 		box.ignoreCollisions = {"LeftWall" : (x < 1), "RightWall" : (x > 1), "Roof" : true}; 
-		setTimeout(function() {box.ignoreCollisions = {};}, 2000);
+		setTimeout(function() {box.ignoreCollisions = {};}, 5000);
+		if (Math.random() > 0.8)
+		{
+			box.frame = LoadTexture("data/box/box2.gif");
+			box.health = 20;
+		}
 	}
+	
 	gEntities.push(box);
 	return box;
 }
@@ -499,10 +503,10 @@ function AddBox()
 function AddEnemy()
 {
 	addEnemyCount += 1;
-	if (addEnemyCount % 5 == 0)
-		AddFox();
-	else
-		AddBox();
+//	if (addEnemyCount % 5 == 0)
+//		AddFox();
+//	else
+	AddBox();
 
 	//AddOx();
 
@@ -654,7 +658,7 @@ function AddOx()
 	ox.frameRate = 3;
 	ox.Step = FoxStep;
 	ox.HandleCollision = OxHandleCollision;
-	ox.health = 7;
+	ox.health = 10;
 	ox.speed = 0.6;
 	ox.canJump = true;
 
@@ -710,15 +714,15 @@ function LoadEntities()
 	player.handleKeys = function(keys)
 	{
 		this.velocity[0] = 0;
-		if (keys[37]) this.velocity[0] -= 1.7;
-		if (keys[39]) this.velocity[0] += 1.7;
+		if (keys[37]) this.velocity[0] -= 0.7;
+		if (keys[39]) this.velocity[0] += 0.7;
 		if (this.canJump && keys[38])
 		{
-			this.velocity[1] = 1.8;
+			this.velocity[1] = 1.2;
 			this.canJump = false;
 		}
 		if (keys[40] && this.velocity[1] > -3)
-			this.velocity[1] -= 0.5;
+			this.velocity[1] -= 0.2;
 	}
 
 	player.Death = function(cause)
@@ -758,9 +762,12 @@ function LoadEntities()
 	{
 		if (other.GetName() == "Box")
 		{
-			if (!instigator && other.MovingTowards(this) && other.RelativeSpeed(this) > 1)
+			if (!instigator && other.MovingTowards(this))
 			{
-				this.Death("SQUISHED");
+				if (other.RelativeSpeed(this) > 0.5)
+				{
+					this.Death("SQUISHED");
+				}
 				return true;
 			}
 		}
@@ -920,9 +927,6 @@ function StartGame()
 	Debug("GET READY!",true);
 	setTimeout(function() {Debug("",true)}, stepRate*500);
 	ResumeGame();
-	AddBox();
-	AddBox();
-	AddBox();
 }
 
 /**
@@ -958,7 +962,7 @@ function ResumeGame()
 	if (drawSceneTimer) clearTimeout(drawSceneTimer);
 	if (addEnemyTimer) clearTimeout(addEnemyTimer);
 	drawSceneTimer = setInterval(DrawScene, stepRate);
-	addEnemyTimer = setInterval(AddEnemy, stepRate*300/Math.pow(level,0.5));
+//	addEnemyTimer = setInterval(AddEnemy, stepRate*300/Math.pow(level,0.5));
 
 	var audio = document.getElementById("theme"); 
 	if (audio)
@@ -1061,6 +1065,7 @@ function main()
 	{	
 		if (typeof(player) === "undefined")
 			return;
+		AddBox();
 
 //		About();
 		/*
@@ -1083,7 +1088,7 @@ function main()
 	// Start the Game.
 //	About();
 	StartScreen();
-	setTimeout(StartGame, 4000);
+	setTimeout(StartGame, 1500);
 }
 
 function About()
@@ -1151,6 +1156,12 @@ function InitWebGL()
  */
 function LoadTexture(src, lambda)
 {
+	if (src in gTextures)
+	{
+		if (lambda) lambda();
+		return gTextures[src];
+	}
+	
 	var texture = gl.createTexture();
 	var image = new Image();
 	image.src = src; 
@@ -1158,7 +1169,9 @@ function LoadTexture(src, lambda)
 		image.onload = function() {HandleTextureLoaded(image, texture); lambda()};
 	else
 		image.onload = function() {HandleTextureLoaded(image, texture)};
-	return {tex : texture, img : image};
+
+	gTextures[src] = {tex: texture, img: image};
+	return gTextures[src];
 }
 
 
