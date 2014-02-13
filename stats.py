@@ -127,8 +127,7 @@ if __name__ == "__main__":
 	if count > 5000:
 		cursor.execute("DELETE FROM stats WHERE start = (SELECT MIN(start) FROM stats)")
 
-
-	cursor.execute("INSERT INTO stats VALUES (?"+"".join([",?" for _ in xrange(len(fields))])+")", [identity] + [values[f] for f in fields])
+	cursor.execute("INSERT INTO stats(identity, "+(",".join([str(f) for f in fields]) + ") VALUES (?") +"".join([",?" for _ in xrange(len(fields))])+")", [identity] + [values[f] for f in fields])
 
 
 	# Get current Level
