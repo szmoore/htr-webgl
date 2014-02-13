@@ -677,7 +677,8 @@ function AddOx()
 	Debug("Ox Time!", true)
 	setTimeout(function() {Debug("",true)}, 200*stepRate);
 	var x = (Math.random() > 0.5) ? -0.8 : 0.8;
-	var y = (-0.8 + 1.6*Math.random());
+	//var y = (-0.8 + 1.6*Math.random());
+	var y = 1.1;
 	var ox = new Entity([x,y],[0,0]);
 	ox.LoadSprites("data/ox");
 	ox.acceleration = [0,-gravity];
@@ -692,7 +693,7 @@ function AddOx()
 	ox.canJump = true;
 
 	ox.jumpSpeed = 0.4;
-	ox.ignoreCollisions = {};
+	ox.ignoreCollisions = {"Roof" : true};
 	ox.Die = function() {
 		setTimeout(AddOx, Math.random()*10000);
 		Entity.prototype.Die.call(this);
@@ -796,7 +797,7 @@ function LoadEntities()
 	{
 		if (other.GetName() == "Box")
 		{
-			console.log("["+other.RelativeVelocity(this)+"]");
+			//console.log("["+other.RelativeVelocity(this)+"]");
 			if (!instigator && other.MovingTowards(this) && other.Above(this) && other.RelativeVelocity(this)[1] < -0.5)
 			{
 				this.Death("SQUISHED");

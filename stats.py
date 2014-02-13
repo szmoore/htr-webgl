@@ -113,7 +113,7 @@ if __name__ == "__main__":
 	cursor = conn.cursor()
 	cursor.execute("UPDATE players SET lastContact=? WHERE identity=?", (helpers.FloatNow(), identity))
 	
-	if int(float(form["runtime"].value)) < 3000:
+	if int(float(form["runtime"].value)) < 5000:
 		print("Content-type: text/plain\n")
 		print("Game too short!")
 		sys.exit(0)
