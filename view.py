@@ -7,6 +7,8 @@ import os
 import sqlite3
 import datetime
 
+import tempfile
+os.environ['MPLCONFIGDIR'] = tempfile.mkdtemp()
 import matplotlib
 matplotlib.use('Agg')
 from pylab import *
