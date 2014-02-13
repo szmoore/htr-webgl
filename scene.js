@@ -46,6 +46,8 @@ var gravity = 1.0;
 var drawSceneTimer;
 var addEnemyTimer;
 var addEnemyCount = 0;
+var foxCount = 0;
+var oxCount = 0;
 var runTime = 0;
 
 var serverTime = (new Date).getTime();
@@ -514,10 +516,10 @@ function AddBox()
 function AddEnemy()
 {
 	addEnemyCount += 1;
-	if (addEnemyCount % 5 == 0)
+	if (addEnemyCount % 5 == 0 && foxCount < 3 + level)
 		AddFox();
 	else
-	AddBox();
+		AddBox();
 
 	//AddOx();
 
@@ -575,7 +577,7 @@ Entity.prototype.MurderPlayer = function(other, killtype)
 Entity.prototype.CollideBox = function(other, instigator)
 {
 	//if (other.velocity[1] < -0.1 && other.Bottom() > this.Top() && !instigator)
-	if (!instigator && other.MovingTowards(this) && other.Above(this) && other.RelativeVelocity(this)[1] < -0.4)
+	if (!instigator && other.MovingTowards(this) && other.Above(this) && other.velocity[1] < -0.4)
 	{
 		var boxh = other.health;
 		if (this.health)
@@ -674,6 +676,9 @@ function FoxHandleCollision(other, instigator)
  */
 function AddOx()
 {
+	if (oxCount >= level-1)
+		return;
+	oxCount += 1;
 	Debug("Ox Time!", true)
 	setTimeout(function() {Debug("",true)}, 200*stepRate);
 	var x = (Math.random() > 0.5) ? -0.8 : 0.8;
@@ -695,6 +700,7 @@ function AddOx()
 	ox.jumpSpeed = 0.4;
 	ox.ignoreCollisions = {"Roof" : true};
 	ox.Die = function() {
+		oxCount -= 1;
 		setTimeout(AddOx, Math.random()*10000);
 		Entity.prototype.Die.call(this);
 	}
@@ -707,6 +713,7 @@ function AddOx()
  */
 function AddFox()
 {
+	foxCount += 1;
 	Debug("Fox Time!", true);
 	setTimeout(function() {Debug("",true)}, 200*stepRate);
 	var fox = new Entity([player.position[0],1],[0,0]);
@@ -722,6 +729,10 @@ function AddFox()
 	fox.health = 1;
 	fox.canJump = false; // Foxes jumping at birth is hard.
 	fox.ignoreCollisions = {"Roof" : true};
+	fox.Die = function() {
+		foxCount -= 1;
+		Entity.prototype.Die.call(this);
+	}
 	gEntities.push(fox);
 	return fox;
 }
@@ -752,6 +763,8 @@ function PostStats(player, cause)
  */
 function LoadEntities()
 {
+	oxCount = 0;
+	foxCount = 0;
 	gEntities = [];
 	
 	// The player (Humphrey The Rabbit)
@@ -798,7 +811,7 @@ function LoadEntities()
 		if (other.GetName() == "Box")
 		{
 			//console.log("["+other.RelativeVelocity(this)+"]");
-			if (!instigator && other.MovingTowards(this) && other.Above(this) && other.RelativeVelocity(this)[1] < -0.5)
+			if (!instigator && other.MovingTowards(this) && other.Above(this) && other.velocity[1] < -0.5)
 			{
 				this.Death("SQUISHED");
 				return true;
