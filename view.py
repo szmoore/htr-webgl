@@ -16,8 +16,9 @@ def HighScores(form):
 
 	scoretype = "runtime"
 
+
 	try:
-		c.execute("SELECT identity, runtime, start FROM stats ORDER BY runtime DESC LIMIT 10")
+		c.execute("SELECT identity, level, runtime, start FROM stats ORDER BY level DESC, runtime DESC LIMIT 15") 
 		scores = c.fetchall()
 		conn.close()
 	except:
@@ -34,19 +35,20 @@ def HighScores(form):
 		print("<p> <b>THERE ARE NO HIGH SCORES! NOW IS YOUR CHANCE FOR <i>GLORY!!!!!</i></b> </p>")
 		return
 	print("<table width=\"100%\">")
-	print("	<tr> <td><b>Rank</b></td> <td> <b> ID </b> </td> <td> <b>%s</b> </td> <td> <b>Date</b> </td> </tr>" % (scoretype,))
+	print("	<tr> <td><b>Rank</b></td> <td> <b> ID </b> </td> <td><b>Level</b></td> <td> <b>%s</b> </td> <td> <b>Date</b> </td> </tr>" % (scoretype,))
 	for rank,score in enumerate(scores):
-		ident, points, date = score
+		ident, level, runtime, date = score
 		print("<a name=\"%s\"></a>" % ident)
 		try:
 			ident = helpers.IdentifyYou(ident)
-			points = float(points)/1e3
+			runtime= float(runtime)/1e3
 			date = helpers.ReadableDate(date)
+			level = int(float(level))
 		except:
 			pass
 
 		sys.stdout.write("<tr> ")
-		for field in [rank, ident, points, date]:
+		for field in [rank, ident, level, runtime, date]:
 			sys.stdout.write("<td>%s</td> " % str(field))
 		sys.stdout.write("</tr>\n")
 
@@ -71,8 +73,29 @@ def TopScore(form):
 def PlayerList(form):
 	conn = sqlite3.connect("stats.db")
 	c = conn.cursor()
-	c.execute("SELECT identity, Count(*), MAX(runtime), SUM(runtime), SUM(foxesSquished), MIN(start), MAX(start) FROM stats GROUP by IDENTITY ORDER by SUM(runtime) DESC")
+	c.execute("SELECT identity, Count(*), MAX(level), SUM(runtime), SUM(foxesSquished), MIN(start), MAX(start) FROM stats GROUP BY identity ORDER by level DESC, SUM(runtime) DESC")
 	players = c.fetchall()
+
+	# Because I have no idea how to do this with an SQL query...
+	for i, p in enumerate(players):
+		players[i] = list(p)
+		c.execute("SELECT MAX(runtime) FROM stats WHERE identity = ? AND level = ?", (p[0], p[2]))
+		runtime = c.fetchone()[0]
+		players[i].insert(3, runtime)
+
+	
+	fields = [[p[0], p[1], "false"] for p in [("identity" ,"Player"), ("attempts" , "Attempts"), ("level" , "Level"), ("bestTime", "Best Time"), ("totalTime" , "Total Time"), ("foxesKilled" , "Foxes Killed"), ("firstPlayed" , "First Played"), ("lastPlayed" , "Last Played")]]
+
+	if form.has_key("order"):
+		try:
+			order = [f[0] for f in fields].index(form["order"].value)
+		except ValueError:
+			pass
+		else:
+			reverse = form.has_key("reverse") and form["reverse"].value == "true"
+			fields[order][2] = "false" if reverse else "true"
+			players.sort(key = lambda e : e[order], reverse=reverse)
+
 	conn.close()
 	print("Content-type: text/html\n")
 	print("<h1>Players: %d</h1>" % (len(players),))
@@ -84,15 +107,17 @@ def PlayerList(form):
 
 	print("<table width=\"100%\">")
 	sys.stdout.write("<tr> ")
-	for field in ["Player", "Deaths", "Best Time", "Total Time", "Foxes Killed", "First Played", "Last Played"]:
-		sys.stdout.write("<td><b>%s</b></td> " % field)
+
+	for f in fields:
+		sys.stdout.write("<td><a href=\"view.py?query=players&order=%s&reverse=%s\">%s</a></td> " % (f[0], f[2], f[1]))
 	sys.stdout.write("<tr>\n")
 
 	for p in players:
-		ident, deaths, best, total, foxkills, first, last = p
+		ident, deaths, level, best, total, foxkills, first, last = p
 		sys.stdout.write("<a name=\"%s\"></a>" % ident)
 #		try:
 		ident = helpers.IdentifyYou(ident)
+		level = int(float(level))
 		best = float(best)/1e3
 		total = float(total)/1e3
 		first = helpers.ReadableDate(first)
@@ -100,7 +125,7 @@ def PlayerList(form):
 #		except:
 #			pass
 
-		for field in [ident, deaths, best, total, foxkills, first, last]:
+		for field in [ident, deaths, level, best, total, foxkills, first, last]:
 			sys.stdout.write("<td>%s</td> " % str(field))
 		sys.stdout.write("</tr> \n")
 

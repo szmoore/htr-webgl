@@ -82,7 +82,7 @@ if __name__ == "__main__":
 		print("# identity\t" + "\t".join(fields)+"\n")
 		conn = sqlite3.connect("stats.db")
 		cursor = conn.cursor()
-		for row in cursor.execute("SELECT " + ", ".join(["identity"] + fields)+" FROM stats ORDER BY runtime DESC LIMIT 100"):
+		for row in cursor.execute("SELECT " + ", ".join(["identity"] + fields)+" FROM stats ORDER BY level DESC, runtime DESC LIMIT 100"):
 			s = ""
 			for field in row:
 				s += str(field) + "\t"
