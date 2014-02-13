@@ -358,6 +358,11 @@ Entity.prototype.LoadSprites = function(imageDir)
 
 function BoxStep()
 {
+	if (Math.abs(this.position[0]) > 1.2)
+	{
+		this.Die();
+		return;
+	}
 	Entity.prototype.Step.call(this);
 	if (Math.abs(this.velocity[0]) < 1e-2)
 		this.velocity[0] = 0;
@@ -455,6 +460,8 @@ function BoxHandleCollision(other, instigator)
 			if (this.position[0] < -1) this.position[0] = -0.9;
 			return false;
 		}
+		else if (this.acceleration[1] == 0)
+			this.acceleration[1] = -gravity;
 	}
 	else 
 	{
@@ -488,25 +495,15 @@ function AddBox()
 		{
 			x = (Math.random() > 0.5) ? 1.05 : -1.05;
 			var vx = (x < 0) ? 1 : -1;
-			vx = vx * (0.5 + Math.random());
+			vx = vx * (0.5 + 0.3*Math.random());
 			box.position = [x, -0.5+Math.random()];
 			box.velocity = [vx,0];
-			box.ignoreCollisions = {"LeftWall" : (x < 1), "RightWall" : (x > 1), "Roof" : true}; 
-			if (Math.random() > 0.2)
-			{
-				box.acceleration[1] = 0;
-				box.velocity[0] *= 0.7;
-				setTimeout(function() {box.acceleration[1] = -gravity}, Math.random()*10000);
-			}
-			setTimeout(function() {box.ignoreCollisions = {};}, 7000);
-		}
-		if (Math.random() > 0.8)
-		{
-			box.frame = LoadTexture("data/box/box2.gif");
-			box.health = 20;
+			box.ignoreCollisions = {"LeftWall" : true, "RightWall" : true, "Roof" : true};
+			box.acceleration[1] = 0;
+			//box.frame = LoadTexture("data/box/box2.gif");
 		}
 	}
-	console.log("Added box at ["+box.position+"] move ["+box.velocity+"]");	
+	//console.log("Added box at ["+box.position+"] move ["+box.velocity+"]");	
 	gEntities.push(box);
 	return box;
 }
@@ -545,6 +542,13 @@ Entity.prototype.Below = function(other)
 	return other.Above(this);
 }
 
+Entity.prototype.RelativeVelocity = function(other)
+{
+	var v = [];
+	for (var i in this.velocity)
+		v[i] = this.velocity[i] - other.velocity[i];
+	return v;
+}
 Entity.prototype.RelativeSpeed = function(other)
 {
 	var s = 0;
@@ -571,7 +575,7 @@ Entity.prototype.MurderPlayer = function(other, killtype)
 Entity.prototype.CollideBox = function(other, instigator)
 {
 	//if (other.velocity[1] < -0.1 && other.Bottom() > this.Top() && !instigator)
-	if (!instigator && other.MovingTowards(this) && other.Above(this) && other.RelativeSpeed(this) > 0.5)
+	if (!instigator && other.MovingTowards(this) && other.Above(this) && other.RelativeVelocity(this)[1] < -0.4)
 	{
 		var boxh = other.health;
 		if (this.health)
@@ -683,7 +687,7 @@ function AddOx()
 	ox.frameRate = 3;
 	ox.Step = FoxStep;
 	ox.HandleCollision = OxHandleCollision;
-	ox.health = 100;
+	ox.health = 10;
 	ox.speed = 0.6;
 	ox.canJump = true;
 
@@ -792,7 +796,8 @@ function LoadEntities()
 	{
 		if (other.GetName() == "Box")
 		{
-			if (!instigator && other.MovingTowards(this) && other.Above(this) && other.RelativeSpeed(this) > 0.5)
+			console.log("["+other.RelativeVelocity(this)+"]");
+			if (!instigator && other.MovingTowards(this) && other.Above(this) && other.RelativeVelocity(this)[1] < -0.5)
 			{
 				this.Death("SQUISHED");
 				return true;
@@ -1099,7 +1104,6 @@ function main()
 	{	
 		if (typeof(player) === "undefined")
 			return;
-		
 
 //		About();
 	/*
