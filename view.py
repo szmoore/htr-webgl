@@ -7,6 +7,10 @@ import os
 import sqlite3
 import datetime
 
+import matplotlib
+matplotlib.use('Agg')
+from pylab import *
+
 import helpers
 
 def HighScores(form):
@@ -161,6 +165,29 @@ def LastPlayer(form):
 
 	conn.close()
 
+def GraphLevelAttempts(form):
+	level = 1 if not form.has_key("level") else int(form["level"].value)
+	target = [194,150][level-1]
+
+	conn = sqlite3.connect("stats.db")
+	c = conn.cursor()
+	c.execute("SELECT runtime FROM stats WHERE level = ?", (level,))
+	data = asarray(map(lambda e : e[0]/1e3, c.fetchall()))
+	m = mean(data)
+	title("Level %d Attempts" % (level,))
+	xlabel("Time (s)")
+	ylabel("Attempts (total: %d)" % len(data))
+	width = len(data)/(data.max()-data.min())
+	nBins = 50/width
+	a, b, c = hist(data,bins=nBins, color="green", alpha=0.5, edgecolor="darkgreen")
+	axvline(x=m,color='darkred',ls='-');
+	text(m+2,max(a),"mean = %d s"%m, color="darkred", rotation=270)
+	axvline(x=target,color="darkblue")
+
+	text(target+2,max(a), "TARGET = %d s" %target, color="darkblue", rotation=270)
+
+	print("Content-type: image/png\n")
+	savefig(sys.stdout, format="png")
 
 
 if __name__ == "__main__":
@@ -183,7 +210,8 @@ if __name__ == "__main__":
 		"topscore" : TopScore,
 		"players" : PlayerList,
 		"active" : ActivePlayers,
-		"last" : LastPlayer
+		"last" : LastPlayer,
+		"attempts" : GraphLevelAttempts
 	}
 
 	if form.has_key("query") and form["query"].value in api:
