@@ -60,6 +60,7 @@ var foxesSquished = 0;
 var foxesDazed = 0;
 var boxesSquished = 0;
 var level = 1;
+var spriteCollisions = false; //blergh
 /**
  * Debug; display information on the page (for most things this is much nicer than Alt-Tabbing to and fro with Firebug)
  */
@@ -93,56 +94,10 @@ Entity.prototype.GetName = function()
 }
 
 /**
- * Step
- * TODO: Split into helpers?
+ * Update frame
  */
-Entity.prototype.Step = function()
+Entity.prototype.UpdateFrames = function()
 {
-	var currentTime = (new Date()).getTime();
-	if (!this.lastUpdateTime)
-	{
-		this.lastUpdateTime = currentTime;
-		return;
-	}
-	this.delta = currentTime - this.lastUpdateTime;
-
-	this.lastPosition = [];
-
-	// Deal with keyboard state
-	if (this.handleKeys)
-		this.handleKeys(keysPressed);
-
-	// Update velocity
-	if (this.acceleration)
-	{
-		for (var i in this.velocity)
-			this.velocity[i] += this.delta * this.acceleration[i] / 1000;
-	}
-
-	// Update position
-	for (var i in this.position)
-	{
-		if (this.velocity[i] == 0) continue;
-		this.lastPosition[i] = this.position[i];
-		this.position[i] += this.delta * this.velocity[i] / 1000;
-
-		// Check for collisions
-		collide = this.Collision();
-		if (collide)
-		{
-				// Soo... this is terribly inefficient and lazy
-				// I can't be bothered looking up vector maths
-				// (And it seems I couldn't last time I wrote HtR)
-				this.position[i] = this.lastPosition[i];
-				while (!this.Collides(collide))
-					this.position[i] += this.delta * 0.05 * this.velocity[i] / 1000;
-				this.position[i] -= this.delta * 0.05 * this.velocity[i] / 1000;
-				if (this.HandleCollision(collide,true))
-					this.velocity[i] = 0;
-		}
-	}
-
-
 	// Change sprite based on direction
 	if (this.frameBase)
 	{
@@ -171,13 +126,86 @@ Entity.prototype.Step = function()
 		}
 	}
 
+}
+
+Entity.prototype.UpdateFrameNumber = function()
+{
 	// Update frame
 	if (this.frames && this.frameRate)
 	{
+		this.sprite = this.frames[0];
 		if (!this.frameNumber) this.frameNumber = 0;
 		this.frameNumber += this.delta * this.frameRate / 1000;
 		this.frame = this.frames[Math.floor(this.frameNumber) % this.frames.length]
 	}
+
+
+}
+
+/**
+ * Step
+ * TODO: Split into helpers?
+ */
+Entity.prototype.Step = function()
+{
+	var currentTime = (new Date()).getTime();
+	if (!this.lastUpdateTime)
+	{
+		this.lastUpdateTime = currentTime;
+		return;
+	}
+	this.delta = currentTime - this.lastUpdateTime;
+
+	this.lastPosition = [];
+
+	// Deal with keyboard state
+	if (this.handleKeys)
+		this.handleKeys(keysPressed);
+
+	// Update velocity
+	if (this.acceleration)
+	{
+		for (var i in this.velocity)
+			this.velocity[i] += this.delta * this.acceleration[i] / 1000;
+	}
+
+	this.UpdateFrames();
+
+
+	// Update position
+	for (var i in this.position)
+	{
+		if (this.velocity[i] == 0) continue;
+		this.lastPosition[i] = this.position[i];
+		this.position[i] += this.delta * this.velocity[i] / 1000;
+
+		// Check for collisions
+		collide = this.Collision();
+		if (collide)
+		{
+				// Soo... this is terribly inefficient and lazy
+				// But slightly better than what I had before
+				// Binary search to location of collision
+				var upper = this.position[i];
+				var lower = this.lastPosition[i]; 
+				while (Math.abs(upper-lower) > 1e-4)
+				{
+					this.position[i] = (upper + lower)/2; 
+					if (this.Collides(collide))
+						upper = this.position[i];
+					else
+						lower = this.position[i];
+				}
+				this.position[i] = lower;
+				
+			
+				if (this.HandleCollision(collide,true))
+					this.velocity[i] = 0;
+				this.UpdateFrames();
+		}
+	}
+
+	this.UpdateFrameNumber();
 
 	// Finalise step
 	this.lastUpdateTime = currentTime;
@@ -240,7 +268,55 @@ Entity.prototype.Collides = function(other)
 	{
 		collides &= (A.min[i] <= B.max[i] && A.max[i] >= B.min[i]);
 	}
+	if (collides && this.sprite && other.sprite && this.sprite.data && other.sprite.data)
+	{
+		tl1 = LocationGLToPix(this.Left(), this.Top());
+		tl2 = LocationGLToPix(other.Left(), other.Top());
+		offset = [tl2[0]-tl1[0], tl2[1]-tl1[1]];
+		collides &= SpriteCollision(offset, this.sprite.data, other.sprite.data);
+	}
 	return collides;
+}
+
+function SpriteToRGBA(sprite1)
+{
+	var rgba1 = [];
+	for (var x = 0; x < sprite1.width; ++x)
+	{
+		rgba1[x] = [];
+		for (var y= 0; y < sprite1.height; ++y)
+		{
+			var index = (+x+ +y*sprite1.width)*4;
+			var pix = [0,0,0,0];
+			for (var i in pix)
+			{
+				pix[i] = sprite1.data[+index + +i];
+			}
+			rgba1[x][y] = pix;
+		}
+	}
+	return {width : sprite1.width, height : sprite1.height, rgba : rgba1};
+
+}
+/**
+ * Sprite based collision
+ */
+function SpriteCollision(offset, sprite1, sprite2)
+{
+	for (var x = 0; x < sprite1.width; ++x)
+	{
+		var xx = +x + +offset[0];
+		if (xx < 0 || xx >= sprite2.width) continue;
+		for (var y = 0; y < sprite1.height; ++y)
+		{
+			var yy = +y + +offset[1];
+			if (yy < 0 || yy >= sprite2.height) continue;
+			var pix1 = sprite1.rgba[x][y];
+			var pix2 = sprite2.rgba[xx][yy];
+			if (pix1[3] > 10 && pix2[3] > 10) return true;
+		}
+	}
+	return false;
 }
 
 /**
@@ -336,6 +412,13 @@ Entity.prototype.Draw = function()
 	gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, gVerticesIndexBuffer);
 	gl.drawElements(gl.TRIANGLES, 6, gl.UNSIGNED_SHORT,0);
 
+}
+
+function LocationGLToPix(x, y)
+{
+	var xx = Math.round((1+x)*canvas.width/2);
+	var yy = Math.round((1-y)*canvas.height/2);
+	return [xx,yy];
 }
 
 /**
@@ -482,6 +565,7 @@ function AddBox()
 	setTimeout(function() {Debug("",true)}, 200*stepRate);
 	var box = new Entity([player.position[0],1.1],[0,0]);
 	box.frame = LoadTexture("data/box/box1.gif");
+	box.sprite = box.frame;
 	box.acceleration = [0,-gravity];
 	box.bounds = {min: [-32/canvas.width, -32/canvas.height], max: [32/canvas.width, 32/canvas.height]};
 	box.name = "Box";
@@ -521,7 +605,7 @@ function AddEnemy()
 	else
 		AddBox();
 
-	//AddOx();
+	AddOx();
 
 	//AddCloud();
 }
@@ -791,6 +875,8 @@ function LoadEntities()
 	
 	player.Death = function(cause)
 	{
+		gl.clear(gl.COLOR_BUFFER_BIT);
+		for (var i in gEntities) gEntities[i].Draw();
 		PauseGame();
 		player = undefined;
 		if (cause == "EATEN")
@@ -973,7 +1059,7 @@ function SetLevel(l)
 
 	if (level == 2)
 	{
-		AddOx();
+		//AddOx();
 	}
 
 	ResumeGame();
@@ -1208,13 +1294,13 @@ function LoadTexture(src, lambda)
 	
 	var texture = gl.createTexture();
 	var image = new Image();
-	image.src = src; 
+	gTextures[src] = {tex: texture, img: image, data : null};
 	if (lambda)
-		image.onload = function() {HandleTextureLoaded(image, texture); lambda()};
+		image.onload = function() {HandleTextureLoaded(gTextures[src]); lambda()};
 	else
-		image.onload = function() {HandleTextureLoaded(image, texture)};
+		image.onload = function() {HandleTextureLoaded(gTextures[src])};
 
-	gTextures[src] = {tex: texture, img: image};
+	image.src = src; 
 	return gTextures[src];
 }
 
@@ -1223,11 +1309,13 @@ function LoadTexture(src, lambda)
 /**
  * When a texture is loaded, do this
  */
-function HandleTextureLoaded(image, texture)
+function HandleTextureLoaded(texData)
 {
+	image = texData.img;
+	texture = texData.tex;
 	gl.bindTexture(gl.TEXTURE_2D, texture);
 
-	if ((image.width & (image.width - 1)) != 0 || (image.height & (image.height - 1)) != 0)
+	if (spriteCollisions || ((image.width & (image.width - 1)) != 0 || (image.height & (image.height - 1)) != 0))
 	{
 		var canvas = document.createElement("canvas");
 		var w = image.width; var h = image.height;
@@ -1236,8 +1324,10 @@ function HandleTextureLoaded(image, texture)
 		canvas.width = w;
 		canvas.height = h;
 		var ctx = canvas.getContext("2d");
-		
+		ctx.rect(0,0,w,h);
 		ctx.drawImage(image, w/2 - image.width/2, h/2 - image.height/2, image.width, image.height);
+		texData.data = SpriteToRGBA(ctx.getImageData(0,0,w,h));
+			
 		//ctx.font = "30px Courier";
 		//ctx.fillText("hello world\nhow are you", 0.1*w, h/2, 0.8*w);
 		/*
@@ -1249,10 +1339,10 @@ function HandleTextureLoaded(image, texture)
 		ctx.lineTo(0,0);
 		ctx.stroke();
 		*/
-		image = canvas;
+		texData.img = canvas;
 	}
 
-	gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
+	gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, texData.img);
 	gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
 	gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_NEAREST);
 	gl.generateMipmap(gl.TEXTURE_2D);
