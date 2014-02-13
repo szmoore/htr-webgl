@@ -737,7 +737,7 @@ function AddFox()
 	return fox;
 }
 
-function PostStats(player, cause)
+PostStats = function(player, cause)
 {
 	// Send results to the stat collecting script
 	var xmlhttp = new XMLHttpRequest(); // IE<7 won't WebGL anyway, screw compatibility

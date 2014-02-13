@@ -16,7 +16,7 @@ HTML_TEMPLATE = """
 		</head>
 		<body>
 			<h1>HtR Customised AI</h1>
-			<p> You can upload a function that will automatically play <a href="index.html">HtR</a> here. </p>
+			<p> You can upload a function that will automatically play <a href="game.html">HtR</a> here. </p>
 			<p></p>
 			<p><b>Upload Text:</b></p>
 			<textarea rows="20" cols="60" name="script" form="form">
@@ -71,12 +71,13 @@ if __name__ == "__main__":
 		print("<p><b><i>Nothing uploaded</i></b></p>")
 		sys.exit(0)
 
-	f = open("index.html")
+	f = open("game.html")
 	for line in f:
 		print(line)
 
 	print("<script type=\"text/javascript\">")
 	print(script)
+	print("PostStats = function(player, cause) {}")
 	print("</script>")
 
 	print("<p align=center><a href=\"playai.py\">Upload AI</a></p>")
