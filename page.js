@@ -18,7 +18,7 @@ function GetCookie(cname)
 	return "";
 }  
 
-var adsShown = (GetCookie("adblock") == "true");
+var adsShown = (GetCookie("adblock") == "false"); 
 var adIds = {"leftPanel" : null, "rightPanel" : null};
 
 function InitPage()
