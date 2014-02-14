@@ -169,11 +169,17 @@ def LastPlayer(form):
 
 def GraphLevelAttempts(form):
 	level = 1 if not form.has_key("level") else int(form["level"].value)
+	player = None if not form.has_key("player") else form["player"].value
 	target = [194,150][level-1]
 
 	conn = sqlite3.connect("stats.db")
 	c = conn.cursor()
-	c.execute("SELECT runtime FROM stats WHERE level = ?", (level,))
+	args = [level]
+	query = "SELECT runtime FROM stats WHERE level = ?"
+	if player:
+		query += " AND identity = ?"
+		args += [player]
+	c.execute(query, args)
 	data = asarray(map(lambda e : e[0]/1e3, c.fetchall()))
 	m = mean(data)
 	title("Level %d Attempts" % (level,))
