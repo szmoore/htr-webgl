@@ -19,7 +19,12 @@ if __name__ == "__main__":
 
 	site = "http://" + os.environ["SERVER_NAME"] + os.path.dirname(os.environ["REQUEST_URI"])
 
-	if os.environ["SERVER_NAME"] != "rabbitgame.net":
+	if os.environ["SERVER_NAME"] not in ["rabbitgame.net", "dev.rabbitgame.net"]:
+		if os.environ["SERVER_NAME"] == "www.rabbitgame.net":
+			helpers.Redirect("http://rabbitgame.net")
+			sys.exit(0)
+
+
 		print("Content-type: text/html\n")
 		print("<html><head><title>Humphrey The Rabbit Has Moved!</title></head><body>")
 		print("<p> Humphrey The Rabbit has bounced to <a href=\"http://rabbitgame.net\">rabbitgame.net</a></p>")

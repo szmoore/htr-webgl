@@ -129,3 +129,16 @@ def DumpDB():
 		print(str(c.fetchall()))
 	else:
 		print("[]")
+
+# Redirect a page
+# http://stackoverflow.com/questions/5411538/how-to-redirect-from-an-html-page
+def Redirect(url):
+	print("Content-type: text/html\n")
+	print("<html>")
+	print("<head><meta http-equiv=\"refresh\" content=\"0;url=\"%s\">" % url)
+	print("<script type=\"text/javascript\">")
+	print("window.location.href = \"%s\"" % url)
+	print("</script>")
+	print("<title>Redirecting to %s ...</title>" % url)
+	print("</head>")
+	print("<body>If you are not redirected automatically, follow this link to <a href=\"%s\">%s</a></body></html>" % (url,url))
