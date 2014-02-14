@@ -51,6 +51,7 @@ var oxCount = 0;
 var runTime = 0;
 
 var serverTime = (new Date).getTime();
+var localTime = new Date();
 var offsetTime = 0;
 var gEntities = [];
 var gTextures = {};
@@ -61,6 +62,9 @@ var foxesDazed = 0;
 var boxesSquished = 0;
 var level = 1;
 var spriteCollisions = false; //blergh
+
+var romanticMode = (localTime.getMonth() == 1 && localTime.getDate() == 14);
+
 /**
  * Debug; display information on the page (for most things this is much nicer than Alt-Tabbing to and fro with Firebug)
  */
@@ -268,7 +272,7 @@ Entity.prototype.Collides = function(other)
 	{
 		collides &= (A.min[i] <= B.max[i] && A.max[i] >= B.min[i]);
 	}
-	if (collides && this.sprite && other.sprite && this.sprite.data && other.sprite.data)
+	if (collides && spriteCollisions && this.sprite && other.sprite && this.sprite.data && other.sprite.data)
 	{
 		tl1 = LocationGLToPix(this.Left(), this.Top());
 		tl2 = LocationGLToPix(other.Left(), other.Top());
@@ -565,6 +569,8 @@ function AddBox()
 	setTimeout(function() {Debug("",true)}, 200*stepRate);
 	var box = new Entity([player.position[0],1.1],[0,0]);
 	box.frame = LoadTexture("data/box/box1.gif");
+	if (romanticMode)
+		box.frame = LoadTexture("data/box/box_valentine.gif");
 	box.sprite = box.frame;
 	box.acceleration = [0,-gravity];
 	box.bounds = {min: [-32/canvas.width, -32/canvas.height], max: [32/canvas.width, 32/canvas.height]};
@@ -879,12 +885,21 @@ function LoadEntities()
 		for (var i in gEntities) gEntities[i].Draw();
 		PauseGame();
 		player = undefined;
+		var splash = SquishScreen;
 		if (cause == "EATEN")
-			EatenScreen("YOU GOT EATEN!");
+			splash= EatenScreen;
 		else if (cause == "STABBED")
-			StabbedScreen("YOU GOT STABBED");
+			splash = StabbedScreen;
 		else
-			SquishScreen("YOU GOT SQUISHED");
+			splash = SquishScreen;
+
+		var showCause = cause;
+		if (romanticMode)
+		{
+			var messages = ["REJECTED", "SHOT DOWN", "SHUNNED", "JILTED", "SPURNED", "SCORNED"];
+			showCause = messages[Math.floor(Math.random()*messages.length)];
+		}
+		splash("YOU GOT " +showCause);
 	
 		PostStats(this, cause);
 		// Restart the game
@@ -1247,7 +1262,9 @@ function DrawScene()
 	var rt = document.getElementById("runtime");
 	if (rt) rt.innerHTML=(""+runTime/1000).toHHMMSS();
 
-	if (level == 1)
+	if (romanticMode)
+		gl.clearColor(1,0.9,0.9,1);
+	else if (level == 1)
 		gl.clearColor(0.9,0.9,1,1);
 	else if (level == 2)
 		gl.clearColor(0.8,0.6,0.6,1);

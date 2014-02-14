@@ -23,6 +23,7 @@ if __name__ == "__main__":
 		print("Content-type: text/html\n")
 		print("<html><head><title>Humphrey The Rabbit Has Moved!</title></head><body>")
 		print("<p> Humphrey The Rabbit has bounced to <a href=\"http://rabbitgame.net\">rabbitgame.net</a></p>")
+		print("<p> But if that still takes you to the wrong place, go <a href=\"game.html\">here</a></p>")
 		print("<p> Apologies for any inconvenience. </p>")
 		print("<p> </p>")
 		print("<p> <img src=\"data/fox/drawing1.svg\" alt=\"walking fox cartoon\" width=\"20%\"><img src=\"data/rabbit/drawing2.svg\" alt=\"scared rabbit cartoon\" width=\"10%\"> </p>")
