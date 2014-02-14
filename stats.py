@@ -104,7 +104,6 @@ if __name__ == "__main__":
 	s = Sanity(values)
 	if s != True:
 		print("Content-type: text/plain\n")
-		print("ArE yOu InSaNe?!\n")
 		print(str(s))
 		sys.exit(0)
 
@@ -113,19 +112,16 @@ if __name__ == "__main__":
 	cursor = conn.cursor()
 	cursor.execute("UPDATE players SET lastContact=? WHERE identity=?", (helpers.FloatNow(), identity))
 	
-	if int(float(form["runtime"].value)) < 5000:
+	if int(float(form["runtime"].value)) < 12000:
 		print("Content-type: text/plain\n")
-		print("Game too short!")
 		sys.exit(0)
 
 
 	# Check size of DB
-	cursor.execute("SELECT Count(*) FROM stats")
-	count = cursor.fetchall()[0][0]
-
-	# Delete earliest record if necessary
-	if count > 5000:
-		cursor.execute("DELETE FROM stats WHERE start = (SELECT MIN(start) FROM stats)")
+	dbSize = os.path.getsize("stats.db")
+	if dbSize > 1e9:
+		# Delete record with lowest score
+		cursor.execute("DELETE FROM stats WHERE runtime = (SELECT MIN(runtime) FROM stats) AND level = (SELECT MIN(level) FROM stats)")
 
 	cursor.execute("INSERT INTO stats(identity, "+(",".join([str(f) for f in fields]) + ") VALUES (?") +"".join([",?" for _ in xrange(len(fields))])+")", [identity] + [values[f] for f in fields])
 
