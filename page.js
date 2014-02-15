@@ -19,7 +19,22 @@ function GetCookie(cname)
 }  
 
 var adsShown = (GetCookie("adblock") == "false"); 
+function HttpGet(theUrl, callback)
+{
+	var xmlHttp = null;
+
+	xmlHttp = new XMLHttpRequest();
+	xmlHttp.open( "GET", theUrl, true);
+	xmlHttp.send( null );
+	xmlHttp.onreadystatechange = function() {
+		if (xmlHttp.readyState == 4 && xmlHttp.status == 200)
+		{
+			callback(xmlHttp.responseText);
+		}
+	}
+}
 var adIds = {"leftPanel" : null, "rightPanel" : null};
+var initPanels = false;
 
 function InitPage()
 {
@@ -51,12 +66,16 @@ function InitPage()
 		}
 			
 	}
-	adIds["rightPanel"].innerHTML = "<iframe src=\"right_advert.html\" height=\"500px\" width=\""+adWidth+"px\" frameBorder=\"0\"></iframe>";
+	if (!initPanels && adsShown)
+	{
+		HttpGet("leftPanel.html", function(response) {adIds["leftPanel"].innerHTML = response;});
+		HttpGet("rightPanel.html", function(response) {adIds["rightPanel"].innerHTML = response;});
+		initPanels = true;
+	}
 
 	document.getElementById("hideads").innerHTML = (adsShown) ? "[Hide Advertisments]" : "[Show Advertisements]";
 	document.getElementById("statusBar").style.display = (h > 520) ? "block" : "none";
 	document.getElementById("infoBar").style.display = (h > 520) ? "block" : "none";
-
 }
 
 function HideAds()

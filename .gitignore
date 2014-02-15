@@ -7,4 +7,5 @@
 *.pyc
 *.rg
 *.wav
-*_advert.html
+rightPanel.html
+leftPanel.html
