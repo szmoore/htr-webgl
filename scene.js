@@ -334,7 +334,10 @@ Entity.prototype.HandleCollision = function(other, instigator)
 		other.HandleCollision(this, false);
 	if (typeof(this.canJump) !== "undefined") 
 	{
-		this.canJump = (other.Bottom() <= this.Top());
+		if (typeof(other.canJump) === "undefined")
+			this.canJump = (other.Bottom() <= this.Top());
+		else
+			this.canJump = (this.Top() > other.Top());
 	}	
 	return true;
 }
@@ -457,7 +460,8 @@ function BoxStep()
 	Entity.prototype.Step.call(this);
 	if (Math.abs(this.velocity[0]) < 1e-2)
 		this.velocity[0] = 0;
-	else if (Math.abs(this.velocity[0]) < 0.5 && Math.abs(this.acceleration[0]) < 1e-12)
+	else if ((Math.abs(this.velocity[0]) < 0.5 && Math.abs(this.acceleration[0]) < 1e-12)
+		|| (this.GetName() != "Box"))
 		this.velocity[0] /= 4;
 }
 
@@ -608,14 +612,11 @@ function AddBox()
 function AddEnemy()
 {
 	addEnemyCount += 1;
-	if (addEnemyCount % 5 == 0 && foxCount < 3 + level)
+	if (addEnemyCount % 5 == 0 && foxCount < (2 + level))
 		AddFox();
 	else
 		AddBox();
 
-	AddOx();
-
-	//AddCloud();
 }
 
 Entity.prototype.MovingTowards = function(other)
@@ -785,7 +786,7 @@ function AddOx()
 	ox.frameRate = 3;
 	ox.Step = FoxStep;
 	ox.HandleCollision = OxHandleCollision;
-	ox.health = 10;
+	ox.health = 15;
 	ox.speed = 0.6;
 	ox.canJump = true;
 
@@ -793,8 +794,8 @@ function AddOx()
 	ox.ignoreCollisions = {"Roof" : true};
 	ox.Die = function() {
 		oxCount -= 1;
-		setTimeout(AddOx, Math.random()*10000);
 		Entity.prototype.Die.call(this);
+		setTimeout(function() {AddOx()}, 10000);
 	}
 	gEntities.push(ox);
 	return ox;
@@ -1076,7 +1077,7 @@ function SetLevel(l)
 
 	if (level == 2)
 	{
-		//AddOx();
+		AddOx();
 	}
 
 	ResumeGame();
@@ -1233,7 +1234,7 @@ function main()
 	var audio = document.getElementById("theme");
 	if (audio)
 	{
-		audio.addEventListener("ended", Victory);
+		audio.addEventListener("ended", VictoryBox);
 		audio.load()
 	}
 	canvas = document.getElementById("glcanvas");
