@@ -60,6 +60,7 @@ var stepCount = 0;
 var foxesSquished = 0;
 var foxesDazed = 0;
 var boxesSquished = 0;
+var maxLevel = 1;
 var level = 1;
 var spriteCollisions = false; //blergh
 
@@ -378,7 +379,8 @@ Entity.prototype.Die = function()
 	}
 	else
 	{
-		alert("Entities can't die in IE<9 because IE is dumb.");
+		// Probably already died, since IE doesn't have WebGL and can't play anyway
+		//alert("Entities can't die in IE<9 because IE is dumb.");
 	}	
 }
 
@@ -1078,6 +1080,8 @@ function SetLevel(l)
 	}
 
 	ResumeGame();
+	if (level < maxLevel)
+		VictoryBox();
 }
 
 
@@ -1139,6 +1143,47 @@ function ResumeGame()
 		pause.onclick = PauseGame;
 	}
 }
+
+function VictoryBox()
+{
+	var box = AddBox();
+	box.acceleration = [0, -gravity];
+	box.frames = [LoadTexture("data/box/box_victory1.gif"),
+		LoadTexture("data/box/box_victory2.gif"),
+		LoadTexture("data/box/box_victory3.gif"),
+		LoadTexture("data/box/box_victory4.gif"),
+		LoadTexture("data/box/box_victory5.gif"),
+		LoadTexture("data/box/box_victory6.gif"),
+	];
+	box.frameNumber = 0;
+	box.frame = box.frames[0];
+	box.frameRate = 3;
+	box.health = 1e5;
+	box.HandleCollision = function(other, instigator) {
+		if (!instigator && other == player)
+		{
+			if (other.MovingTowards(this) && other.Above(this) && other.velocity[1] < -1)
+			{
+				if (this.timeout) clearTimeout(this.timeout);
+				Victory();
+			}
+		}
+		else if (other.GetName() == "Fox" || other.GetName() == "Ox")
+		{
+			if (other.Die) other.Die();
+		}
+		
+		return BoxHandleCollision.call(this, other, instigator);
+	};
+	Debug("<b><em>LEVEL "+(level+1)+" AVAILABLE!</em></b>", true);
+	if (addEnemyTimer) clearTimeout(addEnemyTimer);
+	box.timeout = setTimeout(function() {
+		Debug("<b><em>YOU SNOOZE, YOU LOSE</em></b>", true);
+		box.Die();
+		addEnemyTimer = setInterval(AddEnemy, stepRate*300/Math.pow(level,0.5));
+	}, 5000);
+}
+
 /**
  * You win!
  * ...

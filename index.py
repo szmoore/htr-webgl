@@ -70,9 +70,9 @@ if __name__ == "__main__":
 		c = conn.cursor()
 		if returning_player == True:
 			c.execute("SELECT level FROM players WHERE identity=?",(identity,))
-			level = c.fetchone()
+			maxLevel = c.fetchone()
 			if level != None:
-				level = level[0]
+				maxLevel= maxLevel[0]
 				c.execute("UPDATE players SET lastContact=? WHERE identity=?", (timestamp,identity))
 
 		if cookie_warn or level == None:
@@ -82,8 +82,10 @@ if __name__ == "__main__":
 		conn.close()
 
 	if form.has_key("level"):
-		level = min(int(float(level)), int(float(form["level"].value)))
+		maxLevel = min(int(float(level)), int(float(form["level"].value)))
+		level = maxLevel
 
+	print("maxLevel = %d;" % maxLevel)
 	print("level = %d;" % level)
 	print("</script>")
 
