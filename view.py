@@ -71,7 +71,19 @@ def ShowIdentity(form):
 def TopScore(form):
 	conn = sqlite3.connect("stats.db")
 	c = conn.cursor()
-	c.execute("SELECT MAX(runtime) FROM stats")
+	level = 1
+	if form.has_key("level"):
+		level = int(float(form["level"].value))
+	else:
+		c.execute("SELECT MAX(level) FROM stats")
+		level = c.fetchall()
+		if len(level) > 0:
+			level = level[0][0]
+		else:
+			level = 1
+
+	
+	c.execute("SELECT MAX(runtime) FROM stats WHERE level = ?", (level,))
 	print("Content-type: text/plain\n")
 	print(c.fetchall()[0][0])
 	conn.close()

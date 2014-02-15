@@ -108,15 +108,14 @@ def FixDB():
 			r = list(r)
 			for i in xrange(len(r)):
 				k = str(columns[i][1])
+				if k not in dbTables[table]:
+					continue
 				try:
 					fixed[k] = float(r[i])
 				except ValueError:
 					fixed[k] = r[i]
-
-			insert = []
-			for i in tuple(dbTables[table].keys()):
-				insert += [fixed[i]]
-			c.execute("INSERT INTO "+str(table)+" VALUES (?"+"".join([",?" for _ in xrange(len(fixed)-1)])+")", insert)
+			
+			c.execute("INSERT INTO "+str(table)+"("+",".join(fixed.keys())+") VALUES (?"+"".join([",?" for _ in xrange(len(fixed)-1)])+")", fixed.values())
 
 		conn.commit()
 	conn.close()

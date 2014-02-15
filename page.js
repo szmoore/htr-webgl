@@ -78,6 +78,17 @@ function InitPage()
 	document.getElementById("infoBar").style.display = (h > 520) ? "block" : "none";
 }
 
+function UpdateHighScore()
+{
+	var durations = {
+		1 : 194,
+		2 : 150
+	};
+	HttpGet("view.py?query=topscore&level="+level, function(response) {
+		document.getElementById("highScore").innerHTML = (""+(+response/1000)).toHHMMSS() + "/"+ (""+durations[level]).toHHMMSS();
+	});
+}
+
 function HideAds()
 {
 	if (adsShown)
@@ -99,3 +110,12 @@ function HideAds()
 	}
 	InitPage();
 }
+
+SetLevel = (function() {
+	var _SetLevel = SetLevel;
+	return function() {
+		_SetLevel.apply(this, arguments);
+		UpdateHighScore();	
+	};
+
+})();
