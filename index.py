@@ -11,6 +11,7 @@ import Cookie
 import datetime
 import hashlib
 import sqlite3
+import re
 
 import helpers
 
@@ -23,8 +24,7 @@ if __name__ == "__main__":
 		if os.environ["SERVER_NAME"] == "www.rabbitgame.net":
 			helpers.Redirect("http://rabbitgame.net")
 			sys.exit(0)
-
-
+	elif ".".join(os.environ["SERVER_NAME"].split(".")[1:]) != "rabbitgame.net":
 		print("Content-type: text/html\n")
 		print("<html><head><title>Humphrey The Rabbit Has Moved!</title></head><body>")
 		print("<p> Humphrey The Rabbit has bounced to <a href=\"http://rabbitgame.net\">rabbitgame.net</a></p>")
