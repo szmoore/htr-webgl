@@ -33,8 +33,22 @@ function HttpGet(theUrl, callback)
 		}
 	}
 }
+
+// Hacks to stop Android from breaking with long clicks
+// http://stackoverflow.com/questions/3413683/disabling-the-context-menu-on-long-taps-on-android
+function absorbEvent_(event)
+{
+	var e = event || window.event;
+	e.preventDefault && e.preventDefault();
+	e.stopPropagation && e.stopPropagation();
+	e.cancelBubble = true;
+	e.returnValue = false;
+	return false;
+}
+
 var adIds = {"leftPanel" : null, "rightPanel" : null};
 var initPanels = false;
+var initOnce = false;
 
 function InitPage()
 {
@@ -66,6 +80,31 @@ function InitPage()
 		}
 			
 	}
+
+	if (!initOnce)
+	{
+		initOnce = true;
+		if (typeof window.ontouchstart !== "undefined")
+		{
+			document.getElementById("touchBar").style.display = "block";
+			var l = document.getElementById("touchLeft");
+			var r = document.getElementById("touchRight");
+			var u = document.getElementById("touchUp");
+			var d = document.getElementById("touchDown");
+			l.addEventListener("touchstart", function(event) {absorbEvent_(event); keysPressed[37] = true}, false);
+			l.addEventListener("touchend", function(event) {absorbEvent_(event); keysPressed[37] = false}, false);
+			r.addEventListener("touchstart", function(event) {absorbEvent_(event); keysPressed[39] = true}, false);
+			r.addEventListener("touchend", function(event) {absorbEvent_(event); keysPressed[39] = false}, false);
+			u.addEventListener("touchstart", function(event) {absorbEvent_(event); keysPressed[38] = true}, false);
+			u.addEventListener("touchend", function(event) {absorbEvent_(event); keysPressed[38] = false}, false);
+			d.addEventListener("touchstart", function(event) {absorbEvent_(event); keysPressed[40] = true}, false);
+			d.addEventListener("touchend", function(event) {absorbEvent_(event); keysPressed[40] = false}, false);
+
+		}
+		else
+			document.getElementById("controls").style.display = "block";
+	}
+
 	if (!initPanels && adsShown)
 	{
 		HttpGet("leftPanel.html", function(response) {adIds["leftPanel"].innerHTML = response;});

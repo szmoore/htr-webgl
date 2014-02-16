@@ -396,6 +396,22 @@ Entity.prototype.Draw = function()
 {
 	if (!this.frame)
 		return;
+
+	if (!gl)
+	{
+		var tl = LocationGLToPix(this.Left(), this.Top());
+		var ctx = canvas.getContext("2d");
+		var w = this.frame.img.width;
+		var h = this.frame.img.height;
+		if (this.scale)
+		{
+			w = this.scale[0] * canvas.width;
+			h = this.scale[1] * canvas.height;
+		}
+		ctx.drawImage(this.frame.img, tl[0], tl[1], w, h);
+		return;
+	}
+
 	// Send position offset to shader
 	gl.uniform2f(uPosition, this.position[0], this.position[1]);
 
@@ -884,8 +900,7 @@ function LoadEntities()
 	
 	player.Death = function(cause)
 	{
-		gl.clear(gl.COLOR_BUFFER_BIT);
-		for (var i in gEntities) gEntities[i].Draw();
+		//for (var i in gEntities) gEntities[i].Draw();
 		PauseGame();
 		player = undefined;
 		var splash = SquishScreen;
@@ -1040,13 +1055,26 @@ function SplashScreen(background, blend, type, text)
 		screen.scale = [0.8,0.7];
 	}
 
+	screen.bounds = {min:[-canvas.width/2, -canvas.height/2], max:[canvas.width/2, canvas.height/2]};
 	screen.frame = LoadTexture(file, function() {
 		var ratio = (screen.frame.img.width / screen.frame.img.height);
-		gl.clearColor(background[0], background[1], background[2], background[3]);
-		gl.clear(gl.COLOR_BUFFER_BIT);
-		gl.uniform4f(uColour, blend[0], blend[1], blend[2], blend[3]);
-		screen.Draw();
-		gl.uniform4f(uColour,1,1,1,1); 
+		if (gl)
+		{
+			gl.clearColor(background[0], background[1], background[2], background[3]);
+			gl.clear(gl.COLOR_BUFFER_BIT);
+			gl.uniform4f(uColour, blend[0], blend[1], blend[2], blend[3]);
+		}
+		else
+		{
+			var ctx = canvas.getContext("2d");
+			for (var i = 0; i < background.length; ++i) background[i] = Math.round(255*background[i]);
+			ctx.fillStyle = "rgba("+background+")";
+			ctx.rect(0,0,canvas.width, canvas.height);
+			ctx.fill();
+		}
+		//screen.Draw();
+		if (gl) gl.uniform4f(uColour,1,1,1,1); 
+	
 		if (text)
 			Debug("<b><i>"+text+"</i></b>", true);
 	});
@@ -1126,7 +1154,6 @@ function PauseGame()
  */
 function ResumeGame()
 {
-	gl.clearColor(0.9,0.9,1,1);
 	if (drawSceneTimer) clearTimeout(drawSceneTimer);
 	if (addEnemyTimer) clearTimeout(addEnemyTimer);
 	drawSceneTimer = setInterval(DrawScene, stepRate);
@@ -1237,47 +1264,25 @@ function main()
 		audio.addEventListener("ended", VictoryBox);
 		audio.load()
 	}
-	canvas = document.getElementById("glcanvas");
-	InitWebGL(canvas);      // Initialize the GL context
-
-
-	gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
-	gl.enable(gl.BLEND);
-	gl.clearColor(0.9, 0.9, 1.0, 1.0); // Set clear colour 
-	gl.viewport(0,0,canvas.width,canvas.height); // Set viewport (unnecessary?)
-	//gl.disable(gl.DEPTH_TEST); // No point using depth testing for 2D graphics
-	//gl.depthFunc(gl.LEQUAL);
-	//gl.clearDepth(1.0);
-    
-	// Initialise the buffer objects
-	InitBuffers();
-
-    	// Initialize the shaders; this is where all the lighting for the
-	// vertices and so forth is established.
-	InitShaders();
-
 	// Keyboards
 	document.onkeydown = function(event) {keysPressed[event.keyCode] = true};
 	document.onkeyup = function(event) {keysPressed[event.keyCode] = false};
 
-	
-	canvas.onmousedown = function(event)
-	{	
-		if (typeof(player) === "undefined")
-			return;
+	canvas = document.getElementById("glcanvas");
 
-//		About();
-	/*
-		var thing;
-		if (event.which === 1)
-			thing = AddOx();
-		else if (event.which === 2)
-	*/
+	InitWebGL(canvas);      // Initialize the GL context
+	if (gl)
+	{
+		gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+		gl.enable(gl.BLEND);
+		gl.clearColor(0.9, 0.9, 1.0, 1.0); // Set clear colour 
+		gl.viewport(0,0,canvas.width,canvas.height); // Set viewport (unnecessary?)
+    		// Initialise the buffer objects
+		InitBuffers();
+	    	// Initialize the shaders
+		InitShaders();
 	}
-	
-
 	// Start the Game.
-//	About();
 	StartScreen();
 	setTimeout(StartGame, 1500);
 }
@@ -1308,14 +1313,29 @@ function DrawScene()
 	var rt = document.getElementById("runtime");
 	if (rt) rt.innerHTML=(""+runTime/1000).toHHMMSS();
 
+	var color = [0,0,0,0]
 	if (romanticMode)
-		gl.clearColor(1,0.9,0.9,1);
+		color = [1,0.9,0.9,1];
 	else if (level == 1)
-		gl.clearColor(0.9,0.9,1,1);
+		color = [0.9,0.9,1,0];
 	else if (level == 2)
-		gl.clearColor(0.8,0.6,0.6,1);
+		color = [0.8,0.6,0.6,1];
+
+	if (!gl)
+	{
+		var ctx = canvas.getContext("2d");
+		ctx.clearRect(0,0, canvas.width, canvas.height);
+		ctx.rect(0,0,canvas.width, canvas.height);
+		for (var i = 0; i < color.length; ++i) color[i] = Math.round(color[i]*255);
+		ctx.fillStyle = "rgba("+color+")";
+		ctx.fill();
+	}
+	else
+	{	
+		gl.clearColor(color[0], color[1], color[2], color[3])
+		gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+	}
 		
-	gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
 	for (var i in gEntities)
 	{
@@ -1340,7 +1360,9 @@ function InitWebGL()
   
 	// If we don't have a GL context, give up now
 	if (!gl)
-		alert("Unable to initialize WebGL. Your browser may not support it.");
+	{
+		alert("Unable to initialize WebGL. Your browser or graphics card may not support it.\n\nWill use canvas drawing instead (slower)");
+	}
 
 }
 
@@ -1355,7 +1377,7 @@ function LoadTexture(src, lambda)
 		return gTextures[src];
 	}
 	
-	var texture = gl.createTexture();
+	var texture = (gl) ? gl.createTexture() : null;
 	var image = new Image();
 	gTextures[src] = {tex: texture, img: image, data : null};
 	if (lambda)
@@ -1376,7 +1398,8 @@ function HandleTextureLoaded(texData)
 {
 	image = texData.img;
 	texture = texData.tex;
-	gl.bindTexture(gl.TEXTURE_2D, texture);
+ 	if (gl && texture)
+		 gl.bindTexture(gl.TEXTURE_2D, texture);
 
 	if (spriteCollisions || ((image.width & (image.width - 1)) != 0 || (image.height & (image.height - 1)) != 0))
 	{
@@ -1405,11 +1428,14 @@ function HandleTextureLoaded(texData)
 		texData.img = canvas;
 	}
 
-	gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, texData.img);
-	gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
-	gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_NEAREST);
-	gl.generateMipmap(gl.TEXTURE_2D);
-	gl.bindTexture(gl.TEXTURE_2D, null);
+	if (gl && texture)
+	{
+		gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, texData.img);
+		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_NEAREST);
+		gl.generateMipmap(gl.TEXTURE_2D);
+		gl.bindTexture(gl.TEXTURE_2D, null);
+	}
 }
 
 

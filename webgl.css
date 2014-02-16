@@ -7,5 +7,15 @@ canvas {
 	border: 2px solid black;
 	-moz-box-shadow: black 2px 2px 2px;
 	background-color: white;
+
+}
+
+img {
+	-webkit-touch-callout: none !important;
+	-webkit-user-select: none !important;
+	-khtml-user-select: none;
+	-moz-user-select: none;
+	-ms-user-select: none;
+	user-select: none;
 }
 
