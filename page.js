@@ -99,7 +99,6 @@ function InitPage()
 			u.addEventListener("touchend", function(event) {absorbEvent_(event); keysPressed[38] = false}, false);
 			d.addEventListener("touchstart", function(event) {absorbEvent_(event); keysPressed[40] = true}, false);
 			d.addEventListener("touchend", function(event) {absorbEvent_(event); keysPressed[40] = false}, false);
-
 		}
 		else
 			document.getElementById("controls").style.display = "block";

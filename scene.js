@@ -1063,6 +1063,7 @@ function SplashScreen(background, blend, type, text)
 			gl.clearColor(background[0], background[1], background[2], background[3]);
 			gl.clear(gl.COLOR_BUFFER_BIT);
 			gl.uniform4f(uColour, blend[0], blend[1], blend[2], blend[3]);
+			screen.Draw();
 		}
 		else
 		{
@@ -1071,8 +1072,8 @@ function SplashScreen(background, blend, type, text)
 			ctx.fillStyle = "rgba("+background+")";
 			ctx.rect(0,0,canvas.width, canvas.height);
 			ctx.fill();
+			ctx.drawImage(screen.frame.img, canvas.width/2 - screen.frame.img.width/2, canvas.height/2 - screen.frame.img.height/2, screen.frame.img.width, screen.frame.img.height);
 		}
-		//screen.Draw();
 		if (gl) gl.uniform4f(uColour,1,1,1,1); 
 	
 		if (text)
@@ -1098,7 +1099,22 @@ function SetLevel(l)
 	var audio = document.getElementById("theme");
 	if (audio)
 	{
-		audio.src = (level <= 1) ? "data/theme.ogg" : "data/theme"+level+".ogg";
+		while (audio.firstChild) audio.removeChild(audio.firstChild);
+		var src = (level <= 1) ? "data/theme" : "data/theme"+level;
+		var type = "";
+		if (audio.canPlayType("audio/ogg"))
+		{
+			type = "ogg";
+			src += ".ogg";
+		}
+		else// if (audio.canPlayType("audio/mpeg"))
+		{
+			type = "mpeg";
+			src += "mp3";
+		}
+		var s = document.createElement("source");
+		s.src = src; s.type = "audio/"+type;
+		audio.appendChild(s);
 		audio.load();
 		audio.pause();
 	}
@@ -1317,7 +1333,7 @@ function DrawScene()
 	if (romanticMode)
 		color = [1,0.9,0.9,1];
 	else if (level == 1)
-		color = [0.9,0.9,1,0];
+		color = [0.9,0.9,1,1];
 	else if (level == 2)
 		color = [0.8,0.6,0.6,1];
 
