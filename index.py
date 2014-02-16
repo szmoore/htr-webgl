@@ -22,11 +22,11 @@ if __name__ == "__main__":
 	server = os.environ["SERVER_NAME"]
 	domain = ".".join(os.environ["SERVER_NAME"].split(".")[1:])
 
-	print("Content-type: text/html\n")
 	if server == "www.rabbitgame.net":
 		helpers.Redirect("http://rabbitgame.net")
 		sys.exit(0)
 	elif server != "rabbitgame.net" and domain != "rabbitgame.net":
+		print("Content-type: text/html\n")
 		print("<html><head><title>Humphrey The Rabbit Has Moved!</title></head><body>")
 		print("<p> Humphrey The Rabbit has bounced to <a href=\"http://rabbitgame.net\">rabbitgame.net</a></p>")
 		print("<p> But if that still takes you to the wrong place, go <a href=\"game.html\">here</a></p>")
@@ -36,6 +36,7 @@ if __name__ == "__main__":
 		print("</table></body></html>")
 		sys.exit(0)
 
+	print("Content-type: text/html\n")
 	cookie_warn = False
 	returning_player = True
 	identity = helpers.GetIdentity()
