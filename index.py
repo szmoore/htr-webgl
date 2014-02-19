@@ -36,7 +36,6 @@ if __name__ == "__main__":
 		print("</table></body></html>")
 		sys.exit(0)
 
-	print("Content-type: text/html\n")
 	cookie_warn = False
 	returning_player = True
 	identity = helpers.GetIdentity()
@@ -54,6 +53,7 @@ if __name__ == "__main__":
 			# Couldn't set the cookie, don't bother warning them.
 			cookie_warn = False
 
+	print("Content-type: text/html\n")
 	form = cgi.FieldStorage()
 	timestamp = helpers.FloatNow();
 	level = 1
