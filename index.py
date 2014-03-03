@@ -25,7 +25,7 @@ if __name__ == "__main__":
 	if server == "www.rabbitgame.net":
 		helpers.Redirect("http://rabbitgame.net")
 		sys.exit(0)
-	elif server != "rabbitgame.net" and domain != "rabbitgame.net":
+	elif server != "rabbitgame.net" and domain != "rabbitgame.net" and server != "localhost":
 		print("Content-type: text/html\n")
 		print("<html><head><title>Humphrey The Rabbit Has Moved!</title></head><body>")
 		print("<p> Humphrey The Rabbit has bounced to <a href=\"http://rabbitgame.net\">rabbitgame.net</a></p>")
