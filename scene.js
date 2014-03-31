@@ -62,6 +62,7 @@ var foxesDazed = 0;
 var boxesSquished = 0;
 var maxLevel = 1;
 var level = 1;
+var lives = 0;
 var spriteCollisions = false; //blergh
 
 var romanticMode = (localTime.getMonth() == 1 && localTime.getDate() == 14);
@@ -202,6 +203,16 @@ Entity.prototype.Step = function()
 						lower = this.position[i];
 				}
 				this.position[i] = lower;
+
+				// Last resort?
+				if (this.Collides(collide))
+				{
+					if (this.position[i] > collide.position[i])
+						this.position[i] = collide.position[i] + 1.1*this.Dimension(i);
+					else if (this.position[i] <= collide.position[i])
+						this.position[i] = collide.position[i] - 1.1*collide.Dimension(i);
+				}
+				
 				
 			
 				if (this.HandleCollision(collide,true))
@@ -223,6 +234,7 @@ Entity.prototype.Left = function() {return this.position[0] + this.bounds.min[0]
 Entity.prototype.Right = function() {return this.position[0] + this.bounds.max[0];}
 Entity.prototype.Width = function() {return this.bounds.max[0] - this.bounds.min[0]}
 Entity.prototype.Height = function() {return this.bounds.max[1] - this.bounds.min[1]}
+Entity.prototype.Dimension = function(i) {return Math.abs((i == 0) ? this.Width() : this.Height());}
 
 /**
  * Get the actual bounding box
@@ -390,7 +402,7 @@ Entity.prototype.Die = function()
 
 /**
  * Draw
- * Draws the Entity at its current position.
+ * Draws the Entity at its curnrent position.
  */
 Entity.prototype.Draw = function()
 {
@@ -583,6 +595,37 @@ function BoxHandleCollision(other, instigator)
 }
 
 /**
+ * Give the player a hat
+ */
+function AddHat()
+{
+	Debug("Get the hat!", true);
+	setTimeout(function() {Debug("",true)},200*stepRate);
+	var hat = new Entity([1.8*(Math.random()-0.5),1.1],[0,0]);
+	hat.bounds = {min: [-32/canvas.width, -32/canvas.height], max: [32/canvas.width, 32/canvas.height]};
+	hat.frame = LoadTexture("data/hats/hat1_big.gif");
+	hat.sprite = hat.frame;
+	hat.ignoreCollisions = {"Roof" : true}
+	hat.acceleration = [0, -gravity];
+	hat.HandleCollision = function(other, instigator)
+	{
+		if (other === player)
+		{
+			lives += 1;
+			document.getElementById("lives").innerHTML = lives;
+			PostStats(this, "GOT HAT");
+			this.Die();
+		}
+		else
+		{
+			this.Die();
+		}
+
+	}
+	gEntities.push(hat);
+}
+
+/**
  * Add a Box
  */
 function AddBox()
@@ -701,6 +744,7 @@ Entity.prototype.CollideBox = function(other, instigator)
 			Debug(this.GetName() + " got squished!", true);
 			this.Die()
 			setTimeout(function() {Debug("", true)}, 2000);	
+			AddHat();
 		}
 		else
 		{
@@ -867,6 +911,32 @@ PostStats = function(player, cause)
 	xmlhttp.setRequestHeader("Connection", "close");
 	xmlhttp.send(request);		
 }
+
+/**
+ * Spawn the player
+ */
+function RespawnPlayer()
+{
+			player.position = [0,0];
+			player.velocity = [0,0];
+			player.canJump = false;
+			player.invincible = true;
+			
+			do
+			{
+				player.position[0] += 0.25*(Math.random()-0.5);
+				player.position[1] += 0.25*(Math.random()-0.5);
+			}
+			while (player.Collision());
+
+			var hat = new Entity([player.position[0], player.position[1]+0.130],[0,0]);
+			hat.frame = LoadTexture("data/hats/hat1_big.gif");
+			hat.name = "Hat";
+			//hat.Step = function() {this.position = player.position; this.position[1] += 0.130;}
+			setTimeout(function() {hat.Die(); player.canJump = true; player.invincible = false;}, 600);
+			gEntities.push(hat);
+}
+
 /**
  * Load the initial Entities
  */
@@ -883,23 +953,59 @@ function LoadEntities()
 	player.frameRate = 3;
 	player.canJump = true;
 	player.acceleration = [0, -gravity]; // gravity
+	player.speed = 0.7;
+	player.stomp = 0.2;
+	player.jumpSpeed = 1.2;
+	RespawnPlayer();
 	// Handle any keys pressed
 	player.handleKeys = function(keys)
 	{
 		this.velocity[0] = 0;
-		if (keys[37]) this.velocity[0] -= 0.7;
-		if (keys[39]) this.velocity[0] += 0.7;
+		if (keys[37]) this.velocity[0] -= this.speed;
+		if (keys[39]) this.velocity[0] += this.speed;
 		if (this.canJump && keys[38])
 		{
-			this.velocity[1] = 1.2;
+			this.velocity[1] = this.jumpSpeed;
 			this.canJump = false;
 		}
 		if (keys[40] && this.velocity[1] > -3)
-			this.velocity[1] -= 0.2;
+			this.velocity[1] -= this.stomp;
 	}
 	
 	player.Death = function(cause)
 	{
+		if (player.invincible)
+		{
+			var collides = player.Collision()
+			while (collides.GetName() != "Hat")
+			{
+				player.position[0] += 0.25*(Math.random()-0.5);
+				player.position[1] += 0.25*(Math.random()-0.5);
+			}
+
+		}
+		// The cause to show
+		var showCause = cause;
+		if (romanticMode)
+		{ 
+			// Romantic causes
+			var messages = ["REJECTED", "SHOT DOWN", "SHUNNED", "JILTED", "SPURNED", "SCORNED", "DIVORCED", "JADED"];
+			showCause = messages[Math.floor(Math.random()*messages.length)];
+		}
+
+		
+
+		if (lives > 0)
+		{
+			lives -= 1;
+			document.getElementById("lives").innerHTML = lives;
+			PostStats(this, "LOST HAT (" + cause + ")");
+			RespawnPlayer();
+			return;	
+		}
+
+		PostStats(this, cause);
+		
 		//for (var i in gEntities) gEntities[i].Draw();
 		PauseGame();
 		player = undefined;
@@ -911,15 +1017,10 @@ function LoadEntities()
 		else
 			splash = SquishScreen;
 
-		var showCause = cause;
-		if (romanticMode)
-		{
-			var messages = ["REJECTED", "SHOT DOWN", "SHUNNED", "JILTED", "SPURNED", "SCORNED"];
-			showCause = messages[Math.floor(Math.random()*messages.length)];
-		}
+
 		splash("YOU GOT " +showCause);
 	
-		PostStats(this, cause);
+		
 		// Restart the game
 		setTimeout(StartGame,2000);
 	}
@@ -1096,6 +1197,10 @@ function SetLevel(l)
 	PauseGame();
 	gEntities = [];
 	LoadEntities();
+
+	// Set lives
+	document.getElementById("lives").innerHTML = lives;
+
 	var audio = document.getElementById("theme");
 	if (audio)
 	{
@@ -1119,9 +1224,13 @@ function SetLevel(l)
 		audio.pause();
 	}
 
+	AddHat();
+
+
 	if (level == 2)
 	{
 		AddOx();
+		AddHat();
 	}
 
 	ResumeGame();
@@ -1225,7 +1334,7 @@ function VictoryBox()
 		Debug("<b><em>YOU SNOOZE, YOU LOSE</em></b>", true);
 		box.Die();
 		addEnemyTimer = setInterval(AddEnemy, stepRate*300/Math.pow(level,0.5));
-	}, 5000);
+	}, 20000);
 }
 
 /**
@@ -1281,7 +1390,16 @@ function main()
 		audio.load()
 	}
 	// Keyboards
-	document.onkeydown = function(event) {keysPressed[event.keyCode] = true};
+	document.onkeydown = function(event) {
+		keysPressed[event.keyCode] = true; 
+		if (event.keyCode == 32) // space
+		{
+			PauseGame();
+			alert("PAUSED\nPausing doesn't quite work; you will restart the level. Sorry.");
+			StartGame();
+			
+		}
+	};
 	document.onkeyup = function(event) {keysPressed[event.keyCode] = false};
 
 	canvas = document.getElementById("glcanvas");

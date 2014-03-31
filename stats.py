@@ -13,7 +13,7 @@ import sqlite3
 #import cgitb
 #cgitb.enable()
 import datetime
-
+import re
 import helpers
 
 def Sanity(fields):
@@ -131,6 +131,15 @@ if __name__ == "__main__":
 	l = cursor.fetchall()
 	if len(l) > 0 and l[0][0] < values["level"]:
 		cursor.execute("UPDATE players SET level=? WHERE identity=?", (values["level"], identity))
+
+
+	cursor.execute("SELECT hats FROM players WHERE identity = ?", (identity,))
+	hats = c.fetchall()[0]
+	# Update number of hats
+	if (values["death"] == "GOT HAT"):
+		cursor.execute("UPDATE players SET hats=? WHERE identity=?", (hats+1, identity))
+	elif (re.search(r"LOST HAT", values["death"]) != None):
+		cursor.execute("UPDATE players SET hats=? WHERE identity=?", (hats-1, identity))
 	
 	conn.commit()
 	conn.close()

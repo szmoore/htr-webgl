@@ -9,3 +9,4 @@
 *.wav
 rightPanel.html
 leftPanel.html
+gitignore/*

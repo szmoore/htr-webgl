@@ -26,6 +26,7 @@ dbTables = {
 		"created" : 0, 
 		"lastContact" : 0,
 		"level" : 1,
+		"hats" : 0
 	}
 }
 
