@@ -108,7 +108,10 @@ Entity.prototype.UpdateFrames = function()
 	if (this.frameBase)
 	{
 		if (this.sleep && this.sleep > 0)
+		{
+			this.sleep -= 0.01;
 			this.frames = this.frameBase.sleep;
+		}
 		else if (this.velocity[1] == 0)
 		{
 			if (this.velocity[0] == 0)
@@ -626,6 +629,22 @@ function AddHat()
 }
 
 /**
+ * Add a Rox
+ */
+function AddRox()
+{
+	Debug("Rox Time!",true);
+	setTimeout(function() {Debug("",true)}, 200*stepRate);
+	var rox = new Entity([0,0],[0,0]);
+	rox.LoadSprites("data/fox");
+	rox.acceleration = [0,0];
+	rox.name = "Rox";
+	rox.ignoreCollisions = {"LeftWall" : true, "RightWall" : true};
+	rox.
+	gEntities.push(rox);
+}
+
+/**
  * Add a Box
  */
 function AddBox()
@@ -961,14 +980,14 @@ function LoadEntities()
 	player.handleKeys = function(keys)
 	{
 		this.velocity[0] = 0;
-		if (keys[37]) this.velocity[0] -= this.speed;
-		if (keys[39]) this.velocity[0] += this.speed;
-		if (this.canJump && keys[38])
+		if (keys[37] || keys[65]) this.velocity[0] -= this.speed; // left or A
+		if (keys[39] || keys[68]) this.velocity[0] += this.speed; // right or D
+		if (this.canJump && (keys[38] || keys[87])) // up or W
 		{
 			this.velocity[1] = this.jumpSpeed;
 			this.canJump = false;
 		}
-		if (keys[40] && this.velocity[1] > -3)
+		if ((keys[40] || keys[83]) && this.velocity[1] > -3) // down or S
 			this.velocity[1] -= this.stomp;
 	}
 	

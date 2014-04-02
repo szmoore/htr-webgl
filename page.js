@@ -84,7 +84,8 @@ function InitPage()
 	if (!initOnce)
 	{
 		initOnce = true;
-		if (typeof window.ontouchstart !== "undefined")
+		// Apparently some browsers define ontouchstart when there isn't a touch screen, so confirm to make sure (not ideal :S).
+		if (typeof window.ontouchstart !== "undefined" && confirm("I have detected a touch screen. Use touch screen buttons?"))
 		{
 			document.getElementById("touchBar").style.display = "block";
 			var l = document.getElementById("touchLeft");
