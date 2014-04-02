@@ -43,11 +43,13 @@ var keysPressed = [];
 var player;
 var gravity = 1.0;
 
+// Really should get rid of some of these...
 var drawSceneTimer;
 var addEnemyTimer;
 var addEnemyCount = 0;
 var foxCount = 0;
 var oxCount = 0;
+var roxCount = 0;
 var runTime = 0;
 
 var serverTime = (new Date).getTime();
@@ -615,7 +617,7 @@ function AddHat()
 		if (other === player)
 		{
 			lives += 1;
-			document.getElementById("lives").innerHTML = lives;
+			SetLives(lives);
 			PostStats(this, "GOT HAT");
 			this.Die();
 		}
@@ -640,7 +642,12 @@ function AddRox()
 	rox.acceleration = [0,0];
 	rox.name = "Rox";
 	rox.ignoreCollisions = {"LeftWall" : true, "RightWall" : true};
-	rox.
+
+	rox.Die = function() {
+		roxCount -= 1;
+		Entity.prototype.Die.call(this);
+		setTimeout(function() {AddRox()}, 7000);
+	}
 	gEntities.push(rox);
 }
 
@@ -963,6 +970,7 @@ function LoadEntities()
 {
 	oxCount = 0;
 	foxCount = 0;
+	roxCount = 0;
 	gEntities = [];
 	
 	// The player (Humphrey The Rabbit)
@@ -1017,7 +1025,7 @@ function LoadEntities()
 		if (lives > 0)
 		{
 			lives -= 1;
-			document.getElementById("lives").innerHTML = lives;
+			SetLives(lives);
 			PostStats(this, "LOST HAT (" + cause + ")");
 			RespawnPlayer();
 			return;	
@@ -1218,7 +1226,7 @@ function SetLevel(l)
 	LoadEntities();
 
 	// Set lives
-	document.getElementById("lives").innerHTML = lives;
+	SetLives(lives);
 
 	var audio = document.getElementById("theme");
 	if (audio)
@@ -1249,6 +1257,11 @@ function SetLevel(l)
 	if (level == 2)
 	{
 		AddOx();
+		AddHat();
+	}
+	if (level == 3)
+	{
+		AddRox();
 		AddHat();
 	}
 
@@ -1376,6 +1389,11 @@ function Victory()
 	}
 	else if (level == 2)
 	{
+		SplashScreen([1,0,0,1],[1,1,1,1],"rox", "LET'S ROC");
+		setTimeout(function() {SetLevel(level+1)}, 2000);
+	}
+	else if (level == 3)
+	{
 		VictoryScreen();
 		setTimeout(function() {
 			Debug("<i><b>...</b></i>",true);
@@ -1383,12 +1401,7 @@ function Victory()
 				Debug("Or did you?",true);
 				setTimeout(function() {
 					Debug("<i><b>THERE IS NO ESCAPE</b></i>", true)
-					if (confirm("Epillepsy Warning: .\nContinue?"))
-					{
-						setInterval(function() {gl.clearColor(Math.random(), Math.random(), Math.random(), 1)}, 500);
-					}
-					level += 1;
-					setTimeout(function() {ResumeGame(); AddOx(); AddFox(); AddOx()}, 2000);
+					setTimeout(function() {SetLevel(level)}, 2000);
 				}, 2000);
 			}, 2000);
 		}, 3000);
@@ -1440,6 +1453,22 @@ function main()
 	setTimeout(StartGame, 1500);
 }
 
+function SetLives(l)
+{
+	var dom = document.getElementById("lives");
+	dom.innerHTML = l;
+	if (l <= 0)
+	{
+		dom.style.color = "red";
+		dom.style["text-decoration"] = "blink";
+	}
+	else
+	{
+		dom.style.color = "black";
+		dom.style["text-decoration"] = "none";
+	}
+}
+
 function About()
 {
 	PauseGame();
@@ -1473,6 +1502,8 @@ function DrawScene()
 		color = [0.9,0.9,1,1];
 	else if (level == 2)
 		color = [0.8,0.6,0.6,1];
+	else if (level == 3)
+		color = [1.0,0.9,0.8,1];
 
 	if (!gl)
 	{
