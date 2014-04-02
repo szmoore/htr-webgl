@@ -24,7 +24,7 @@ def Sanity(fields):
 	if fields["level"] not in [1,2]:
 		return "Bad level"
 
-	if fields["death"] not in ["SQUISHED", "STABBED", "EATEN", "NEXT LEVEL"]:
+	if fields["death"] not in ["SQUISHED", "STABBED", "EATEN", "NEXT LEVEL", "GOT HAT", "LOST HAT (SQUISHED)", "LOST HAT (STABBED)", "LOST HAT (EATEN)"]:
 		return "Invalid death"
 
 	x = fields["x"]
@@ -134,7 +134,7 @@ if __name__ == "__main__":
 
 
 	cursor.execute("SELECT hats FROM players WHERE identity = ?", (identity,))
-	hats = c.fetchall()[0]
+	hats = cursor.fetchall()[0][0]
 	# Update number of hats
 	if (values["death"] == "GOT HAT"):
 		cursor.execute("UPDATE players SET hats=? WHERE identity=?", (hats+1, identity))
