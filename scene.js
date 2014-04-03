@@ -635,10 +635,11 @@ function AddHat()
  */
 function AddRox()
 {
+	alert("Rox time!");
 	Debug("Rox Time!",true);
 	setTimeout(function() {Debug("",true)}, 200*stepRate);
 	var rox = new Entity([0,0],[0,0]);
-	rox.LoadSprites("data/fox");
+	rox.LoadSprites("data/ox"); // use ox as placeholder
 	rox.acceleration = [0,0];
 	rox.name = "Rox";
 	rox.ignoreCollisions = {"LeftWall" : true, "RightWall" : true};
@@ -1351,6 +1352,7 @@ function VictoryBox()
 			{
 				if (this.timeout) clearTimeout(this.timeout);
 				Victory();
+				this.Die();
 			}
 		}
 		else if (other.GetName() == "Fox" || other.GetName() == "Ox")
@@ -1365,7 +1367,9 @@ function VictoryBox()
 	box.timeout = setTimeout(function() {
 		Debug("<b><em>YOU SNOOZE, YOU LOSE</em></b>", true);
 		box.Die();
+		clearTimeout(addEnemyTimer);
 		addEnemyTimer = setInterval(AddEnemy, stepRate*300/Math.pow(level,0.5));
+		SetLevel(level);
 	}, 20000);
 }
 
