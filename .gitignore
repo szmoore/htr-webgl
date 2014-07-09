@@ -10,3 +10,4 @@
 rightPanel.html
 leftPanel.html
 gitignore/*
+*.geany
