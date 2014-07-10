@@ -20,14 +20,13 @@ function Game(audio, canvas, level)
 	
 	this.timeouts = {};
 	
-	this.Start(this.level);
+	
 	this.running = false;
 }
 
 Game.prototype.Pause = function()
 {
-	if (!this.running) 
-		return;
+
 	this.running = false;
 	for (var t in this.timeouts)
 	{
@@ -36,6 +35,7 @@ Game.prototype.Pause = function()
 	if (this.audio)
 		this.audio.pause();
 		
+	this.Draw();
 	this.canvas.SplashScreen("data/rabbit/drawing2.svg", "Paused", [0,0,0,0.6]);
 }
 
@@ -43,16 +43,28 @@ Game.prototype.Resume = function()
 {
 	if (this.running)
 		return;
+
 	this.running = true;
+	this.timeouts.enemy = setTimeout(function() {this.AddEnemy()}.bind(this), 2000);
+	
+	if (this.entities.length <= 0 || !this.entities)
+	{
+		if (this.timeouts.start)
+		{
+			clearTimeout(this.timeouts.start);
+			delete this.timeouts.start;
+		}
+		this.SetLevel(this.level);
+	}
 	this.MainLoop();
 	
-	this.timeouts.enemy = setTimeout(function(g) {g.AddEnemy()}, 2000, this);
 	//if (this.audio) // put back in when done testing
 		//this.audio.play();
 }
 
 Game.prototype.Start = function(level)
 {
+
 	this.SetLevel(level);
 	this.Resume();
 }
@@ -75,6 +87,7 @@ Game.prototype.SetLevel = function(level)
 	this.keyState = [];
 	this.webSockets = [];
 	this.entities = [];
+	this.entityCount = {};
 
 	// Add the walls
 	this.AddEntity(new Wall({min: [-Infinity,-Infinity], max:[Infinity, -1]}, "Floor")); // bottom
@@ -90,16 +103,19 @@ Game.prototype.SetLevel = function(level)
 Game.prototype.AddEnemy = function()
 {
 	var enemy;
-	if (this.spawnedEnemies++ % 5 == 0)
+	this.spawnedEnemies += 1;
+	if ((this.spawnedEnemies % 5) == 0 && 
+		(!this.entityCount["Fox"] || this.entityCount["Fox"] < 3+this.level))
 	{
 		enemy = new Fox([this.player.position[0], 1],[0,0], this.gravity, this.canvas, "data/fox/")
+		
 	}
 	else
 	{
 		enemy = new Box([this.player.position[0], 1],[0,0], this.gravity, this.canvas, "data/box/box1.gif")
 	}
 	this.AddEntity(enemy);
-	this.timeouts.enemy = setTimeout(function(g) {g.AddEnemy()}, 2000, this);
+	this.timeouts.enemy = setTimeout(function() {this.AddEnemy()}.bind(this), 2000);
 }
 
 Game.prototype.AddHat = function()
@@ -116,6 +132,14 @@ Game.prototype.AddEntity = function(entity)
 			this.entities[i] = entity;
 			return;
 		}
+	}
+	if (!this.entityCount[entity.GetName()])
+	{
+		this.entityCount[entity.GetName()] = 1;
+	}
+	else
+	{
+		this.entityCount[entity.GetName()] += 1;
 	}
 	this.entities.push(entity);
 }
@@ -163,13 +187,16 @@ Game.prototype.Step = function()
 		this.runTime += this.stepTime - this.lastStepTime;
 	}
 	
-	for (var i = 0; i < this.entities.length; ++i)
+	for (var i = this.entities.length; i >= 0; --i)
 	{
 		if (this.entities[i])
 		{
 			this.entities[i].Step(this);
 			if (!this.entities[i].alive)
+			{
+				this.entityCount[this.entities[i].GetName()] -= 1;
 				delete this.entities[i];
+			}
 		}
 	}
 	
@@ -207,15 +234,25 @@ Game.prototype.MainLoop = function()
 	this.Draw();
 	if (!this.player.alive)
 	{
-		this.player.DeathScene(this);
+		this.Draw();
 		this.running = false;
-		clearTimeout(this.timeouts.step);
-		delete this.timeouts.step;
-		setTimeout(function(g) {g.Start(g.level)}, 2000, this);
+		this.player.DeathScene(this);
+		for (var t in this.timeouts)
+		{
+			clearTimeout(this.timeouts[t]);
+			delete this.timeouts[t];
+		}
+		this.entities = [];
+		this.timeouts.start = setTimeout(function() {this.Start(this.level)}.bind(this), 2000);
 		return;
 	}
-	this.timeouts.step = setTimeout(function(g) {g.MainLoop()}, this.stepRate, this);
+	this.timeouts.step = setTimeout(function() {this.MainLoop()}.bind(this), this.stepRate, this);
 		
+}
+
+Game.prototype.GetNearestPlayer = function(position)
+{
+	return this.player;
 }
 
 

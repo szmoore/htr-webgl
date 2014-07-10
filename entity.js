@@ -135,7 +135,7 @@ Entity.prototype.Step = function(game)
 			this.velocity[i] += this.delta * this.acceleration[i] / 1000;
 	}
 
-	this.UpdateFrames();
+	
 
 
 	// Update position
@@ -165,23 +165,27 @@ Entity.prototype.Step = function(game)
 				}
 				this.position[i] = lower;
 
+
 				// Last resort?
 				
 				if (this.Collides(collide))
 				{
-					if (this.position[i] > collide.position[i] || Math.abs(collide.Dimension(i)) == Infinity)
-						this.position[i] = collide.position[i] + 1.1*this.Dimension(i);
-					else if (this.position[i] <= collide.position[i])
-						this.position[i] = collide.position[i] - 1.1*collide.Dimension(i);
+					this.position[0] = this.lastPosition[0];
+					this.position[1] = this.lastPosition[1];
+					//if (this.position[i] > collide.position[i] || Math.abs(collide.Dimension(i)) == Infinity)
+					//	this.position[i] = collide.position[i] + 1.1*this.Dimension(i);
+					//else if (this.position[i] <= collide.position[i])
+					//	this.position[i] = collide.position[i] - 0.1*collide.Dimension(i);
 				}
 				
 			
 				if (this.HandleCollision(collide,true,game))
 					this.velocity[i] = 0;
-				this.UpdateFrames();
+					
+				
 		}
 	}
-
+	this.UpdateFrames();
 	this.UpdateFrameNumber();
 
 	// Finalise step

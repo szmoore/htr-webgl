@@ -8,8 +8,9 @@ function Enemy(position, velocity, acceleration, canvas, spritePath)
 	Entity.call(this, position, velocity, acceleration, canvas, spritePath);
 	this.dazed = 0;
 	this.sleep = 0;
-	this.jumpSpeed = 3;
+	this.jumpSpeed = 0.9;
 	this.name = "Enemy";
+	this.ignoreCollisions["Roof"] = true;
 }
 Enemy.prototype = Object.create(Entity.prototype);
 Enemy.prototype.constructor = Enemy;
@@ -33,6 +34,9 @@ Enemy.prototype.Step = function(game)
 {
 	if (this.dazed && this.dazed > 0)
 		this.dazed -= this.delta/1000;
+
+
+	var player = game.GetNearestPlayer(this.position);
 
 	if (!player || (this.sleep && this.sleep > 0) || (this.dazed && this.dazed > 0))
 	{
@@ -80,14 +84,14 @@ Enemy.prototype.Step = function(game)
  */
 Enemy.prototype.HandleCollision = function(other, instigator, game)
 {
-	if (instigator && other === game.player)
+	if (instigator && other === game.player && this.MovingTowards(other))
 	{
 		if (!this.sleep && !this.dazed)
 		{
 			other.Die(this.GetName());
 		}
 	}
-	else if (this.CollideBox(other, instigator,game))
+	else if (other.GetName() === "Box" && this.CollideBox(other, instigator,game))
 	{
 		this.TryToJump();
 	}
@@ -109,10 +113,7 @@ Enemy.prototype.CollideBox = function(other, instigator, game)
 
 		if (!this.health || this.health <= 0)
 		{
-			foxesSquished += 1; // Yeah, everything is a fox...
-			Debug(this.GetName() + " got squished!", true);
 			this.Die()
-			setTimeout(function() {Debug("", true)}, 2000);	
 			game.AddHat();
 		}
 		else
@@ -128,6 +129,8 @@ function Fox(position, velocity, acceleration, canvas, spritePath)
 {
 	Enemy.call(this, position, velocity, acceleration, canvas, spritePath);
 	this.name = "Fox";
+	this.speed = 0.5;
+	this.jumpSpeed = 0.7;
 }
 Fox.prototype = Object.create(Enemy.prototype);
 Fox.prototype.constructor = Fox;

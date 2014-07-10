@@ -8,6 +8,7 @@ function Player(position, velocity, acceleration, canvas, spritePath)
 	Entity.call(this, position, velocity, acceleration, canvas, spritePath);
 	this.stomp = 0.2;
 	this.lives = 0;
+	this.name = "Humphrey";
 	
 }
 Player.prototype = Object.create(Entity.prototype);
@@ -50,11 +51,11 @@ Player.prototype.Die = function(deathType)
 Player.prototype.HandleCollision = function(other, instigator, game)
 {
 	var action = Player.prototype.CollisionActions[other.GetName()];
-	var base = false;
+	var base;
 	if (action)
 		base = action.call(this, other, instigator, game);
 		
-	if (!base)
+	if (typeof(base) === "undefined")
 		return Entity.prototype.HandleCollision.call(this, other, instigator, game);
 	return base;
 }
@@ -69,6 +70,22 @@ Player.prototype.CollisionActions["Box"] = function(other, instigator, game)
 		this.Die(other.GetName());
 		return true;
 	}
+	if (instigator && this.Bottom() < other.Top())
+	{
+		other.velocity[0] = this.velocity[0]/2;
+		if (other.Top() - this.Bottom() < 0.05*other.Height())
+			this.position[1] += 0.07*other.Height();
+		return false;
+	}
+}
+
+
+/**
+ * Collision handler for a Fox
+ */
+Player.prototype.CollisionActions["Fox"] = function(other, instigator, game)
+{
+	
 }
 
 Player.prototype.DeathScene = function(game)

@@ -11,6 +11,7 @@ function Box(position, velocity, acceleration, canvas, spritePath)
 	this.frame = canvas.LoadTexture(spritePath);
 	this.name = "Box";
 	this.ignoreCollisions["Roof"] = true;
+	this.health = 4 + Math.random()*16;
 	
 }
 Box.prototype = Object.create(Entity.prototype);
@@ -45,8 +46,13 @@ Box.prototype.HandleCollision = function(other, instigator, game)
 		return Entity.prototype.HandleCollision.call(this,other, instigator,game);
 	}
 	
+	if (other.Top() - this.Bottom() < 0.05*other.Height())
+			this.position[1] += 0.07*other.Height();
+		
+	
 	if (other.GetName() == "Box" && other.Top() > this.Top())
 	{
+			
 		this.health -= Math.min(1.0, Math.abs(Math.random()*other.velocity[1]));
 		if (this.health <= 0)
 			this.Die();
