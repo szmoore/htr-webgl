@@ -9,6 +9,10 @@ function Player(position, velocity, acceleration, canvas, spritePath)
 	this.stomp = 0.2;
 	this.lives = 0;
 	this.name = "Humphrey";
+	this.spawn = [];
+	for (var i = 0; i < position.length; ++i)
+		this.spawn[i] = position[i];
+	this.shield = false;
 	
 }
 Player.prototype = Object.create(Entity.prototype);
@@ -39,38 +43,56 @@ Player.prototype.HandleKeys = function(keys)
 		this.velocity[1] -= this.stomp;
 }
 
-Player.prototype.Die = function(deathType)
+Player.prototype.Die = function(deathType, other, game)
 {
-	if (this.lives <= 0)
+	if (this.shield)
+	{
+		if (other)
+			other.Die(this.GetName());
+		return;
+	}
+	
+	if (--this.lives < 0)
 	{
 		this.deathType = deathType;
 		return Entity.prototype.Die.call(this, deathType);
 	}
+	else
+	{
+		for (var i = 0; i < this.position.length; ++i)
+			this.position[i] = this.spawn[i];
+			
+		this.shield = true;
+		game.AddTimeout("shieldExpire",function() {
+				this.shield = false}.bind(this), 1000);
+		game.UpdateDOM(this);
+	}
+
 }
 
-Player.prototype.HandleCollision = function(other, instigator, game)
-{
-	var action = Player.prototype.CollisionActions[other.GetName()];
-	var base;
-	if (action)
-		base = action.call(this, other, instigator, game);
-		
-	if (typeof(base) === "undefined")
-		return Entity.prototype.HandleCollision.call(this, other, instigator, game);
-	return base;
-}
 
 /**
  * Collision handler for a Box
  */
 Player.prototype.CollisionActions["Box"] = function(other, instigator, game)
 {
-	if (!instigator && other.MovingTowards(this) && other.Above(this) && other.velocity[1] < -0.5)
+	if (!instigator)
 	{
-		this.Die(other.GetName());
+		if (other.MovingTowards(this) && other.Above(this) 
+		&& Math.abs(other.velocity[1] - this.velocity[1]) > 0.2 && other.velocity[1] < 0.4)
+		{
+			this.Die(other.GetName(), other, game);
+		}
 		return true;
 	}
-	if (instigator && this.Bottom() < other.Top())
+	
+	if (this.IsStomping(other))
+	{
+		other.health -= 1;
+		return true;
+	}
+	
+	if (this.Bottom() < other.Top())
 	{
 		other.velocity[0] = this.velocity[0]/2;
 		if (other.Top() - this.Bottom() < 0.05*other.Height())
@@ -79,34 +101,99 @@ Player.prototype.CollisionActions["Box"] = function(other, instigator, game)
 	}
 }
 
+Player.prototype.IsStomping = function(other)
+{
+	return ((this.Bottom() >= other.Top()-0.1*other.Height()) && (this.velocity[1] < -2.5));
+}
 
 /**
  * Collision handler for a Fox
  */
 Player.prototype.CollisionActions["Fox"] = function(other, instigator, game)
 {
-	
+	if (instigator && this.IsStomping(other))
+	{
+		other.sleep = Math.random() * Math.abs(this.velocity[1] - other.velocity[1]) * 5;
+	}
 }
 
-Player.prototype.DeathScene = function(game)
+
+Player.prototype.DeathScene = function(game, onload)
 {
 	switch (this.deathType)
 	{
 		case "Box":
 			image = "data/rabbit/drawing2.svg";
 			text = "SQUISH!";
+			game.Message("You got Squished!");
 			colour = [1,0,0,0.8];
 			break;
 		case "Fox":
 			image = "data/fox/drawing1.svg";
-			text = "You got Eaten!";
+			text = "CHOMP!";
+			game.Message("You got Eaten!");
 			colour = [1,0,0,0.8];
 			break;
 		case "Ox":
 			image = "data/ox/drawing1.svg";
-			text = "You got Stabbed!";
+			text = "STAB!";
+			game.Message("You got Stabbed!");
 			colour = [1,0,0,0.8];
 			break;
 	}
-	game.canvas.SplashScreen(image, text, colour);
+	game.canvas.SplashScreen(image, text, colour, onload);
 }
+
+Player.prototype.Draw = function(canvas)
+{
+	var result = Entity.prototype.Draw.call(this,canvas);
+	if (this.shield)
+	{
+		var f = this.frame;
+		this.frame = canvas.LoadTexture("data/sfx/shield1.png");
+		result = Entity.prototype.Draw.call(this,canvas);
+		this.frame = canvas.LoadTexture("data/hats/hat1_big.gif");
+		this.position[1] += this.Height();
+		result = Entity.prototype.Draw.call(this,canvas);
+		this.position[1] -= this.Height();
+		this.frame = f;
+		
+	}
+	return result;
+}
+
+Player.prototype.GainLife = function(life, game)
+{
+	this.lives++;
+	this.shield = true;
+	game.AddTimeout("shieldExpire", function() {
+			this.shield = false}.bind(this), 1000,game);
+	game.UpdateDOM(this);	
+}
+
+
+function Hat(position, velocity, acceleration, canvas, game)
+{
+	Entity.call(this, position, velocity, acceleration, canvas, "");
+	this.frame = canvas.LoadTexture("data/hats/hat1_big.gif");
+	this.name = "Hat";
+	this.ignoreCollisions["Roof"] = true;
+	if (game)
+		game.Message("Get the hat!");
+}
+Hat.prototype = Object.create(Entity.prototype);
+Hat.prototype.constructor = Hat;
+Hat.prototype.CollisionActions = {};
+
+Hat.prototype.CollisionActions["Humphrey"] = function(other, instigator, game)
+{
+	other.GainLife(this, game);
+	game.UpdateDOM(player);
+}
+
+Hat.prototype.HandleCollision = function(other, instigator, game)
+{
+	Entity.prototype.HandleCollision.call(this, other, instigator, game);
+	this.Die(this.GetName(), this, game);
+}
+

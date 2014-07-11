@@ -38,6 +38,7 @@ function Entity(position, velocity, acceleration, canvas, spritePath)
 	}
 
 }
+Entity.prototype.CollisionActions = {};
 
 /**
  * Get the name of an Entity
@@ -149,7 +150,7 @@ Entity.prototype.Step = function(game)
 		// Check for collisions
 		collide = this.Collision(game);
 		if (collide)
-		{
+		{	
 				// Soo... this is terribly inefficient and lazy
 				// But slightly better than what I had before
 				// Binary search to location of collision
@@ -178,9 +179,9 @@ Entity.prototype.Step = function(game)
 					//	this.position[i] = collide.position[i] - 0.1*collide.Dimension(i);
 				}
 				
-			
-				if (this.HandleCollision(collide,true,game))
+				if (this.HandleCollision(collide, true, game))
 					this.velocity[i] = 0;
+
 					
 				
 		}
@@ -281,7 +282,15 @@ Entity.prototype.Collides = function(other)
  */
 Entity.prototype.HandleCollision = function(other, instigator,game)
 {
-	if (this.ignoreCollisions && this.ignoreCollisions[other.GetName()]) return false;	
+	if (this.CollisionActions && this.CollisionActions[other.GetName()])
+	{
+		var result = this.CollisionActions[other.GetName()].call(this,other, instigator, game);
+		if (typeof(result) !== "undefined")
+			return result;
+	}
+	
+	if (this.ignoreCollisions && this.ignoreCollisions[other.GetName()]) 
+		return false;	
 	if (instigator)
 		other.HandleCollision(this, false, game);
 	if (typeof(this.canJump) !== "undefined") 
@@ -327,7 +336,7 @@ Entity.prototype.Bounce = function(n, reflect)
 /**
  * Remove entity
  */
-Entity.prototype.Die = function(deathType)
+Entity.prototype.Die = function(deathType, other, game)
 {
 	this.alive = false;
 }

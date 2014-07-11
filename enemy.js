@@ -14,6 +14,7 @@ function Enemy(position, velocity, acceleration, canvas, spritePath)
 }
 Enemy.prototype = Object.create(Entity.prototype);
 Enemy.prototype.constructor = Enemy;
+Enemy.prototype.CollisionActions = {}; // this is slightly whack
 
 /**
  * Try and jump
@@ -80,23 +81,21 @@ Enemy.prototype.Step = function(game)
 }
 
 /**
- * A Fox collided with something 
+ * Handler for colliding with player
  */
-Enemy.prototype.HandleCollision = function(other, instigator, game)
+Enemy.prototype.CollisionActions["Humphrey"] = function(other, instigator, game)
 {
-	if (instigator && other === game.player && this.MovingTowards(other))
+	if (instigator && this.MovingTowards(other) 
+		&& !this.sleep && !this.dazed)
 	{
-		if (!this.sleep && !this.dazed)
-		{
-			other.Die(this.GetName());
-		}
+		other.Die(this.GetName(), this, game);
 	}
-	else if (other.GetName() === "Box" && this.CollideBox(other, instigator,game))
-	{
+}
+
+Enemy.prototype.CollisionActions["Box"] = function(other, instigator, game)
+{
+	if (this.CollideBox(other, instigator, game) && !this.sleep)
 		this.TryToJump();
-	}
-		
-	return Entity.prototype.HandleCollision.call(this, other, instigator, game);
 }
 
 Enemy.prototype.CollideBox = function(other, instigator, game)
@@ -113,7 +112,7 @@ Enemy.prototype.CollideBox = function(other, instigator, game)
 
 		if (!this.health || this.health <= 0)
 		{
-			this.Die()
+			this.Die(other.GetName(), other, game);
 			game.AddHat();
 		}
 		else
@@ -125,12 +124,20 @@ Enemy.prototype.CollideBox = function(other, instigator, game)
 	return true;
 }
 
-function Fox(position, velocity, acceleration, canvas, spritePath)
+function Fox(position, velocity, acceleration, canvas)
 {
-	Enemy.call(this, position, velocity, acceleration, canvas, spritePath);
+	Enemy.call(this, position, velocity, acceleration, canvas, "data/fox/");
 	this.name = "Fox";
 	this.speed = 0.5;
 	this.jumpSpeed = 0.7;
+	this.canJump = false;
 }
 Fox.prototype = Object.create(Enemy.prototype);
 Fox.prototype.constructor = Fox;
+
+Fox.prototype.Die = function(reason, other, game)
+{
+	if (other.GetName() == "Box")
+		game.Message(this.GetName()+" got Squished!", 2000);
+	Entity.prototype.Die.call(this, reason, other, game);
+}

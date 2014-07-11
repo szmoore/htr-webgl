@@ -696,6 +696,7 @@ function Victory()
 	}
 }
 var game;
+var startLevel = 0;
 /**
  * The main function
  */
@@ -703,24 +704,11 @@ function main()
 {
 	var audio = document.getElementById("theme");
 	var canvas = document.getElementById("glcanvas");
-	game = new Game(audio, canvas);
+	game = new Game(canvas, audio, document);
 	
 	document.onkeydown = function(event) {game.KeyDown(event)};
 	document.onkeyup = function(event) {game.KeyUp(event)};
-	
-	
-	if (/*@cc_on!@*/false) // check for Internet Explorer
-	{ 
-		//document.onfocusin = game.Resume.bind(game);;
-		document.onfocusout = game.Pause.bind(game);;
-	} 
-	else 
-	{
-		//window.onfocus = game.Resume.bind(game);
-		window.onblur = game.Pause.bind(game);
-	}
-	
-	game.Start(1);
+	game.Start(startLevel);
 }
 
 function SetLives(l)

@@ -91,23 +91,23 @@ Canvas.prototype.LocationGLToPix = function(x, y)
 }
 
 
-Canvas.prototype.SplashScreen = function(imagePath, text, backColour, blend)
+Canvas.prototype.SplashScreen = function(imagePath, text, backColour, onload)
 {
 	var screen = new Entity([0,0], [0,0],[0,0],"");
 	if (!text) text = "";
 	if (!backColour) backColour = [0,0,0,0.9];
 	screen.scale = [0.6, 0.6]; 
 	screen.bounds = {min:[-this.width/2, -this.height/2], max:[this.width/2, this.height/2]};
-	var c = this;
-	screen.frame = this.LoadTexture(imagePath, function() {
-		var ratio = (screen.frame.img.width / screen.frame.img.height);
-		with (c)
+
+	var f = function(onload, screen) {
+		with (this)
 		{
 			if (gl)
 			{
 				gl.clearColor(background[0], background[1], background[2], background[3]);
 				gl.clear(gl.COLOR_BUFFER_BIT);
-				gl.uniform4f(uColour, blend[0], blend[1], blend[2], blend[3]);
+				gl.uniform4f(uColour,1,1,1,1); 
+				//gl.uniform4f(uColour, blend[0], blend[1], blend[2], blend[3]);
 				screen.Draw();
 				gl.uniform4f(uColour,1,1,1,1); 
 			}
@@ -118,15 +118,30 @@ Canvas.prototype.SplashScreen = function(imagePath, text, backColour, blend)
 				ctx.fillStyle = "rgba("+backColour+")";
 				ctx.rect(0,0,width, height);
 				ctx.fill();
-				ctx.drawImage(screen.frame.img, width/2 - screen.frame.img.width/2, height/2 - screen.frame.img.height/2, screen.frame.img.width, screen.frame.img.height);
-				ctx.font = "50px Impact";
+				if (screen.frame)
+				{
+					ctx.drawImage(screen.frame.img, width/2 - screen.frame.img.width/2, height/2 - screen.frame.img.height/2, screen.frame.img.width, screen.frame.img.height);
+				}
+					
+				var fontSize = 50 / (1 +Math.round(text.length/40));
+				ctx.font = String(fontSize)+"px Comic Sans";
 				ctx.fillStyle = "rgba(0,0,0,1)";
-				ctx.fillText(text,width/2 - text.length*10, 7*height/8);
+				ctx.fillText(text,this.width-Math.min(this.width, fontSize*7*text.length/8), 7*height/8);
 			}
+		}
+		
+		if (typeof(onload) === "function")
+		{
+			onload();
 		}
 		//if (text)
 		//	Debug("<b><i>"+text+"</i></b>", true);
-	});
+	};
+	
+	if (imagePath)
+		screen.frame = this.LoadTexture(imagePath, f.bind(this, onload, screen));
+	else
+		f.bind(this, onload, screen)();
 }
 
 
