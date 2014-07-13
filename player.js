@@ -47,8 +47,8 @@ Player.prototype.Die = function(deathType, other, game)
 {
 	if (this.shield)
 	{
-		if (other)
-			other.Die(this.GetName());
+		//if (other)
+		//	other.Die(this.GetName());
 		return;
 	}
 	
@@ -178,6 +178,7 @@ function Hat(position, velocity, acceleration, canvas, game)
 	this.frame = canvas.LoadTexture("data/hats/hat1_big.gif");
 	this.name = "Hat";
 	this.ignoreCollisions["Roof"] = true;
+	this.ignoreCollisions["Hat"] = true;
 	if (game)
 		game.Message("Get the hat!");
 }

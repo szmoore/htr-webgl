@@ -66,28 +66,32 @@ if __name__ == "__main__":
 	print("<script type=\"text/javascript\">")
 	print("serverTime = %f;" % timestamp)
 
-	if (helpers.DataBaseExists()):
-		conn = sqlite3.connect("stats.db")
-		c = conn.cursor()
-		if returning_player == True:
-			c.execute("SELECT level FROM players WHERE identity=?",(identity,))
-			maxLevel = c.fetchone()
-			if level != None:
-				maxLevel= maxLevel[0]
-				c.execute("UPDATE players SET lastContact=? WHERE identity=?", (timestamp,identity))
+	try:
+		if (helpers.DataBaseExists()):
+			conn = sqlite3.connect("stats.db")
+			c = conn.cursor()
+			if returning_player == True:
+				c.execute("SELECT level FROM players WHERE identity=?",(identity,))
+				maxLevel = c.fetchone()
+				if level != None:
+					maxLevel= maxLevel[0]
+					c.execute("UPDATE players SET lastContact=? WHERE identity=?", (timestamp,identity))
 
-		if cookie_warn or level == None:
-			c.execute("INSERT INTO players(identity,created,lastContact,level) VALUES (?,?,?,1)", (identity,timestamp,timestamp))
+			if cookie_warn or level == None:
+				c.execute("INSERT INTO players(identity,created,lastContact,level) VALUES (?,?,?,1)", (identity,timestamp,timestamp))
 
-		conn.commit()
-		conn.close()
+			conn.commit()
+			conn.close()
+	
+		if form.has_key("level"):
+			maxLevel = min(int(float(level)), int(float(form["level"].value)))
+			level = maxLevel
 
-	if form.has_key("level"):
-		maxLevel = min(int(float(level)), int(float(form["level"].value)))
-		level = maxLevel
-
-	print("maxLevel = %d;" % maxLevel)
-	print("level = %d;" % level)
+		print("maxLevel = %d;" % maxLevel)
+		print("level = %d;" % level)
+		
+	except Exception as e:
+		print("console.log(\"Server database error: %s\")" % str(e))
 	print("</script>")
 
 

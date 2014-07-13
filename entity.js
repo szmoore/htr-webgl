@@ -40,6 +40,7 @@ function Entity(position, velocity, acceleration, canvas, spritePath)
 }
 Entity.prototype.CollisionActions = {};
 
+
 /**
  * Get the name of an Entity
  * @returns this.name if defined, otherwise "unnamed"
@@ -122,7 +123,7 @@ Entity.prototype.Step = function(game)
 	// Try to make the physics more accurate taking into account lag
 	var latency = (currentTime - this.lastUpdateTime)/game.stepRate;
 	// But not too much or wierd shit happens.
-	this.delta = (latency < 3) ? latency*game.stepRate : 3*game.stepRate;
+	this.delta = (latency < 4) ? latency*game.stepRate : 4*game.stepRate;
 	this.lastPosition = [this.position[0], this.position[1]];
 
 	// Deal with keyboard state
@@ -342,6 +343,25 @@ Entity.prototype.Die = function(deathType, other, game)
 }
 
 
+
+Entity.prototype.Clear = function(canvas)
+{
+	if (!this.frame)
+		return;
+	var tl = canvas.LocationGLToPix(this.Left(), this.Top());
+	var w = this.frame.img.width;
+	var h = this.frame.img.height;
+	if (this.scale)
+	{
+		w = this.scale[0] * canvas.width;
+		h = this.scale[1] * canvas.height;
+	}
+	canvas.ctx.beginPath()	
+	canvas.ctx.rect(tl[0]-w, tl[1]-h, 2*w, 2*h);
+	canvas.ctx.fillStyle = canvas.fillStyle;
+	canvas.ctx.fill();
+}
+
 /**
  * Draw
  * Draws the Entity at its curnrent position.
@@ -350,6 +370,8 @@ Entity.prototype.Draw = function(canvas)
 {
 	if (!this.frame)
 		return;
+		
+
 		
 	with (canvas)
 	{
@@ -473,4 +495,11 @@ function Wall(bounds, name)
 }
 Wall.prototype = Object.create(Entity.prototype);
 
-
+function StaticEntity(position, canvas, image)
+{
+	Entity.call(this, position,[0,0],[0,0], canvas, "")
+	if (image)
+		this.frame = canvas.LoadTexture(image);
+}
+StaticEntity.prototype = Object.create(Entity);
+StaticEntity.prototype.constructor = StaticEntity;

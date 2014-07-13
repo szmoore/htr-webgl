@@ -53,7 +53,7 @@ function Game(canvas, audio, document)
 	this.audio = audio;
 	this.level = -1;
 	
-	this.levelDurations = [null, 199000];
+	this.levelDurations = [null, 198000,150000];
 	
 	this.localTime = new Date();
 	this.romanticMode = (localTime.getMonth() == 1 
@@ -63,9 +63,10 @@ function Game(canvas, audio, document)
 		this.canvas.prepareSpriteCollisions = true;
 		
 	this.gravity = [0, -1];
-	this.stepRate = 15;
+	this.stepRate = 20;
 	
 	this.timeouts = {};
+	
 	
 	
 	this.running = false;
@@ -97,9 +98,10 @@ Game.prototype.Pause = function(message,image	, colour)
 	if (typeof(image) === "undefined")
 		image = "data/rabbit/drawing2.svg";
 	if (typeof(colour) === "undefined")
-		colour = [0,0,0,0.6];
+		colour = [1,1,1,1];
 	this.canvas.SplashScreen("data/rabbit/drawing2.svg", message, colour);
 }
+
 
 Game.prototype.Resume = function()
 {
@@ -133,6 +135,7 @@ Game.prototype.Resume = function()
 			this.AddTimeout("AddCloud", function() {this.AddCloud()}.bind(this), this.stepRate*(1000 + Math.random()*2000));		
 		}
 	}
+	this.canvas.Clear(this.GetColour());
 
 }
 
@@ -182,18 +185,40 @@ Game.prototype.SetLevel = function(level)
 
 }
 
-
+Game.prototype.GetColour = function()
+{
+	if (this.romanticMode)
+		return [1,0.9,0.9,1];
+	else if (this.level == 0)
+		return [0.9,1,0.9,1];
+	else if (this.level == 1)
+		return [0.9,0.9,1,1];
+	else if (this.level == 2)
+		return [0.8,0.6,0.6,1];
+	else if (this.level == 3)
+		return [1.0,0.9,0.8,1];
+	return [1,1,1,1];
+}
 
 Game.prototype.NextLevel = function()
 {
 	this.Pause("Loading...");
 	this.SetLevel(this.level+1);
+	
+	
+	this.Clear();
 	this.Draw();
 	
 	var boss;
 	var taunt;
 	var colour;
 	var message;
+	
+	if (this.level == 0 && !confirm("Play the tutorial?"))
+	{
+		return this.NextLevel();
+	}
+	
 	switch (this.level)
 	{
 		case 0:
@@ -204,8 +229,8 @@ Game.prototype.NextLevel = function()
 			
 			break;
 		case 1:
-			this.Resume();
-			return;
+			//this.Resume();
+			//return;
 			boss = "data/fox/drawing1.svg";
 			taunt = message = "Fox Time.";
 			message = "And so our dance begins..."
@@ -233,7 +258,7 @@ Game.prototype.NextLevel = function()
 			function() {
 				this.Resume();
 				if (this.level == 0)
-					this.Tutorial(0);
+					this.Tutorial("start");
 			}.bind(this) ,2000);
 		this.Message(message, 2000);
 		
@@ -247,8 +272,8 @@ Game.prototype.AddEnemy = function()
 {
 	var enemy;
 	this.spawnedEnemies += 1;
-	if (this.level > 0 && (this.spawnedEnemies % 5) == 0 && 
-		(!this.entityCount["Fox"] || this.entityCount["Fox"] < 3+this.level))
+	if (this.level > 0 && (this.spawnedEnemies % (6-Math.min(4,this.level))) == 0 && 
+		(!this.entityCount["Fox"] || this.entityCount["Fox"] < 2+this.level))
 	{
 		enemy = new Fox([this.player.position[0], 1],[0,0], this.gravity, this.canvas)
 		
@@ -258,7 +283,7 @@ Game.prototype.AddEnemy = function()
 		enemy = new Box([this.player.position[0], 1],[0,0], this.gravity, this.canvas)
 	}
 	this.AddEntity(enemy);
-	this.AddTimeout("AddEnemy", function() {this.AddEnemy()}.bind(this), this.stepRate*600);
+	this.AddTimeout("AddEnemy", function() {this.AddEnemy()}.bind(this), this.stepRate*300/Math.min(Math.pow(this.level,0.5),1));
 }
 
 Game.prototype.AddCloud = function()
@@ -266,12 +291,12 @@ Game.prototype.AddCloud = function()
 	var x = Math.random() > 0.5 ? 1.1 : -1.1;
 	var y = 0.8*Math.random();
 	this.AddEntity(new Cloud([x, y],this.canvas));
-	this.AddTimeout("AddCloud", function() {this.AddCloud()}.bind(this), this.stepRate*(1000 + Math.random()*2000));
+	this.AddTimeout("AddCloud", function() {this.AddCloud()}.bind(this), this.stepRate*(2000 + Math.random()*3000)/Math.min(Math.pow(this.level,0.5),1));
 }
 
 Game.prototype.AddHat = function()
 {
-	var hat = new Hat([-0.8+2*Math.random(),1], [0,0], this.gravity, this.canvas);
+	var hat = new Hat([-0.8+2*Math.random(),1+0.2*Math.random()], [0,0], this.gravity, this.canvas);
 	this.AddEntity(hat); 
 
 }
@@ -323,6 +348,7 @@ Game.prototype.KeyDown = function(event)
 	}
 }
 
+
 Game.prototype.KeyUp = function(event)
 {
 	if (this.keyState[event.keyCode] !== true)
@@ -333,6 +359,40 @@ Game.prototype.KeyUp = function(event)
 	{
 		this.webSockets.send("-"+event.keyCode+"\n");
 	}	
+}
+
+
+Game.prototype.TouchDown = function(event)
+{
+	this.keyState = [];
+	//alert("TouchDown at "+String(event.clientX) +","+String(event.clientY));
+	//this.Message("TouchDown at "+String([event.clientX, event.clientY]));
+	if (event.clientX >= 2*this.canvas.width/3)
+	{
+		this.KeyDown({keyCode : 39});
+	}
+	else if (event.clientX < 1*this.canvas.width/3)
+	{
+		this.KeyDown({keyCode : 37});
+	}
+	
+	if (event.clientY < this.canvas.height/3)
+	{
+		this.KeyDown({keyCode : 38});
+	}
+	else if (event.clientY >= 2*this.canvas.height/3)
+	{
+		this.KeyDown({keyCode : 40});
+	}
+}
+
+Game.prototype.TouchUp = function(event)
+{
+	for (var k in this.keyState)
+	{
+		this.KeyUp({keyCode : k});
+	}
+	this.keyState = [];
 }
 
 Game.prototype.Step = function()
@@ -365,38 +425,49 @@ Game.prototype.Step = function()
 	this.stepCount += 1;
 }
 
-Game.prototype.Draw = function(canvas)
+Game.prototype.Clear = function(canvas)
 {
 	if (!canvas)
 		canvas = this.canvas;
+	
+	//if (canvas.gl)
+	{
+		canvas.Clear()
+		return;
+	}
+	for (var i = 0; i < this.entities.length; ++i)
+	{
+		if (this.entities[i] && this.entities[i].alive)
+			this.entities[i].Clear(canvas);
+	}
+}
 
-	var colour = [0,0,0,0]
-	if (this.romanticMode)
-		colour = [1,0.9,0.9,1];
-	else if (this.level == 0)
-		colour = [0.9,1,0.9,1];
-	else if (this.level == 1)
-		colour = [0.9,0.9,1,1];
-	else if (this.level == 2)
-		colour = [0.8,0.6,0.6,1];
-	else if (this.level == 3)
-		colour = [1.0,0.9,0.8,1];
-		
-	canvas.Clear(colour);
+Game.prototype.Draw = function(canvas)
+{
+	
+	if (this.message)
+	{
+		this.canvas.Clear(this.GetColour());
+		this.canvas.Text(this.message);
+		//this.canvas.SplashScreen(this.overlay.image, this.overlay.splashText, [0,0,0,0.1]);
+	}
+	
+	if (!canvas)
+		canvas = this.canvas;
+	
 	for (var i = 0; i < this.entities.length; ++i)
 	{
 		if (this.entities[i])
+		{
 			this.entities[i].Draw(canvas);
+		}
 	}
 	
-	if (this.overlay)
-	{
-		this.canvas.SplashScreen(this.overlay.image, this.overlay.splashText, [0,0,0,0.1]);
-	}
 }
 
 Game.prototype.MainLoop = function()
 {	
+	
 	if (!this.running)
 		return;
 		
@@ -413,12 +484,16 @@ Game.prototype.MainLoop = function()
 		this.NextLevel();
 		return;
 	}
-			
+	
 		
+			
+	this.Clear();	
 	this.Step();
 	this.Draw();
+	
 	if (!this.player.alive)
 	{
+		this.Clear();
 		this.Draw();
 		this.player.Draw(this.canvas);
 		
@@ -441,10 +516,23 @@ Game.prototype.MainLoop = function()
 	{
 		if (!this.document.runtime)
 			this.document.runtime = this.document.getElementById("runtime");
-		this.document.runtime.innerHTML = (""+this.runTime/1000).toHHMMSS();
+		if (this.document.runtime)
+			this.document.runtime.innerHTML = (""+this.runTime/1000).toHHMMSS();
 	}
 	
-	this.AddTimeout("MainLoop", function() {this.MainLoop()}.bind(this), this.stepRate, this);
+	var actualTime = 0;
+	var thisLoop = (new Date()).getTime();
+	if (this.lastLoop)
+	{
+		actualTime = thisLoop - this.lastLoop;
+	}
+	this.lastLoop = thisLoop;
+	
+	
+	var nextTime = Math.max(0, this.stepRate - actualTime);
+	this.AddTimeout("MainLoop", function() {
+		this.MainLoop()
+	}.bind(this), nextTime, this);
 		
 }
 
@@ -459,6 +547,8 @@ Game.prototype.Message = function(text, timeout)
 		return;
 	if (!this.document.message)
 		this.document.message = this.document.getElementById("message");
+	if (!this.document.message)
+		return;
 	this.document.message.innerHTML = text;
 	if (timeout)
 	{
@@ -474,6 +564,9 @@ Game.prototype.UpdateDOM = function(player)
 		
 	if (!this.document.lives)
 		this.document.lives = this.document.getElementById("lives");
+	if (!this.document.lives)
+		return;
+		
 	this.document.lives.innerHTML = player.lives;
 	if (player.lives <= 0)
 	{

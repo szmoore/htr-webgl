@@ -2,6 +2,7 @@
   <head>
     <title>Humphrey The Rabbit - WebGL Version</title>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <meta name="viewport" content="width=device-width, user-scalable=no">
     <link rel="stylesheet" href="webgl.css" type="text/css">
    
     <script src="utils.js"></script>
@@ -52,12 +53,13 @@
   </head>
   
 
-  <body onload="InitPage(); main();" onresize="InitPage();" style="-webkit-touch-callout: none !important; -webkit-user-select: none !important;">
+  <body id="body" onload="InitPage(); main();" onresize="InitPage();" style="-webkit-touch-callout: none !important; -webkit-user-select: none !important;">
 	<!-- Introduction -->
 	<audio id="theme">
 		<!--<source src="data/theme.ogg" type="audio/ogg">-->
 		<!--Your browser does not support the <code>audio</code> tag.-->
 	</audio>
+	<!--
 	<div id="infoBar" style="font-size: x-small; position: relative; width:600px; height:auto; border:0px solid black; margin:0 auto;">
 		<div style="float:left; width:20%; border:0px solid blue;">
 			<a href="about.html">[About]</a>
@@ -80,11 +82,11 @@
 		</div>
 
 		<div id="middlePanel" style="margin:0 auto; width:650px; border:0px solid blue;">
-			<!-- The canvas -->
-			<canvas id="glcanvas" width="640" height="480">
+		-->	<!-- The canvas -->
+			<canvas id="glcanvas" width="0" height="0">
 				The <code>canvas</code> tag isn't supported, <b>or</b> you have disabled scripts.
 			</canvas>
-		</div>
+		<!--</div>
 
 	</div>
 
@@ -97,19 +99,22 @@
 	</div>
 
 	<div id="spacer" style="position:relative; width:auto; height:50px; margin:0 auto; display: block;"></div>
-
+	-->
 	<!-- For touch screen devices -->
+	<!--
 	<div id="touchBar" style="position:relative; width:auto; height:auto; margin:0 auto; border:0px solid black; text-align:center; display: none;">
 		<img id="touchLeft" src="data/rabbit/left1.gif" style="width:25%">
 		<img id="touchUp" src="data/rabbit/up.gif" style="width:25%">
 		<img id="touchRight" src="data/rabbit/right1.gif" style="width:25%">
 		<img id="touchDown" src="data/rabbit/down.gif" style="width:25%">
-	</div>
+	</div> -->
 
 	<!-- Links and Info
 	<div id="statusPanel" style="overflow:hidden;">
 		<p align=center id="debug" style="font-size: small;"></p>
 		<p align=center id="runtime" style="font-size: small;"></p>
 	</div> -->
+	
+	<span id="debug" style="font-size: x-small;"></span>
   </body>
 </html>

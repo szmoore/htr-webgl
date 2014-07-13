@@ -54,13 +54,19 @@ function SpriteCollision(offset, sprite1, sprite2)
  */
 function Canvas(element)
 {
-	//try
-	//{
-	//	this.gl = element.getContext("experimental-webgl");
-	//}
-	//catch (e) 
+	// Commented out because on my testing laptop 
+	//	with the latest graphics driver update this causes X to crash
+	// *fglrx slow clap*
+	//this.gl = element.getContext("experimental-webgl");
+	this.ctx = element.getContext("2d");
+	
+	if (!this.gl && !this.ctx)
 	{
-		this.ctx = element.getContext("2d");
+		alert("Your browser does not support Humphrey The Rabbit\nTry with Firefox\n:-(");
+	}
+	else if (!this.gl)
+	{
+		alert("Your browser does not support WebGL\nThis may cause performance issues\n:-(");
 	}
 	this.width = element.width;
 	this.height = element.height;
@@ -90,6 +96,14 @@ Canvas.prototype.LocationGLToPix = function(x, y)
 	return [xx,yy];
 }
 
+Canvas.prototype.Text = function(text)
+{
+	var fontSize = 50 / (1 +Math.round(text.length/40));
+	this.ctx.font = String(fontSize)+"px Comic Sans";
+	this.ctx.fillStyle = "rgba(0,0,0,1)";
+	this.ctx.beginPath();
+	this.ctx.fillText(text,this.width/16, this.height/6, 14*this.width/16);
+}
 
 Canvas.prototype.SplashScreen = function(imagePath, text, backColour, onload)
 {
@@ -116,17 +130,14 @@ Canvas.prototype.SplashScreen = function(imagePath, text, backColour, onload)
 				for (var i = 0; i < 3; ++i) 
 					backColour[i] = Math.round(255*backColour[i]);
 				ctx.fillStyle = "rgba("+backColour+")";
-				ctx.rect(0,0,width, height);
-				ctx.fill();
+				
+				ctx.fillRect(0,0,width, height);
+				
 				if (screen.frame)
 				{
 					ctx.drawImage(screen.frame.img, width/2 - screen.frame.img.width/2, height/2 - screen.frame.img.height/2, screen.frame.img.width, screen.frame.img.height);
 				}
-					
-				var fontSize = 50 / (1 +Math.round(text.length/40));
-				ctx.font = String(fontSize)+"px Comic Sans";
-				ctx.fillStyle = "rgba(0,0,0,1)";
-				ctx.fillText(text,this.width-Math.min(this.width, fontSize*7*text.length/8), 7*height/8);
+				this.Text(text);
 			}
 		}
 		
@@ -201,7 +212,7 @@ Canvas.prototype.HandleTextureLoaded = function(texData)
 		canvas.width = w;
 		canvas.height = h;
 		var ctx = canvas.getContext("2d");
-		ctx.rect(0,0,w,h);
+		//ctx.rect(0,0,w,h);
 		ctx.drawImage(image, w/2 - image.width/2, h/2 - image.height/2, image.width, image.height);
 		texData.data = SpriteToRGBA(ctx.getImageData(0,0,w,h));
 		texData.img = canvas;
@@ -331,17 +342,19 @@ function GetShader(gl, id)
 Canvas.prototype.Clear = function(colour)
 {
 	
-	if (this.ctx) with(this.ctx)
+	if (this.gl)
 	{
-		clearRect(0,0, this.width, this.height);
-		rect(0,0,this.width, this.height);
-		for (var i = 0; i < colour.length; ++i) 
-			colour[i] = Math.round(colour[i]*255);
-		fillStyle = "rgba("+colour+")";
-		fill();		
+		this.gl.clearColor(colour[0], colour[1], colour[2], colour[3]);
 	}
-	else if (this.gl) with(this.gl)
+	else if (this.ctx)
 	{
-		clearColor(colour[0], colour[1], colour[2], colour[3]);
+		if (colour)
+		{
+			for (var i = 0; i < colour.length; ++i) 
+				colour[i] = Math.round(colour[i]*255);
+			this.fillStyle = "rgba("+colour+")";		
+		}
+		this.ctx.fillStyle = this.fillStyle;
+		this.ctx.fillRect(0,0,this.width,this.height);	
 	}
 }

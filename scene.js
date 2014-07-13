@@ -708,7 +708,14 @@ function main()
 	
 	document.onkeydown = function(event) {game.KeyDown(event)};
 	document.onkeyup = function(event) {game.KeyUp(event)};
-	game.Start(startLevel);
+	
+	
+	canvas.addEventListener("touchstart", function(event) {game.TouchDown(event.changedTouches[0])});
+	canvas.addEventListener("touchend", function(event) {game.TouchUp(event.changedTouches[0])});
+	canvas.addEventListener("touchmove", function(event) {game.TouchDown(event.changedTouches[0])});
+	
+	var s = function(startLevel) {this.AddTimeout("Start", this.Start.bind(this, startLevel),2000)}.bind(game, startLevel);
+	game.canvas.SplashScreen("data/rabbit/drawing2.svg", "Humphrey The Rabbit", [0.9,1.0,0.9,1],s);
 }
 
 function SetLives(l)

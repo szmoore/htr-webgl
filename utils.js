@@ -18,6 +18,74 @@ function Debug(html, clear)
 	}
 }
 
+function SetCookie(cname,cvalue,exdays)
+{
+	var d = new Date();
+	d.setTime(d.getTime()+(exdays*24*60*60*1000));
+	var expires = "expires="+d.toGMTString();
+	document.cookie = cname + "=" + cvalue + "; " + expires;
+}
+
+function GetCookie(cname)
+{
+	var name = cname + "=";
+	var ca = document.cookie.split(';');
+	for(var i=0; i<ca.length; i++)
+	{
+		var c = ca[i].trim();
+		if (c.indexOf(name)==0) return c.substring(name.length,c.length);
+	}
+	return "";
+}  
+
+function HttpGet(theUrl, callback)
+{
+	var xmlHttp = null;
+
+	xmlHttp = new XMLHttpRequest();
+	xmlHttp.open( "GET", theUrl, true);
+	xmlHttp.send( null );
+	xmlHttp.onreadystatechange = function() {
+		if (xmlHttp.readyState == 4 && xmlHttp.status == 200)
+		{
+			callback(xmlHttp.responseText);
+		}
+	}
+}
+
+function HttpPost(theUrl, callback, post)
+{
+	// Send results to the stat collecting script
+	var xmlhttp = new XMLHttpRequest(); // IE<7 won't WebGL anyway, screw compatibility
+		
+	xmlhttp.onreadystatechange = function() {
+		// Don't really need to do anything.
+	};
+	var request = "";
+	for (var p in post)
+	{
+		if (request) request += "&";
+		request += String(p) + "="+String(post[p]);
+	}
+	xmlhttp.open("POST", theUrl, true); //POST just because its BIG
+	xmlhttp.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
+	xmlhttp.setRequestHeader("Content-length", request.length);
+	xmlhttp.setRequestHeader("Connection", "close");
+	xmlhttp.send(request);		
+}
+
+
+// Hacks to stop Android from breaking with long clicks
+// http://stackoverflow.com/questions/3413683/disabling-the-context-menu-on-long-taps-on-android
+function absorbEvent_(event)
+{
+	var e = event || window.event;
+	e.preventDefault && e.preventDefault();
+	e.stopPropagation && e.stopPropagation();
+	e.cancelBubble = true;
+	e.returnValue = false;
+	return false;
+}
 
  // Le sigh date formatting
 String.prototype.toHHMMSS = function () 
