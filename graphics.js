@@ -119,14 +119,14 @@ Canvas.prototype.SplashScreen = function(imagePath, text, backColour, onload)
 		{
 			if (cancelSplash)
 				return;
-			if (gl)
+			if (this.gl)
 			{
-				gl.clearColor(background[0], background[1], background[2], background[3]);
-				gl.clear(gl.COLOR_BUFFER_BIT);
-				gl.uniform4f(uColour,1,1,1,1); 
+				this.gl.clearColor(background[0], background[1], background[2], background[3]);
+				this.gl.clear(gl.COLOR_BUFFER_BIT);
+				this.gl.uniform4f(uColour,1,1,1,1); 
 				//gl.uniform4f(uColour, blend[0], blend[1], blend[2], blend[3]);
 				screen.Draw();
-				gl.uniform4f(uColour,1,1,1,1); 
+				this.gl.uniform4f(uColour,1,1,1,1); 
 			}
 			else if (ctx)
 			{

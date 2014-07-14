@@ -58,8 +58,6 @@ function Game(canvas, audio, document)
 	this.levelDurations = [null, 198000,150000,210000];
 	
 	this.localTime = new Date();
-	this.romanticMode = (localTime.getMonth() == 1 
-		&& localTime.getDate() == 14);
 	this.canvas = new Canvas(canvas);
 	if (this.spriteCollisions)
 		this.canvas.prepareSpriteCollisions = true;
@@ -308,7 +306,7 @@ Game.prototype.NextLevel = function(skipAd)
 	
 	
 	this.canvas.SplashScreen(boss, taunt, colour, function() {
-		this.AddTimeout("Level"+String(level),
+		this.AddTimeout("Level"+String(this.level),
 			function() {
 				this.Resume();
 				if (this.level == 0)

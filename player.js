@@ -235,7 +235,7 @@ Hat.prototype.CollisionActions = {};
 Hat.prototype.CollisionActions["Humphrey"] = function(other, instigator, game)
 {
 	other.GainLife(this, game);
-	game.UpdateDOM(player);
+	game.UpdateDOM(other);
 	this.Die(other.GetName(), other, game);
 }
 

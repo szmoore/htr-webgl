@@ -374,7 +374,7 @@ Entity.prototype.Draw = function(canvas)
 		
 	with (canvas)
 	{
-		if (!gl)
+		if (!this.gl)
 		{
 			if (!ctx) return;
 		
