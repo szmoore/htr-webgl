@@ -37,9 +37,9 @@ function main()
 	canvas.addEventListener("touchenter", function(event) {game.TouchDown(event.changedTouches[0])});
 	canvas.addEventListener("touchend", function(event) {game.TouchUp(event.changedTouches[0])});
 	canvas.addEventListener("touchleave", function(event) {game.TouchUp(event.changedTouches[0])});
-	//canvas.addEventListener("mousedown", function(event) {game.TouchDown(event)});
-	//canvas.addEventListener("mousemove", function(event) {game.TouchDown(event)});
-	//canvas.addEventListener("mouseup", function(event) {game.TouchUp(event)});
+	canvas.addEventListener("mousedown", function(event) {game.MouseDown(event)});
+	canvas.addEventListener("mousemove", function(event) {game.MouseMove(event)});
+	canvas.addEventListener("mouseup", function(event) {game.MouseUp(event)});
 	
 	game.splashPerformance = (new Date()).getTime();
 	var s = function(startLevel) {

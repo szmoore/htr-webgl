@@ -477,6 +477,28 @@ Game.prototype.TouchUp = function(event)
 	this.keyState = [];
 }
 
+Game.prototype.MouseDown = function(event)
+{
+	this.mouseDown = true;
+	this.TouchDown(event);
+}
+
+
+Game.prototype.MouseUp = function(event)
+{
+	if (this.mouseDown)
+	{
+		this.mouseDown = false;
+		this.TouchUp(event);
+	}
+}
+
+Game.prototype.MouseMove = function(event)
+{
+	if (this.mouseDown)
+		this.TouchDown(event);
+}
+
 Game.prototype.ClearStepAndDraw = function()
 {
 

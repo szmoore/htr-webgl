@@ -19,6 +19,12 @@ Game.prototype.tutorial = {
 		this.tutorialTimeout = 2000;
 	},
 	
+	"move3" : function() {
+		this.message = "Mouse: Hold down and move";
+		this.tutorialState = "climb";
+		this.tutorialTimeout = 2000;
+	},
+	
 	"climb" : function () {
 		this.message = "Try climbing the walls";
 		this.tutorialState = "hat1";

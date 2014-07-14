@@ -24,16 +24,16 @@
      borderopacity="1.0"
      inkscape:pageopacity="0.0"
      inkscape:pageshadow="2"
-     inkscape:zoom="0.7"
-     inkscape:cx="232.49368"
-     inkscape:cy="242.0054"
+     inkscape:zoom="1.4"
+     inkscape:cx="192.22071"
+     inkscape:cy="170.31013"
      inkscape:document-units="px"
      inkscape:current-layer="layer1"
      showgrid="false"
-     inkscape:window-width="1366"
-     inkscape:window-height="692"
+     inkscape:window-width="1024"
+     inkscape:window-height="702"
      inkscape:window-x="0"
-     inkscape:window-y="24"
+     inkscape:window-y="27"
      inkscape:window-maximized="1" />
   <metadata
      id="metadata7">
@@ -130,19 +130,19 @@
     <text
        xml:space="preserve"
        style="font-size:15.0031929px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:center;line-height:125%;letter-spacing:0px;word-spacing:0px;text-anchor:middle;fill:#000000;fill-opacity:1;stroke:none;font-family:ComicSans;-inkscape-font-specification:ComicSans"
-       x="153.73097"
-       y="929.94006"
+       x="158.25859"
+       y="942.78644"
        id="text3767"
        sodipodi:linespacing="125%"
        transform="scale(0.94657108,1.0564447)"><tspan
          sodipodi:role="line"
-         x="156.33894"
-         y="929.94006"
+         x="160.86656"
+         y="942.78644"
          id="tspan3771"
          style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-family:DejaVu Sans;-inkscape-font-specification:DejaVu Sans Bold">&quot;fglrx: Because segmentation faults </tspan><tspan
          sodipodi:role="line"
-         x="153.73097"
-         y="948.69403"
+         x="158.25859"
+         y="961.54041"
          id="tspan3775"
          style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-family:DejaVu Sans;-inkscape-font-specification:DejaVu Sans Bold">keep your memory cleaner!&quot;</tspan></text>
     <text
@@ -163,5 +163,17 @@
        height="98.72863"
        x="25.635689"
        y="817.99792" />
+    <text
+       xml:space="preserve"
+       style="font-size:40px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Courier;-inkscape-font-specification:Courier"
+       x="17.857149"
+       y="961.64795"
+       id="text3896"
+       sodipodi:linespacing="125%"><tspan
+         sodipodi:role="line"
+         id="tspan3898"
+         x="17.857149"
+         y="961.64795"
+         style="font-size:12px">cat /dev/random &gt; /usr/lib/libGL.so</tspan></text>
   </g>
 </svg>
