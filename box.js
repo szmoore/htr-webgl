@@ -21,6 +21,11 @@ Box.prototype.constructor = Box;
 
 Box.prototype.Step = function(game)
 {
+	if (this.position[1] > 0.9)
+		this.acceleration = [0.5*game.gravity[0], 0.5*game.gravity[1]];
+	else
+		this.acceleration = game.gravity;
+		
 	if (this.health < 1)
 		this.frame = this.damagedFrame; 
 	Entity.prototype.Step.call(this, game);

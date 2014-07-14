@@ -12,8 +12,6 @@ function Player(position, velocity, acceleration, canvas, spritePath)
 	this.spawn = [];
 	for (var i = 0; i < position.length; ++i)
 		this.spawn[i] = position[i];
-	this.shield = false;
-	
 }
 Player.prototype = Object.create(Entity.prototype);
 Player.prototype.constructor = Player;
@@ -43,6 +41,16 @@ Player.prototype.HandleKeys = function(keys)
 		this.velocity[1] -= this.stomp;
 }
 
+Player.prototype.Step = function(game)
+{
+	Entity.prototype.Step.call(this,game);
+	if (this.shield && !this.shield.alive)
+	{
+		delete this.shield;
+		delete this.hat;
+	}
+}
+
 Player.prototype.Die = function(deathType, other, game)
 {
 	if (this.shield)
@@ -61,13 +69,9 @@ Player.prototype.Die = function(deathType, other, game)
 	{
 		for (var i = 0; i < this.position.length; ++i)
 			this.position[i] = this.spawn[i];
-			
-		this.shield = true;
-		game.AddTimeout("shieldExpire",function() {
-				this.shield = false}.bind(this), 1000);
+		this.AddShield(game);
 		game.UpdateDOM(this);
 	}
-
 }
 
 
@@ -79,7 +83,7 @@ Player.prototype.CollisionActions["Box"] = function(other, instigator, game)
 	if (!instigator)
 	{
 		if (other.MovingTowards(this) && other.Above(this) 
-		&& Math.abs(other.velocity[1] - this.velocity[1]) > 0.2 && other.velocity[1] < 0.4)
+		&& Math.abs(other.velocity[1] - this.velocity[1]) > 0.2 && other.velocity[1] < -0.4)
 		{
 			this.Die(other.GetName(), other, game);
 		}
@@ -92,6 +96,7 @@ Player.prototype.CollisionActions["Box"] = function(other, instigator, game)
 		return true;
 	}
 	
+	
 	if (this.Bottom() < other.Top())
 	{
 		other.velocity[0] = this.velocity[0]/2;
@@ -100,6 +105,8 @@ Player.prototype.CollisionActions["Box"] = function(other, instigator, game)
 		return false;
 	}
 }
+
+
 
 Player.prototype.IsStomping = function(other)
 {
@@ -114,9 +121,31 @@ Player.prototype.CollisionActions["Fox"] = function(other, instigator, game)
 	if (instigator && this.IsStomping(other))
 	{
 		other.sleep = Math.random() * Math.abs(this.velocity[1] - other.velocity[1]) * 5;
+		other.velocity[0] /= 2;
+	}
+	else if (instigator && other.sleep)
+	{
+		Player.prototype.CollisionActions["Box"].call(this,other,instigator,game);
 	}
 }
 
+Player.prototype.CollisionActions["Wolf"] = function(other, instigator, game)
+{
+	if (instigator && this.IsStomping(other))
+	{
+		if (other.health <= 1)
+		{
+			other.sleep = Math.random() * Math.abs(this.velocity[1] - other.velocity[1]) * 5;
+			other.velocity[0] /= 2;
+		}
+		else
+			other.health -= 1;
+	}
+	else if (instigator && other.sleep)
+	{
+		Player.prototype.CollisionActions["Box"].call(this,other,instigator,game);
+	}
+}
 
 Player.prototype.DeathScene = function(game, onload)
 {
@@ -140,36 +169,52 @@ Player.prototype.DeathScene = function(game, onload)
 			game.Message("You got Stabbed!");
 			colour = [1,0,0,0.8];
 			break;
+		case "Wolf":
+			image = "data/wolf/drawing1.svg";
+			text = "MAUL!";
+			game.Message("You got Mauled!");
+			colour = [1,0,0,0.8];
+			break;
 	}
 	game.canvas.SplashScreen(image, text, colour, onload);
 }
 
 Player.prototype.Draw = function(canvas)
 {
-	var result = Entity.prototype.Draw.call(this,canvas);
+	Entity.prototype.Draw.call(this, canvas);
+	
+	// hack to get shield to always appear on top of player
 	if (this.shield)
 	{
-		var f = this.frame;
-		this.frame = canvas.LoadTexture("data/sfx/shield1.png");
-		result = Entity.prototype.Draw.call(this,canvas);
-		this.frame = canvas.LoadTexture("data/hats/hat1_big.gif");
-		this.position[1] += this.Height();
-		result = Entity.prototype.Draw.call(this,canvas);
-		this.position[1] -= this.Height();
-		this.frame = f;
-		
+		this.shield.Draw(canvas);
 	}
-	return result;
+
 }
+
+/**
+ * Hacky way to add shield special effects
+ */
+Player.prototype.AddShield = function(game)
+{
+	if (this.shield && this.shield.alive)
+		this.shield.Die();
+	if (this.hat && this.hat.alive)
+		this.hat.Die();
+		
+	this.shield = new SFXEntity(this, 1000/game.stepRate, ["data/sfx/shield1.png"], game.canvas, [0,0]);
+	this.hat = new SFXEntity(this, 1000/game.stepRate, ["data/hats/hat1_big.gif"], game.canvas, [0,this.Height()]);
+	game.AddEntity(this.shield);
+	game.AddEntity(this.hat);
+}
+
 
 Player.prototype.GainLife = function(life, game)
 {
 	this.lives++;
-	this.shield = true;
-	game.AddTimeout("shieldExpire", function() {
-			this.shield = false}.bind(this), 1000,game);
+	this.AddShield(game);
 	game.UpdateDOM(this);	
 }
+
 
 
 function Hat(position, velocity, acceleration, canvas, game)
@@ -178,7 +223,7 @@ function Hat(position, velocity, acceleration, canvas, game)
 	this.frame = canvas.LoadTexture("data/hats/hat1_big.gif");
 	this.name = "Hat";
 	this.ignoreCollisions["Roof"] = true;
-	this.ignoreCollisions["Hat"] = true;
+	this.ignoreCollisions["Cloud"] = true;
 	if (game)
 		game.Message("Get the hat!");
 }
@@ -186,15 +231,26 @@ Hat.prototype = Object.create(Entity.prototype);
 Hat.prototype.constructor = Hat;
 Hat.prototype.CollisionActions = {};
 
+
 Hat.prototype.CollisionActions["Humphrey"] = function(other, instigator, game)
 {
 	other.GainLife(this, game);
 	game.UpdateDOM(player);
+	this.Die(other.GetName(), other, game);
+}
+
+Hat.prototype.CollisionActions["Hat"] = function(other,instigator, game)
+{
+	if (instigator)
+	{
+		this.position[0] = other.position[0] - 1.2*this.Width();
+	}
 }
 
 Hat.prototype.HandleCollision = function(other, instigator, game)
 {
 	Entity.prototype.HandleCollision.call(this, other, instigator, game);
-	this.Die(this.GetName(), this, game);
+	if (other.GetName() === "Floor")
+		this.Die(this.GetName(), this, game);
 }
 

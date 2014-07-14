@@ -52,8 +52,10 @@ function Game(canvas, audio, document)
 	this.document = document;
 	this.audio = audio;
 	this.level = -1;
+	this.enableAdverts = true;
+	this.ChooseAdvert();
 	
-	this.levelDurations = [null, 198000,150000];
+	this.levelDurations = [null, 198000,150000,210000];
 	
 	this.localTime = new Date();
 	this.romanticMode = (localTime.getMonth() == 1 
@@ -99,7 +101,7 @@ Game.prototype.Pause = function(message,image	, colour)
 		image = "data/rabbit/drawing2.svg";
 	if (typeof(colour) === "undefined")
 		colour = [1,1,1,1];
-	this.canvas.SplashScreen("data/rabbit/drawing2.svg", message, colour);
+	this.canvas.SplashScreen(image, message, colour);
 }
 
 
@@ -107,6 +109,8 @@ Game.prototype.Resume = function()
 {
 	if (this.running)
 		return;
+		
+	this.canvas.cancelSplash = true;
 		
 	this.UpdateDOM(this.player);
 	
@@ -132,7 +136,15 @@ Game.prototype.Resume = function()
 		
 		if (typeof(this.timeouts["AddCloud"]) === "undefined")
 		{
-			this.AddTimeout("AddCloud", function() {this.AddCloud()}.bind(this), this.stepRate*(1000 + Math.random()*2000));		
+			this.AddTimeout("AddCloud", function() {this.AddCloud()}.bind(this), this.stepRate*(1000 + Math.random()*2000));	
+			
+		}
+		
+		
+		if (!this.running) 
+		{
+			this.timeouts["AddCloud"].Pause();	
+			this.timeouts["AddEnemy"].Pause();
 		}
 	}
 	this.canvas.Clear(this.GetColour());
@@ -147,7 +159,7 @@ Game.prototype.Start = function(level)
 
 Game.prototype.SetLevel = function(level)
 {
-	this.level = level;
+	this.level = Math.min(level,3);
 		
 	this.spawnedEnemies = 0;
 		
@@ -172,7 +184,7 @@ Game.prototype.SetLevel = function(level)
 
 	// Add the walls
 	this.AddEntity(new Wall({min: [-Infinity,-Infinity], max:[Infinity, -1]}, "Floor")); // bottom
-	//this.AddEntity(new Wall({min: [-Infinity,0.8], max:[Infinity,Infinity]}, "Roof")); // top
+	this.AddEntity(new Wall({min: [-Infinity,0.8], max:[Infinity,Infinity]}, "Roof")); // top
 	this.AddEntity(new Wall({min: [-Infinity,-Infinity], max:[-1, Infinity]})); // left 
 	this.AddEntity(new Wall({min: [1,-Infinity], max:[Infinity, Infinity]})); // right
 	
@@ -181,8 +193,20 @@ Game.prototype.SetLevel = function(level)
 	this.AddEntity(this.player);
 	
 
-	
+	// level specific
+	for (var i = 0; i < this.level*2; ++i)
+		this.AddHat();
+		
+		
+	for (var i = 0; i < this.level-1; ++i)
+	{
+		if (i % 2 == 1)
+			this.AddEntity(new Wolf([1,1],[0,0],this.gravity,this.canvas));
+		else
+			this.AddEntity(new Ox([-1,1],[0,0],this.gravity,this.canvas));
+	}
 
+	
 }
 
 Game.prototype.GetColour = function()
@@ -200,9 +224,35 @@ Game.prototype.GetColour = function()
 	return [1,1,1,1];
 }
 
-Game.prototype.NextLevel = function()
+Game.prototype.ChooseAdvert = function(trial)
+{
+	if (!this.advertChoices)
+	{
+		if (trial)
+			return;
+			
+		//JSON.parse is more "secure"... but also buggy compared to eval
+		// (Doing annoying things on the server side to make it work)
+		HttpGet("data/adverts", function(response) {
+			this.advertChoices = JSON.parse(response);
+			this.ChooseAdvert(true);
+		}.bind(this));
+		return;
+	}
+	return "data/adverts/"+String(this.advertChoices[Math.round(Math.random()*(this.advertChoices.length-1))]);
+	
+}
+
+Game.prototype.NextLevel = function(skipAd)
 {
 	this.Pause("Loading...");
+	if (this.enableAdverts && !skipAd)
+	{
+		this.canvas.SplashScreen(this.ChooseAdvert(), "",[1,1,1,1], function() {
+			this.AddTimeout("Advert", this.NextLevel.bind(this,true), 4000);
+		}.bind(this));
+		return;
+	}
 	this.SetLevel(this.level+1);
 	
 	
@@ -235,20 +285,24 @@ Game.prototype.NextLevel = function()
 			taunt = message = "Fox Time.";
 			message = "And so our dance begins..."
 			colour = [0.9,0.5,0.5,1];
-			this.AddHat();
 			break;
 		case 2:
 			boss = "data/ox/drawing1.svg";
 			taunt = message = "Ox Time.";
 			message = "The plot thickens...";
 			colour = [0.9,0.5,0.5,1];
-			this.AddHat(); this.AddHat();
 			break;
 		case 3:
 			boss = "data/wolf/drawing1.svg";
-			taunt = "<Placeholder Boss> Time. ";
+			taunt = "Wolf(?) Time.";
 			message = "It's a wolf. Honest.";
 			colour = [0.9,0.5,0.5,1];
+			break;
+		default:
+			alert("Congratulations on beating level 3. There are no more levels. Yet. Starting again.");
+			this.level = -1;
+			this.NextLevel();
+			return;
 			break;
 	}
 	
@@ -270,6 +324,7 @@ Game.prototype.NextLevel = function()
 
 Game.prototype.AddEnemy = function()
 {
+	
 	var enemy;
 	this.spawnedEnemies += 1;
 	if (this.level > 0 && (this.spawnedEnemies % (6-Math.min(4,this.level))) == 0 && 
@@ -282,8 +337,16 @@ Game.prototype.AddEnemy = function()
 	{
 		enemy = new Box([this.player.position[0], 1],[0,0], this.gravity, this.canvas)
 	}
+	
+	if (this.spawnedEnemies % 10 == 0)
+	{
+		this.AddHat();
+	}
+		
 	this.AddEntity(enemy);
 	this.AddTimeout("AddEnemy", function() {this.AddEnemy()}.bind(this), this.stepRate*300/Math.min(Math.pow(this.level,0.5),1));
+	if (!this.running)
+		this.timeouts["AddEnemy"].Pause();
 }
 
 Game.prototype.AddCloud = function()
@@ -291,12 +354,15 @@ Game.prototype.AddCloud = function()
 	var x = Math.random() > 0.5 ? 1.1 : -1.1;
 	var y = 0.8*Math.random();
 	this.AddEntity(new Cloud([x, y],this.canvas));
-	this.AddTimeout("AddCloud", function() {this.AddCloud()}.bind(this), this.stepRate*(2000 + Math.random()*3000)/Math.min(Math.pow(this.level,0.5),1));
+	this.AddTimeout("AddCloud", function() {this.AddCloud()}.bind(this), this.stepRate*(4000 + Math.random()*6000)/Math.min(Math.pow(this.level,0.5),1));
+	
+	if (!this.running)
+		this.timeouts["AddCloud"].Pause();
 }
 
 Game.prototype.AddHat = function()
 {
-	var hat = new Hat([-0.8+2*Math.random(),1+0.2*Math.random()], [0,0], this.gravity, this.canvas);
+	var hat = new Hat([this.player.position[0], 1], [0,0], [0.8*this.gravity[0], 0.8*this.gravity[1]], this.canvas);
 	this.AddEntity(hat); 
 
 }
@@ -325,6 +391,9 @@ Game.prototype.AddEntity = function(entity)
 
 Game.prototype.KeyDown = function(event)
 {
+	if (!this.keyState)
+		this.keyState = [];
+		
 	if (this.keyState[event.keyCode] === true) 
 		return;
 	this.keyState[event.keyCode] = true; 
@@ -342,6 +411,9 @@ Game.prototype.KeyDown = function(event)
 			this.Message("");
 		}
 	}
+	if (!this.webSockets)
+		return;
+	
 	for (var i = 0; i < this.webSockets.length; ++i)
 	{
 		this.webSockets.send("+"+event.keyCode+"\n");
@@ -351,10 +423,15 @@ Game.prototype.KeyDown = function(event)
 
 Game.prototype.KeyUp = function(event)
 {
+	if (!this.keyState)
+		this.keyState = [];
+	
 	if (this.keyState[event.keyCode] !== true)
 		return;
 		
 	this.keyState[event.keyCode] = false;
+	if (!this.webSockets)
+		return;
 	for (var i = 0; i < this.webSockets.length; ++i)
 	{
 		this.webSockets.send("-"+event.keyCode+"\n");
@@ -365,22 +442,27 @@ Game.prototype.KeyUp = function(event)
 Game.prototype.TouchDown = function(event)
 {
 	this.keyState = [];
+	if (!this.player || !this.canvas)
+		return;
 	//alert("TouchDown at "+String(event.clientX) +","+String(event.clientY));
-	//this.Message("TouchDown at "+String([event.clientX, event.clientY]));
-	if (event.clientX >= 2*this.canvas.width/3)
+	var delx = ((2*event.clientX/this.canvas.width)-1) - this.player.position[0];
+	var dely = (1-2*(event.clientY/this.canvas.height)) - this.player.position[1];
+	// note y coordinate positive direction is reversed in GL (game) coords vs canvas coords
+	//this.Message("TouchDown "+String(delx)+","+String(dely));
+	if (delx >= 2*this.player.Width() || event.clientX > 0.8*this.canvas.width)
 	{
 		this.KeyDown({keyCode : 39});
 	}
-	else if (event.clientX < 1*this.canvas.width/3)
+	else if (delx <= -1.5*this.player.Width() || event.clientX < 0.2*this.canvas.width)
 	{
 		this.KeyDown({keyCode : 37});
 	}
 	
-	if (event.clientY < this.canvas.height/3)
+	if (dely >= 3*this.player.Height() || event.clientY < 0.2*this.canvas.height)
 	{
 		this.KeyDown({keyCode : 38});
 	}
-	else if (event.clientY >= 2*this.canvas.height/3)
+	else if (dely <= -3*this.player.Height() || event.clientY > 0.8*this.canvas.height)
 	{
 		this.KeyDown({keyCode : 40});
 	}
@@ -388,6 +470,8 @@ Game.prototype.TouchDown = function(event)
 
 Game.prototype.TouchUp = function(event)
 {
+	//this.Message("TouchUp at "+String([event.clientX, event.clientY]));
+	
 	for (var k in this.keyState)
 	{
 		this.KeyUp({keyCode : k});
@@ -395,8 +479,9 @@ Game.prototype.TouchUp = function(event)
 	this.keyState = [];
 }
 
-Game.prototype.Step = function()
+Game.prototype.ClearStepAndDraw = function()
 {
+
 
 	this.lastStepTime = this.stepTime;
 	this.stepTime = (new Date()).getTime();
@@ -408,19 +493,32 @@ Game.prototype.Step = function()
 	{
 		this.runTime += this.stepTime - this.lastStepTime;
 	}
+
+	this.canvas.Clear(this.GetColour());
+		
+	if (this.message)
+	{
+		this.canvas.Text(this.message);	
+	}
+
 	
 	for (var i = this.entities.length; i >= 0; --i)
 	{
 		if (this.entities[i])
 		{
+			 // noticably faster on smartphone, but obviously causes issues with overlapping objects :(
+			//this.entities[i].Clear(this.canvas);
 			this.entities[i].Step(this);
+			this.entities[i].Draw(this.canvas);
 			if (!this.entities[i].alive)
 			{
+				this.entities[i].Clear(this.canvas);
 				this.entityCount[this.entities[i].GetName()] -= 1;
 				delete this.entities[i];
 			}
 		}
 	}
+	
 	
 	this.stepCount += 1;
 }
@@ -442,7 +540,7 @@ Game.prototype.Clear = function(canvas)
 	}
 }
 
-Game.prototype.Draw = function(canvas)
+Game.prototype.Draw = function()
 {
 	
 	if (this.message)
@@ -451,17 +549,16 @@ Game.prototype.Draw = function(canvas)
 		this.canvas.Text(this.message);
 		//this.canvas.SplashScreen(this.overlay.image, this.overlay.splashText, [0,0,0,0.1]);
 	}
-	
-	if (!canvas)
-		canvas = this.canvas;
-	
+		
+	/*
 	for (var i = 0; i < this.entities.length; ++i)
 	{
 		if (this.entities[i])
 		{
-			this.entities[i].Draw(canvas);
+			this.entities[i].Draw(this.canvas);
 		}
 	}
+	*/
 	
 }
 
@@ -487,11 +584,9 @@ Game.prototype.MainLoop = function()
 	
 		
 			
-	this.Clear();	
-	this.Step();
-	this.Draw();
+	this.ClearStepAndDraw();
 	
-	if (!this.player.alive)
+	if (this.player && !this.player.alive)
 	{
 		this.Clear();
 		this.Draw();
@@ -508,7 +603,16 @@ Game.prototype.MainLoop = function()
 		this.runTime = 0;
 		delete this.stepTime;
 		this.SetLevel(this.level);
-		this.AddTimeout("Restart", function() {this.Resume()}.bind(this), 2000);
+		if (!this.enableAdverts)
+			this.AddTimeout("Restart", function() {this.Resume()}.bind(this), 1000);
+		else
+		{
+			this.AddTimeout("Advert", function() {
+				this.canvas.SplashScreen(this.ChooseAdvert(), "",[1,1,1,1], function() {
+					this.AddTimeout("Restart", this.Resume.bind(this), 4000);
+				}.bind(this));
+			}.bind(this), 1000);
+		}
 		return;
 	}
 	

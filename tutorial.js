@@ -3,12 +3,26 @@
 Game.prototype.tutorial = {
 	"start" : function () {
 		this.message = "Move around";
+		this.tutorialState = "move1";
+		this.tutorialTimeout = 2000;
+	},
+	
+	"move1" : function() {
+		this.message = "Touch: Humphrey moves towards finger"
+		this.tutorialState = "move2";
+		this.tutorialTimeout = 2000;
+	},
+	
+	"move2" : function() {
+		this.message = "Keyboard: W,S,A,D or Arrow keys"
 		this.tutorialState = "climb";
+		this.tutorialTimeout = 2000;
 	},
 	
 	"climb" : function () {
-		this.message = "Climb the walls";
+		this.message = "Try climbing the walls";
 		this.tutorialState = "hat1";
+		this.tutorialTimeout = 8000;
 	},
 	
 	"hat1" : function () {
@@ -19,6 +33,13 @@ Game.prototype.tutorial = {
 	},
 	
 	"hat2" : function() {
+		
+		if (this.player.lives > 0)
+		{
+			this.message = "Quick thinking!";
+			this.tutorialState = "box1";
+			return;
+		}
 		this.tutorial.hat.acceleration = this.gravity;
 		this.tutorial.hat.position = [0,0.25];
 		this.tutorial.hat.velocity = [0,0];
@@ -62,6 +83,8 @@ Game.prototype.tutorial = {
 		else
 		{
 			this.message = "You're going to need more lives for the next bit...";
+			for (var i = 0; i < 4; ++i)
+				this.AddHat();
 		}
 		this.player.lives = 999;
 		this.tutorialState = "cloud1";
@@ -83,14 +106,20 @@ Game.prototype.tutorial = {
 	},
 	
 	"cloud3" : function() {
-		if (this.player.position[1] < this.tutorial.cloud.position[1])
+		this.message = "You can move through it"
+		this.tutorialState = "cloud4";
+	},
+	
+	"cloud4" : function() {
+		if (this.player.position[1] < this.tutorial.cloud.position[1]-this.player.Height()/2)
 		{
 			this.message = "Stand on the cloud";
-			this.tutorialState = "cloud3";
+			this.tutorialState = "cloud4";
+			this.tutorialTimeout = 1000;
 		}
 		else
 		{
-			this.message = "2.4KB of \"Big Data\"";
+			this.message = "2.4KB of Big Data";
 			this.tutorialState = "fox1";
 		}
 		
@@ -133,7 +162,17 @@ Game.prototype.tutorial = {
 			return;
 		}
 		this.message = "Hit her as she is falling";
-		this.tutorialState = "fox4";
+		this.tutorialState = "fox4.5";
+	},
+	
+	"fox4.5" : function() {
+		if (!this.tutorial.fox || !this.tutorial.fox.alive || this.tutorial.fox.sleep)
+		{
+			this.tutorial["fox5"].call(this);
+			return;
+		}
+		this.message = "Try gaining some height";
+		this.tutorialState = "fox4.5";		
 	},
 	
 	"fox5" : function() {
@@ -294,6 +333,11 @@ Game.prototype.tutorial = {
 	
 	"done" : function() {
 		this.message = "CONGRATULATIONS!";
+		this.tutorialState = "done2";
+	},
+	
+	"done2" : function() {
+		this.message = "Warning: Stomping / Squishing will not work on all enemies.";
 		this.tutorialState = "realworld1";
 	},
 	

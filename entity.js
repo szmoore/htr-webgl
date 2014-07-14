@@ -28,6 +28,7 @@ function Entity(position, velocity, acceleration, canvas, spritePath)
 	
 	this.frameRate = 3; // magic frame rate number
 	this.frameNumber = 0;
+	this.solid = true;
 		
 	if (canvas)
 	{
@@ -157,7 +158,7 @@ Entity.prototype.Step = function(game)
 				// Binary search to location of collision
 				var upper = this.position[i];
 				var lower = this.lastPosition[i]; 
-				while (Math.abs(upper-lower) > 1e-4)
+				while (Math.abs(upper-lower) > 1e-3)
 				{
 					this.position[i] = (upper + lower)/2; 
 					if (this.Collides(collide))
@@ -169,19 +170,17 @@ Entity.prototype.Step = function(game)
 
 
 				// Last resort?
-				
-				if (this.Collides(collide))
-				{
-					this.position[0] = this.lastPosition[0];
-					this.position[1] = this.lastPosition[1];
-					//if (this.position[i] > collide.position[i] || Math.abs(collide.Dimension(i)) == Infinity)
-					//	this.position[i] = collide.position[i] + 1.1*this.Dimension(i);
-					//else if (this.position[i] <= collide.position[i])
-					//	this.position[i] = collide.position[i] - 0.1*collide.Dimension(i);
-				}
-				
 				if (this.HandleCollision(collide, true, game))
+				{
+					if (this.Collides(collide))
+					{
+						if (collide.position[0] > this.position[0] || Math.abs(collide.Width()) == Infinity)
+							this.position[0] = collide.position[0] - 1.2*this.Width();
+						else
+							this.position[0] = collide.position[0] + 1.2*collide.Width();
+					}
 					this.velocity[i] = 0;
+				}
 
 					
 				
@@ -254,8 +253,8 @@ Entity.prototype.Collision = function(game)
 Entity.prototype.Collides = function(other)
 {
 	if (!other.bounds || !this.bounds) return;
-
-
+	if (!other.solid || !this.solid) return;
+	
 	var A = this.GetBoundBox();
 	var B = other.GetBoundBox();
 
@@ -357,7 +356,7 @@ Entity.prototype.Clear = function(canvas)
 		h = this.scale[1] * canvas.height;
 	}
 	canvas.ctx.beginPath()	
-	canvas.ctx.rect(tl[0]-w, tl[1]-h, 2*w, 2*h);
+	canvas.ctx.rect(tl[0], tl[1], w, h);
 	canvas.ctx.fillStyle = canvas.fillStyle;
 	canvas.ctx.fill();
 }
@@ -501,5 +500,34 @@ function StaticEntity(position, canvas, image)
 	if (image)
 		this.frame = canvas.LoadTexture(image);
 }
-StaticEntity.prototype = Object.create(Entity);
+StaticEntity.prototype = Object.create(Entity.prototype);
 StaticEntity.prototype.constructor = StaticEntity;
+
+/**
+ * Special Effects Entity class
+ */
+
+function SFXEntity(parent, life, images, canvas, offset)
+{
+	Entity.call(this, [parent.position[0], parent.position[1]], [0,0],[0,0], canvas, "");
+	this.parent = parent;
+	this.offset = (!offset) ? [0,0] : offset;
+	this.frames = [];
+	for (var i = 0; i < images.length; ++i)
+		this.frames[i] = canvas.LoadTexture(images[i]);
+	this.solid = false;
+	this.life = life;
+	this.name = "SFX";
+}
+SFXEntity.prototype = Object.create(Entity.prototype);
+SFXEntity.prototype.constructor = SFXEntity;
+SFXEntity.prototype.Step = function(game) {
+	if (this.life-- <= 0)
+		this.Die();
+	
+	for (var i = 0; i < this.position.length; ++i)
+		this.position[i] = this.parent.position[i]+this.offset[i];
+		
+	Entity.prototype.Step.call(this,game);
+	
+}

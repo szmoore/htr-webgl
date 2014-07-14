@@ -11,6 +11,10 @@ function Enemy(position, velocity, acceleration, canvas, spritePath)
 	this.jumpSpeed = 0.9;
 	this.name = "Enemy";
 	this.ignoreCollisions["Roof"] = true;
+	
+	this.chaseWidths = 15;
+	this.danceWidths = 1.5;
+	this.jumpWidths = 15;
 }
 Enemy.prototype = Object.create(Entity.prototype);
 Enemy.prototype.constructor = Enemy;
@@ -36,6 +40,10 @@ Enemy.prototype.Step = function(game)
 	if (this.dazed && this.dazed > 0)
 		this.dazed -= this.delta/1000;
 
+	if (this.position[1] > 0.9)
+		this.acceleration = [0.3*game.gravity[0], 0.3*game.gravity[1]];
+	else
+		this.acceleration = game.gravity;
 
 	var player = game.GetNearestPlayer(this.position);
 
@@ -53,9 +61,9 @@ Enemy.prototype.Step = function(game)
 	}
 
 	// If close, attax
-	if (r2 < 15*this.Width())
+	if (r2 < this.chaseWidths*this.Width())
 	{
-		if (Math.abs(r[0]) < 1.5*this.Width() && 
+		if (Math.abs(r[0]) < this.danceWidths*this.Width() && 
 			Math.abs(this.velocity[0]) < 0.5*this.speed)
 		{
 			this.velocity[0] = (Math.random() > 0.5) 
@@ -70,8 +78,8 @@ Enemy.prototype.Step = function(game)
 				this.velocity[0] = +this.speed;
 		}
 
-		// Jump!
-		if (player.Bottom() > this.Top())
+		// Jump! (still with Ox hack :S)
+		if (player.Bottom() > this.Top() && r2 < this.jumpWidths*this.Width())
 			this.TryToJump();
 	}
 	else
@@ -90,6 +98,12 @@ Enemy.prototype.CollisionActions["Humphrey"] = function(other, instigator, game)
 	{
 		other.Die(this.GetName(), this, game);
 	}
+}
+
+Enemy.prototype.Die = function(reason, other, game)
+{
+	Entity.prototype.Die.call(this,reason,other,game);
+	game.AddHat();
 }
 
 Enemy.prototype.CollisionActions["Box"] = function(other, instigator, game)
@@ -113,7 +127,6 @@ Enemy.prototype.CollideBox = function(other, instigator, game)
 		if (!this.health || this.health <= 0)
 		{
 			this.Die(other.GetName(), other, game);
-			game.AddHat();
 		}
 		else
 		{
@@ -126,7 +139,7 @@ Enemy.prototype.CollideBox = function(other, instigator, game)
 
 function Fox(position, velocity, acceleration, canvas)
 {
-	Enemy.call(this, position, velocity, acceleration, canvas, "data/fox/");
+	Enemy.call(this, position, velocity, acceleration, canvas, "data/fox");
 	this.name = "Fox";
 	this.speed = 0.5;
 	this.jumpSpeed = 0.7;
@@ -135,9 +148,83 @@ function Fox(position, velocity, acceleration, canvas)
 Fox.prototype = Object.create(Enemy.prototype);
 Fox.prototype.constructor = Fox;
 
-Fox.prototype.Die = function(reason, other, game)
+function Ox(position, velocity, acceleration, canvas)
 {
-	if (other.GetName() == "Box")
-		game.Message(this.GetName()+" got Squished!", 2000);
-	Entity.prototype.Die.call(this, reason, other, game);
+	Enemy.call(this, position, velocity, acceleration, canvas, "data/ox");
+	this.name = "Ox";
+	this.bounds = {min: [-40/canvas.width, -48/canvas.height], max: [40/canvas.width, 40/canvas.height]};
+	this.scale = [48/canvas.width, 48/canvas.height];
+	
+	this.health = 20;
+	this.speed = 0.55;
+	this.canJump = true;
+	this.jumpSpeed = 0.5;
+	
+	this.jumpWidths = 2;
+	
+}
+Ox.prototype = Object.create(Enemy.prototype);
+Ox.prototype.constructor = Ox;
+Ox.prototype.CollisionActions = Object.create(Enemy.prototype.CollisionActions);
+
+Ox.prototype.Die = function(reason, other, game)
+{
+	Enemy.prototype.Die.call(this, reason, other, game);
+	game.AddTimeout("OxTime", function() {
+		var xx = Math.random() > 0.5 ? 0.5 : -0.5;
+		this.AddEntity(new Ox([xx, 1], [0,0], this.gravity, this.canvas));
+	}.bind(game), 2000*game.stepRate);
+	if (!game.running) game.timeouts["OxTime"].Pause();
+}
+
+Ox.prototype.CollisionActions["Box"] = function(other, instigator, game)
+{
+	Enemy.prototype.CollisionActions["Box"].call(this,other,instigator,game);
+	if (this.Bottom() < other.Top())
+	{
+		other.velocity[0] = this.velocity[0]/2;
+		if (other.Top() - this.Bottom() < 0.05*other.Height())
+			this.position[1] += 0.07*other.Height();
+		other.health -= Math.max(0.4,Math.max(this.velocity[0], this.velocity[1]));
+		return false;
+	}
+}
+
+Ox.prototype.CollisionActions["Fox"] = function(other, instigator, game)
+{
+	if (other.sleep)
+	{
+		other.Die(this.GetName(), this, game);
+		return false;
+	}
+}
+
+
+function Wolf(position, velocity, acceleration, canvas)
+{
+	Enemy.call(this, position, velocity, acceleration, canvas, "data/wolf");
+	this.name = "Wolf";
+	this.bounds = {min: [-40/canvas.width, -40/canvas.height], max: [40/canvas.width, 40/canvas.height]};
+	this.scale = [40/canvas.width, 40/canvas.height];
+	
+	this.health = 5;
+	this.speed = 0.65;
+	this.canJump = true;
+	this.jumpSpeed = 1.0;
+	
+	this.jumpWidths = 3;
+	
+}
+Wolf.prototype = Object.create(Enemy.prototype);
+Wolf.prototype.constructor = Wolf;
+Wolf.prototype.CollisionActions = Object.create(Enemy.prototype.CollisionActions);
+
+Wolf.prototype.Die = function(reason, other, game)
+{
+	Enemy.prototype.Die.call(this, reason, other, game);
+	game.AddTimeout("WolfTime", function() {
+		var xx = Math.random() > 0.5 ? 0.5 : -0.5;
+		this.AddEntity(new Wolf([xx, 1], [0,0], this.gravity, this.canvas));
+	}.bind(game), 5000*game.stepRate);
+	if (!game.running) game.timeouts["WolfTime"].Pause();
 }

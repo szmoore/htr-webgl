@@ -66,7 +66,7 @@ function Canvas(element)
 	}
 	else if (!this.gl)
 	{
-		alert("Your browser does not support WebGL\nThis may cause performance issues\n:-(");
+		//alert("Your browser does not support WebGL\nThis may cause performance issues\n:-(");
 	}
 	this.width = element.width;
 	this.height = element.height;
@@ -107,6 +107,7 @@ Canvas.prototype.Text = function(text)
 
 Canvas.prototype.SplashScreen = function(imagePath, text, backColour, onload)
 {
+	this.cancelSplash = false;
 	var screen = new Entity([0,0], [0,0],[0,0],"");
 	if (!text) text = "";
 	if (!backColour) backColour = [0,0,0,0.9];
@@ -116,6 +117,8 @@ Canvas.prototype.SplashScreen = function(imagePath, text, backColour, onload)
 	var f = function(onload, screen) {
 		with (this)
 		{
+			if (cancelSplash)
+				return;
 			if (gl)
 			{
 				gl.clearColor(background[0], background[1], background[2], background[3]);
@@ -214,7 +217,12 @@ Canvas.prototype.HandleTextureLoaded = function(texData)
 		var ctx = canvas.getContext("2d");
 		//ctx.rect(0,0,w,h);
 		ctx.drawImage(image, w/2 - image.width/2, h/2 - image.height/2, image.width, image.height);
-		texData.data = SpriteToRGBA(ctx.getImageData(0,0,w,h));
+		// This is needed for webgl but not canvas2d, removing since I'm focusing on canvas2d for now
+		// It is really slow.
+		// Is webgl really better?
+		// I mean, it might draw faster but it has to do all this work before it can draw
+		//  (especially for a one off image) :S
+		//texData.data = SpriteToRGBA(ctx.getImageData(0,0,w,h));
 		texData.img = canvas;
 	}
 
