@@ -7,5 +7,7 @@ function InitPage()
 	var canvas = document.getElementById("glcanvas");
 	canvas.width = width;
 	canvas.height = height;
-	
+	var loading = document.getElementById("loading");
+	if (loading)
+		loading.parentNode.removeChild(loading);
 }

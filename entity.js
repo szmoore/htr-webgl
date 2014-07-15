@@ -29,6 +29,8 @@ function Entity(position, velocity, acceleration, canvas, spritePath)
 	this.frameRate = 3; // magic frame rate number
 	this.frameNumber = 0;
 	this.solid = true;
+	
+	this.distanceMoved = 0;
 		
 	if (canvas)
 	{
@@ -64,6 +66,7 @@ Entity.prototype.UpdateFrames = function()
 	if (typeof(this.sleep) !== "undefined" && this.sleep > 0)
 	{
 		this.sleep -= 0.01;
+		this.sleep = Math.max(0, this.sleep);
 		this.frames = this.frameBase.sleep;
 	}
 	else if (this.velocity[1] == 0)
@@ -181,11 +184,9 @@ Entity.prototype.Step = function(game)
 					}
 					this.velocity[i] = 0;
 				}
-
-					
-				
 		}
 	}
+	this.distanceMoved += Math.sqrt(Math.pow(this.position[0]-this.lastPosition[0],2)+Math.pow(this.position[1]-this.lastPosition[1],2))
 	this.UpdateFrames();
 	this.UpdateFrameNumber();
 
@@ -471,6 +472,17 @@ Entity.prototype.RelativeSpeed = function(other)
 	return Math.pow(s, 0.5);
 }
 
+Entity.prototype.TryToPush = function(other)
+{
+	if (this.Bottom() < other.Top())
+	{
+		other.velocity[0] = this.velocity[0]/2;
+		if (other.Top() - this.Bottom() < 0.05*other.Height())
+			this.position[1] += 0.07*other.Height();
+		return true;
+	}
+	return false;
+}
 
 
 function Wall(bounds, name)

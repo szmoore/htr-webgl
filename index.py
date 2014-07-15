@@ -15,9 +15,7 @@ import re
 
 import helpers
 
-
-if __name__ == "__main__":
-
+def CheckDomain():
 	site = "http://" + os.environ["SERVER_NAME"] + os.path.dirname(os.environ["REQUEST_URI"])
 	server = os.environ["SERVER_NAME"]
 	domain = ".".join(os.environ["SERVER_NAME"].split(".")[1:])
@@ -36,69 +34,48 @@ if __name__ == "__main__":
 		print("</table></body></html>")
 		sys.exit(0)
 
-	cookie_warn = False
+def main(argv):
+	CheckDomain()
+	
 	returning_player = True
 	identity = helpers.GetIdentity()
-	if identity == "<anonymous>":
+	
+	
+	
+	if identity == "<anonymous>" or helpers.PlayerExists(identity) == False:
 		returning_player = False
-		try:
-			cookie = Cookie.SimpleCookie()
-			cookie["identity"] = hashlib.md5(str(datetime.datetime.now())).hexdigest()
-			identity = cookie["identity"].value
-			expires = datetime.datetime.now() + datetime.timedelta(days=10000)
-			cookie["identity"]["expires"] = expires.strftime('%a, %d %b %Y %H:%M:%S')
-			print(cookie.output())
-			cookie_warn = True
-		except:
-			# Couldn't set the cookie, don't bother warning them.
-			cookie_warn = False
+		identity = hashlib.md5(str(datetime.datetime.now())).hexdigest()
+		helpers.AddPlayer(identity)
+	else:
+		helpers.PlayerVisits(identity)
 
-	print("Content-type: text/html\n")
 	form = cgi.FieldStorage()
 	timestamp = helpers.FloatNow();
-	level = 1
-	print("\n")
+	print("Content-type: text/html\r\n\r\n")
+	
 	game = open("game.html", "r")
 	lines = game.readlines()
 	game.close()
 	for l in lines[0:-2]:
 		print(str(l))
-	print("<script type=\"text/javascript\">")
-	print("serverTime = %f;" % timestamp)
-
-	try:
-		if (helpers.DataBaseExists()):
-			conn = sqlite3.connect("stats.db")
-			c = conn.cursor()
-			if returning_player == True:
-				c.execute("SELECT level FROM players WHERE identity=?",(identity,))
-				maxLevel = c.fetchone()
-				if level != None:
-					maxLevel= maxLevel[0]
-					c.execute("UPDATE players SET lastContact=? WHERE identity=?", (timestamp,identity))
-
-			if cookie_warn or level == None:
-				c.execute("INSERT INTO players(identity,created,lastContact,level) VALUES (?,?,?,1)", (identity,timestamp,timestamp))
-
-			conn.commit()
-			conn.close()
-	
-		if form.has_key("level"):
-			maxLevel = min(int(float(level)), int(float(form["level"].value)))
-			level = maxLevel
-
-		print("maxLevel = %d;" % maxLevel)
-		print("level = %d;" % level)
 		
+	print("<script type=\"text/javascript\">")
+		
+	try:
+		print("g_serverTime = %f;" % timestamp)
+		if identity != "<anonymouse>":
+			print("g_identityCookie = \"%s\";" % identity)
+	
+		if "adblock" in form:
+			print("g_adblockCookie = \"%s\";" % form["adblock"].value)
+	
 	except Exception as e:
 		print("console.log(\"Server database error: %s\")" % str(e))
 	print("</script>")
 
-
-	if cookie_warn:
-		# Warn about cookies. No other websites EVER seem to do this but we will be nice.
-		print("<script type=\"text/javascript\">alert(\"A cookie has been set!\\nYour player identity is: %s\\n\\nYou can use this at %s/view.py to keep track of your scores.\\n\\nThe cookie can't be used to personally identify you.\\nIf you are still not OK with this, feel free to disable cookies.\\n\\nThe game will work exactly the same with or without cookies.\\nVisit %s/game.html directly to avoid this message.\");</script>" % (cookie["identity"].value, site,site))
-	
 	for l in lines[-2:]:
 		print(str(l))
+
+if __name__ == "__main__":
+	main(sys.argv)
 

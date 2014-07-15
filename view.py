@@ -24,7 +24,7 @@ def HighScores(form):
 
 
 	try:
-		c.execute("SELECT identity, level, runtime, start FROM stats ORDER BY level DESC, runtime DESC LIMIT 15") 
+		c.execute("SELECT nickname, identity, level, runtime, start FROM stats ORDER BY level DESC, runtime DESC LIMIT 15") 
 		scores = c.fetchall()
 		conn.close()
 	except:
@@ -41,12 +41,13 @@ def HighScores(form):
 		print("<p> <b>THERE ARE NO HIGH SCORES! NOW IS YOUR CHANCE FOR <i>GLORY!!!!!</i></b> </p>")
 		return
 	print("<table width=\"100%\">")
-	print("	<tr> <td><b>Rank</b></td> <td> <b> ID </b> </td> <td><b>Level</b></td> <td> <b>%s</b> </td> <td> <b>Date</b> </td> </tr>" % (scoretype,))
+	print("	<tr> <td><b>Nickname</b></td> <td> <b> Rank </b> </td> <td><b>Level</b></td> <td> <b>%s</b> </td> <td> <b>Date</b> </td> <td><b>ID</b></td> </tr>" % (scoretype,))
 	for rank,score in enumerate(scores):
-		ident, level, runtime, date = score
+		nickname, ident, level, runtime, date = score
 		print("<a name=\"%s\"></a>" % ident)
 		try:
 			ident = helpers.IdentifyYou(ident)
+			
 			runtime= float(runtime)/1e3
 			date = helpers.ReadableDate(date)
 			level = int(float(level))
@@ -54,7 +55,7 @@ def HighScores(form):
 			pass
 
 		sys.stdout.write("<tr> ")
-		for field in [rank, ident, level, runtime, date]:
+		for field in [nickname, rank, level, runtime, date,ident[0:20]]:
 			sys.stdout.write("<td>%s</td> " % str(field))
 		sys.stdout.write("</tr>\n")
 
@@ -193,6 +194,8 @@ def GraphLevelAttempts(form):
 		args += [player]
 	c.execute(query, args)
 	data = asarray(map(lambda e : e[0]/1e3, c.fetchall()))
+	
+	
 	m = mean(data)
 	title("Level %d Attempts" % (level,))
 	xlabel("Time (s)")

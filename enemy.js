@@ -38,7 +38,10 @@ Enemy.prototype.TryToJump = function()
 Enemy.prototype.Step = function(game)
 {
 	if (this.dazed && this.dazed > 0)
+	{
 		this.dazed -= this.delta/1000;
+		this.dazed = Math.max(this.dazed, 0);
+	}
 
 	if (this.position[1] > 0.9)
 		this.acceleration = [0.3*game.gravity[0], 0.3*game.gravity[1]];
@@ -137,6 +140,16 @@ Enemy.prototype.CollideBox = function(other, instigator, game)
 	return true;
 }
 
+Enemy.prototype.DamagePush = function(other)
+{
+	if (Entity.prototype.TryToPush.call(this,other))
+	{
+		other.health -= Math.max(0.4,Math.max(this.velocity[0], this.velocity[1]));
+		return true;
+	}
+	return false;
+}
+
 function Fox(position, velocity, acceleration, canvas)
 {
 	Enemy.call(this, position, velocity, acceleration, canvas, "data/fox");
@@ -159,7 +172,7 @@ function Ox(position, velocity, acceleration, canvas)
 	this.speed = 0.55;
 	this.canJump = true;
 	this.jumpSpeed = 0.5;
-	
+	this.danceWidths = 2;
 	this.jumpWidths = 2;
 	
 }
@@ -192,9 +205,18 @@ Ox.prototype.CollisionActions["Box"] = function(other, instigator, game)
 
 Ox.prototype.CollisionActions["Fox"] = function(other, instigator, game)
 {
-	if (other.sleep)
+	if (other.sleep && this.DamagePush(other))
 	{
-		other.Die(this.GetName(), this, game);
+		other.sleep -= 0.1;
+		return false;
+	}
+}
+
+Ox.prototype.CollisionActions["Wolf"] = function(other, instigator, game)
+{
+	if (other.sleep && this.TryToPush(other))
+	{
+		other.sleep -= 0.1;
 		return false;
 	}
 }
@@ -218,6 +240,15 @@ function Wolf(position, velocity, acceleration, canvas)
 Wolf.prototype = Object.create(Enemy.prototype);
 Wolf.prototype.constructor = Wolf;
 Wolf.prototype.CollisionActions = Object.create(Enemy.prototype.CollisionActions);
+
+Wolf.prototype.CollisionActions["Fox"] = function(other, instigator, game)
+{
+	if (other.sleep && this.TryToPush(other))
+	{
+		other.sleep -= 0.1;
+		this.TryToJump();
+	}
+}
 
 Wolf.prototype.Die = function(reason, other, game)
 {

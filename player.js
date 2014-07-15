@@ -67,10 +67,14 @@ Player.prototype.Die = function(deathType, other, game)
 	}
 	else
 	{
+		
 		for (var i = 0; i < this.position.length; ++i)
 			this.position[i] = this.spawn[i];
 		this.AddShield(game);
 		game.UpdateDOM(this);
+		
+		//if (g_identityCookie)
+		//	this.PostStats("Lose life "+deathType,game)
 	}
 }
 
@@ -149,6 +153,10 @@ Player.prototype.CollisionActions["Wolf"] = function(other, instigator, game)
 
 Player.prototype.DeathScene = function(game, onload)
 {
+	var image = "data/rabbit/drawing3.svg";
+	var text = "You died of mysterious causes.";
+	var colour = [1,1,1,1];
+	console.log(this.deathType);
 	switch (this.deathType)
 	{
 		case "Box":
@@ -176,7 +184,39 @@ Player.prototype.DeathScene = function(game, onload)
 			colour = [1,0,0,0.8];
 			break;
 	}
+	if (g_identityCookie)
+		this.PostStats("Killed "+this.deathType,game)
+		
 	game.canvas.SplashScreen(image, text, colour, onload);
+}
+
+Player.prototype.PostStats = function(type, game, callback)
+{
+	// fields = ["start", "runtime", "steps", "type", "x", "y", "foxesSquished", "bossesSquished", "level"]
+	var foxesSquished = game.deathCount["Fox"];
+	if (!foxesSquished)
+		foxesSquished = 0;
+		
+	var bossesSquished = 0;
+	if (game.deathCount["Wolf"])
+		bossesSquished += game.deathCount["Wolf"];
+	if (game.deathCount["Ox"])
+		bossesSquished += game.deathCount["Ox"];
+		
+	fields = {
+		"start" : game.startTime,
+		"runtime" : game.runTime,
+		"steps" : game.stepCount,
+		"type" : type,
+		"x" : this.position[0],
+		"y" : this.position[1],
+		"foxesSquished" : foxesSquished,
+		"bossesSquished" : bossesSquished,
+		"level" : game.level,
+		"lives" : this.lives,
+		"distanceMoved" : this.distanceMoved
+	}
+	HttpPost("stats.py", fields,callback);
 }
 
 Player.prototype.Draw = function(canvas)
@@ -213,6 +253,8 @@ Player.prototype.GainLife = function(life, game)
 	this.lives++;
 	this.AddShield(game);
 	game.UpdateDOM(this);	
+	//if (g_identityCookie)
+	//	this.PostStats("Gain life",game)
 }
 
 

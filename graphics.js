@@ -113,39 +113,54 @@ Canvas.prototype.SplashScreen = function(imagePath, text, backColour, onload)
 	if (!backColour) backColour = [0,0,0,0.9];
 	screen.scale = [0.6, 0.6]; 
 	screen.bounds = {min:[-this.width/2, -this.height/2], max:[this.width/2, this.height/2]};
-
-	var f = function(onload, screen) {
-		with (this)
+	
+	var f = function(onload, screen, imagePath) {
+		//console.log("Splash for "+String(imagePath) + " loaded, onload is "+String(onload));
+		
+		if (this.cancelSplash)
+			return;
+		if (this.gl)
 		{
-			if (cancelSplash)
-				return;
-			if (this.gl)
-			{
-				this.gl.clearColor(background[0], background[1], background[2], background[3]);
-				this.gl.clear(gl.COLOR_BUFFER_BIT);
-				this.gl.uniform4f(uColour,1,1,1,1); 
-				//gl.uniform4f(uColour, blend[0], blend[1], blend[2], blend[3]);
-				screen.Draw();
-				this.gl.uniform4f(uColour,1,1,1,1); 
-			}
-			else if (ctx)
-			{
-				for (var i = 0; i < 3; ++i) 
-					backColour[i] = Math.round(255*backColour[i]);
-				ctx.fillStyle = "rgba("+backColour+")";
-				
-				ctx.fillRect(0,0,width, height);
-				
-				if (screen.frame)
-				{
-					ctx.drawImage(screen.frame.img, width/2 - screen.frame.img.width/2, height/2 - screen.frame.img.height/2, screen.frame.img.width, screen.frame.img.height);
-				}
-				this.Text(text);
-			}
+			this.gl.clearColor(background[0], background[1], background[2], background[3]);
+			this.gl.clear(gl.COLOR_BUFFER_BIT);
+			this.gl.uniform4f(uColour,1,1,1,1); 
+			//gl.uniform4f(uColour, blend[0], blend[1], blend[2], blend[3]);
+			screen.Draw();
+			this.gl.uniform4f(uColour,1,1,1,1); 
 		}
+		else if (this.ctx)
+		{
+			for (var i = 0; i < 3; ++i) 
+				backColour[i] = Math.round(255*backColour[i]);
+			this.ctx.fillStyle = "rgba("+backColour+")";
+			
+			this.ctx.fillRect(0,0,this.width, this.height);
+			
+			if (screen.frame)
+			{
+				var drawWidth = screen.frame.img.width;
+				var drawHeight = screen.frame.img.height;
+				if (drawWidth > this.width || this.width < 300)
+				{
+					var scale = drawWidth / this.width;
+					drawWidth /= scale;
+					drawHeight /= scale;
+				}
+				this.ctx.drawImage(screen.frame.img, this.width/2 - drawWidth/2, this.height/2 - drawHeight/2, drawWidth, drawHeight);
+			}
+			this.Text(text);
+			
+			var fontSize = 10;// / (1 +Math.round(text.length/40));
+			this.ctx.font = String(fontSize)+"px Comic Sans";
+			this.ctx.fillStyle = "rgba(1,0,0,0.5)";
+			this.ctx.beginPath();
+			this.ctx.fillText("If this Splash Screen takes more than 30s to disappear reload the page",this.width/16, 31*this.height/32	, 14*this.width/16);
+		}
+		
 		
 		if (typeof(onload) === "function")
 		{
+			//console.log("  Callback for splash " + String(imagePath) + " calling");
 			onload();
 		}
 		//if (text)
@@ -153,7 +168,7 @@ Canvas.prototype.SplashScreen = function(imagePath, text, backColour, onload)
 	};
 	
 	if (imagePath)
-		screen.frame = this.LoadTexture(imagePath, f.bind(this, onload, screen));
+		screen.frame = this.LoadTexture(imagePath, f.bind(this, onload, screen, imagePath));
 	else
 		f.bind(this, onload, screen)();
 }
@@ -204,10 +219,11 @@ Canvas.prototype.HandleTextureLoaded = function(texData)
  	if (this.gl && texture)
 		 this.gl.bindTexture(this.gl.TEXTURE_2D, texture);
 
-	if (this.prepareSpriteCollisions 
-		|| ((image.width & (image.width - 1)) != 0 
+	if (this.prepareSpriteCollisions || this.gl 
+		&& ((image.width & (image.width - 1)) != 0 
 		|| (image.height & (image.height - 1)) != 0))
 	{
+		console.log("scaling non power of 2 texture");
 		var canvas = document.createElement("canvas");
 		var w = image.width; var h = image.height;
 		--w; for (var i = 1; i < 32; i <<= 1) w = w | w >> i; ++w;

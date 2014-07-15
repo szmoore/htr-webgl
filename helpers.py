@@ -10,26 +10,47 @@ import datetime
 dbTables = {
 	"stats" : {
 		"identity" : "<anonymous>",
+		"nickname" : "nemo",
 		"start" : datetime.datetime.now(),
 		"runtime" : 0,
 		"steps" : 0,
-		"death" : "UNKNOWN",
+		"type" : "UNKNOWN",
 		"x" : 0,
 		"y" : 0,
 		"foxesSquished" : 0,
-		"foxesDazed" : 0,
-		"boxesSquished" : 0,
-		"level" : 1},
+		"bossesSquished" : 0,
+		"level" : 0,
+		"lives" : 0,
+		"distanceMoved" : 0},
 
 	"players" : {
 		"identity" : "<anonymous>",
+		"nickname" : "nemo",
 		"created" : 0, 
 		"lastContact" : 0,
-		"level" : 1,
-		"hats" : 0
+		"level" : 0,
+		"visits" : 0
 	}
 }
 
+
+def AddPlayer(identity):
+	conn = sqlite3.connect("stats.db")
+	c = conn.cursor()
+	c.execute("INSERT INTO players(identity,nickname,created,lastContact,level,visits) VALUES (?,?,0,0,0,0)", (identity, "nemo"))
+	conn.commit()
+	conn.close()
+	
+def PlayerVisits(identity):
+	conn = sqlite3.connect("stats.db")
+	c = conn.cursor()
+	
+	c.execute("SELECT visits FROM players WHERE identity=?", (identity,))
+	visits = c.fetchall()[0][0]
+	visits += 1
+	c.execute("UPDATE players SET visits=? WHERE identity=?", (visits, identity))
+	conn.commit()
+	conn.close()
 
 def GetIdentity():
 	try:
@@ -38,6 +59,16 @@ def GetIdentity():
 		return cookie["identity"].value
 	except KeyError, Cookie.CookieError:
 		return "<anonymous>"
+
+
+def GetNickname():
+	try:
+		http_cookie = os.environ["HTTP_COOKIE"]
+		cookie = Cookie.SimpleCookie(http_cookie)
+		return cookie["nickname"].value
+	except KeyError, Cookie.CookieError:
+		return "nemo"
+		
 
 def LastContact(ident):
 	conn = sqlite3.connect("stats.db")
@@ -48,6 +79,10 @@ def LastContact(ident):
 	if (len(results) > 0):
 		return results[0][0]
 	return None
+	
+
+def PlayerExists(ident):
+	return LastContact(ident) != None
 
 
 def GetSite():

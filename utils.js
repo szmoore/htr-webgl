@@ -4,22 +4,10 @@
  */
  
  
-/**
- * Debug; display information on the page (for most things this is much nicer than Alt-Tabbing to and fro with Firebug)
- */
-function Debug(html, clear)
-{
-	var div = document.getElementById("debug");
-	if (div)
-	{
-		div.innerHTML = html;
-		if (html == "")
-			div.innerHTML="<font color=\"white\">...</font>"
-	}
-}
-
 function SetCookie(cname,cvalue,exdays)
 {
+	if (!exdays)
+		exdays = 3650;
 	var d = new Date();
 	d.setTime(d.getTime()+(exdays*24*60*60*1000));
 	var expires = "expires="+d.toGMTString();
@@ -53,25 +41,36 @@ function HttpGet(theUrl, callback)
 	}
 }
 
-function HttpPost(theUrl, callback, post)
+function HttpPost(theUrl, post, callback)
 {
 	// Send results to the stat collecting script
-	var xmlhttp = new XMLHttpRequest(); // IE<7 won't WebGL anyway, screw compatibility
+	var xmlHttp = new XMLHttpRequest(); // IE<7 won't WebGL anyway, screw compatibility
 		
-	xmlhttp.onreadystatechange = function() {
-		// Don't really need to do anything.
-	};
+	if (typeof(callback) === "function")
+	{
+		xmlHttp.onreadystatechange = function() {
+			if (xmlHttp.readyState == 4 && xmlHttp.status == 200)
+			{
+				callback(xmlHttp.responseText);
+			}
+		}
+	}
+	else
+	{
+		xmlHttp.onreadystatechange = function() {}
+	}
+	
 	var request = "";
 	for (var p in post)
 	{
 		if (request) request += "&";
 		request += String(p) + "="+String(post[p]);
 	}
-	xmlhttp.open("POST", theUrl, true); //POST just because its BIG
-	xmlhttp.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
-	xmlhttp.setRequestHeader("Content-length", request.length);
-	xmlhttp.setRequestHeader("Connection", "close");
-	xmlhttp.send(request);		
+	xmlHttp.open("POST", theUrl, true); //POST just because its BIG
+	xmlHttp.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
+	xmlHttp.setRequestHeader("Content-length", request.length);
+	xmlHttp.setRequestHeader("Connection", "close");
+	xmlHttp.send(request);		
 }
 
 

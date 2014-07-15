@@ -3,6 +3,9 @@
  * @brief Represents the game world and all Entities within it
  */
  
+/**
+ * Wrapper class for pausable timeouts associated with a Game
+ */
 function Timeout(name, onTimeout, wait, game)
 {
 	if (game.timeouts[name])
@@ -21,7 +24,11 @@ function Timeout(name, onTimeout, wait, game)
 	this.wait = wait;
 	this.start = (new Date()).getTime();
 	this.running = true;
+	this.game = game;
 }
+/**
+ * Pause timeout
+ */
 Timeout.prototype.Pause = function()
 {
 	if (!this.running)
@@ -35,37 +42,50 @@ Timeout.prototype.Pause = function()
 	
 }
 
+/**
+ * Resume timeout
+ */
 Timeout.prototype.Resume = function()
 {
 	this.running = true;
 	//console.log("Timeout <" + this.name + "> resumed with " + String(this.wait) + " ms remaining");
 	this.id = setTimeout(function(game) {
 		this.onTimeout(); 
-		delete game.timeouts[this.name]}.bind(this,game), this.wait);
+		delete game.timeouts[this.name]}.bind(this,this.game), this.wait);
 }
 Timeout.prototype.constructor = Timeout;
 
 
- 
+/**
+ * Game class
+ * @param canvas - HTML5 canvas element to render into
+ * @param audio - HTML5 audio element to use for sound
+ * @param document - The webpage DOM
+ */
 function Game(canvas, audio, document)
 {
 	this.document = document;
 	this.audio = audio;
 	this.level = -1;
-	this.enableAdverts = true;
-	this.ChooseAdvert();
+	// If true, "advertising" spash screens are shown every time a level starts/restarts
+	this.enableAdverts = true; // Will be set to false if necessary in main()
+	this.ChooseAdvert(); // First call will get the list of adverts
 	
+	// Hacks to keep track of level durations
+	// Needed because some devices won't play audio so we have to check the time ourselves
+	//  instead of using a "ended" event listener.
+	// Level 0 is the tutorial and doesn't end at a specified time depending on player speed
 	this.levelDurations = [null, 198000,150000,210000];
 	
 	this.localTime = new Date();
-	this.canvas = new Canvas(canvas);
+	this.canvas = new Canvas(canvas); // Construct Canvas class on the HTML5 canvas
 	if (this.spriteCollisions)
-		this.canvas.prepareSpriteCollisions = true;
+		this.canvas.prepareSpriteCollisions = true; // unused will probably break things
 		
-	this.gravity = [0, -1];
-	this.stepRate = 20;
+	this.gravity = [0, -1]; // gravity!
+	this.stepRate = 20; // Time we would ideally have between steps in ms (lol setTimeout)
 	
-	this.timeouts = {};
+	this.timeouts = {}; // Timeouts
 	
 	
 	
@@ -120,7 +140,7 @@ Game.prototype.Resume = function()
 		this.timeouts[t].Resume();
 	}
 	
-	if (this.audio) // put back in when done testing
+	if (this.audio)
 		this.audio.play();
 		
 		
@@ -157,12 +177,20 @@ Game.prototype.Start = function(level)
 
 Game.prototype.SetLevel = function(level)
 {
+	
 	this.level = Math.min(level,3);
+	
+	// hooray globals
+	if (typeof(g_maxLevelCookie) != "undefined")
+	{
+		if (g_maxLevelCookie < this.level)
+		{
+			g_maxLevelCookie = this.level;
+			SetCookie("maxLevel", g_maxLevelCookie);
+		}
+	}
 		
 	this.spawnedEnemies = 0;
-		
-		
-	
 	if (this.audio)
 	{
 		this.audio.src = "data/theme"+this.level+".ogg";
@@ -173,12 +201,20 @@ Game.prototype.SetLevel = function(level)
 		//this.levelDurations[this.level] = this.audio.duration*1000;
 	}
 	
-	
+	delete this.stepTime;
 	this.runTime = 0;
+	this.stepCount = 0;
 	this.keyState = [];
 	this.webSockets = [];
 	this.entities = [];
+	for (var t in this.timeouts)
+	{
+		this.timeouts[t].Pause();
+		delete this.timeouts[t];
+	}
+	this.timeouts = {};
 	this.entityCount = {};
+	this.deathCount = {};
 
 	// Add the walls
 	this.AddEntity(new Wall({min: [-Infinity,-Infinity], max:[Infinity, -1]}, "Floor")); // bottom
@@ -191,7 +227,9 @@ Game.prototype.SetLevel = function(level)
 	this.AddEntity(this.player);
 	
 
-	// level specific
+	/**  level specific code goes below here **/
+	
+	//TODO: Make NaN and Infinity levels
 	for (var i = 0; i < this.level*2; ++i)
 		this.AddHat();
 		
@@ -207,6 +245,7 @@ Game.prototype.SetLevel = function(level)
 	
 }
 
+/** Get background draw colour (in OpenGL RGBA) **/
 Game.prototype.GetColour = function()
 {
 	if (this.romanticMode)
@@ -222,30 +261,42 @@ Game.prototype.GetColour = function()
 	return [1,1,1,1];
 }
 
+/** 
+ * Pick an advert to show; on the first call it will HTTP GET the list of adverts
+ * @param trial - Used to stop recursion
+ */
 Game.prototype.ChooseAdvert = function(trial)
 {
 	if (!this.advertChoices)
 	{
 		if (trial)
 			return;
-			
-		//JSON.parse is more "secure"... but also buggy compared to eval
-		// (Doing annoying things on the server side to make it work)
-		HttpGet("data/adverts", function(response) {
+		HttpGet("adverts.py", function(response) {
 			this.advertChoices = JSON.parse(response);
+			this.advertChoiceIndex = -1;
 			this.ChooseAdvert(true);
 		}.bind(this));
 		return;
 	}
-	return "data/adverts/"+String(this.advertChoices[Math.round(Math.random()*(this.advertChoices.length-1))]);
+	// Go through the adverts in order (order is chosen by the server in adverts.py)
+	return this.advertChoices[this.advertChoiceIndex++ % this.advertChoices.length];
 	
 }
 
+/**
+ * Progress to the Next Level
+ * @param skipAd - Used to prevent recursion
+ */
 Game.prototype.NextLevel = function(skipAd)
 {
 	this.Pause("Loading...");
+	
+
+	
 	if (this.enableAdverts && !skipAd)
 	{
+		// Make the splash screen then call NextLevel (with the skipAd flag
+		//	to prevent recursing infinitely)
 		this.canvas.SplashScreen(this.ChooseAdvert(), "",[1,1,1,1], function() {
 			this.AddTimeout("Advert", this.NextLevel.bind(this,true), 4000);
 		}.bind(this));
@@ -253,18 +304,18 @@ Game.prototype.NextLevel = function(skipAd)
 	}
 	this.SetLevel(this.level+1);
 	
-	
 	this.Clear();
 	this.Draw();
-	
+
 	var boss;
 	var taunt;
 	var colour;
 	var message;
-	
+
+	// The tutorial is optional
 	if (this.level == 0 && !confirm("Play the tutorial?"))
 	{
-		return this.NextLevel();
+		return this.NextLevel(); // Skip to level 1
 	}
 	
 	switch (this.level)
@@ -304,12 +355,12 @@ Game.prototype.NextLevel = function(skipAd)
 			break;
 	}
 	
-	
+	// Show splash screen, then start level 
 	this.canvas.SplashScreen(boss, taunt, colour, function() {
 		this.AddTimeout("Level"+String(this.level),
 			function() {
 				this.Resume();
-				if (this.level == 0)
+				if (this.level == 0) // Hacky but more concise
 					this.Tutorial("start");
 			}.bind(this) ,2000);
 		this.Message(message, 2000);
@@ -320,6 +371,10 @@ Game.prototype.NextLevel = function(skipAd)
 	
 }
 
+/**
+ * Add an Enemy and then set a timeout to call AddEnemy again
+ * This should only be called once at the start of a level
+ */
 Game.prototype.AddEnemy = function()
 {
 	
@@ -346,7 +401,10 @@ Game.prototype.AddEnemy = function()
 	if (!this.running)
 		this.timeouts["AddEnemy"].Pause();
 }
-
+/**
+ * Add a Cloud and then set a timeout to call AddCloud again
+ * This should only be called once at the start of a level
+ */
 Game.prototype.AddCloud = function()
 {
 	var x = Math.random() > 0.5 ? 1.1 : -1.1;
@@ -358,6 +416,10 @@ Game.prototype.AddCloud = function()
 		this.timeouts["AddCloud"].Pause();
 }
 
+/**
+ * Add a Hat and... don't set a timeout to add one again
+ * (Yeah I should have named those other functions better I guess)
+ */
 Game.prototype.AddHat = function()
 {
 	var hat = new Hat([this.player.position[0], 1], [0,0], [0.8*this.gravity[0], 0.8*this.gravity[1]], this.canvas);
@@ -365,6 +427,9 @@ Game.prototype.AddHat = function()
 
 }
 
+/**
+ * Add an Entity; optimises use of this.entities array
+ */
 Game.prototype.AddEntity = function(entity)
 {
 	for (var i = 0; i < this.entities.length; ++i)
@@ -387,6 +452,10 @@ Game.prototype.AddEntity = function(entity)
 	return entity;
 }
 
+/**
+ * Key was pressed
+ * Warning: Magic keycode numbers incoming
+ */
 Game.prototype.KeyDown = function(event)
 {
 	if (!this.keyState)
@@ -418,7 +487,9 @@ Game.prototype.KeyDown = function(event)
 	}
 }
 
-
+/**
+ * Key was released
+ */
 Game.prototype.KeyUp = function(event)
 {
 	if (!this.keyState)
@@ -466,6 +537,9 @@ Game.prototype.TouchDown = function(event)
 	}
 }
 
+/**
+ * Touch is released
+ */
 Game.prototype.TouchUp = function(event)
 {
 	//this.Message("TouchUp at "+String([event.clientX, event.clientY]));
@@ -477,13 +551,19 @@ Game.prototype.TouchUp = function(event)
 	this.keyState = [];
 }
 
+/**
+ * Mouse is clicked inside the canvas
+ */
 Game.prototype.MouseDown = function(event)
 {
 	this.mouseDown = true;
 	this.TouchDown(event);
 }
 
-
+/**
+ * Mouse is released
+ * Buggy - doesn't get called if mouse is released outside of the canvas
+ */
 Game.prototype.MouseUp = function(event)
 {
 	if (this.mouseDown)
@@ -493,12 +573,19 @@ Game.prototype.MouseUp = function(event)
 	}
 }
 
+/**
+ * Mouse got moved
+ */
 Game.prototype.MouseMove = function(event)
 {
 	if (this.mouseDown)
 		this.TouchDown(event);
 }
 
+/**
+ * Combine clearing, steping and drawing into one function
+ * More efficient than using three
+ */
 Game.prototype.ClearStepAndDraw = function()
 {
 
@@ -507,6 +594,7 @@ Game.prototype.ClearStepAndDraw = function()
 	this.stepTime = (new Date()).getTime();
 	if (!this.lastStepTime)
 	{
+		this.startTime = this.stepTime;
 		this.runTime += this.stepRate/1000;
 	}
 	else
@@ -514,6 +602,8 @@ Game.prototype.ClearStepAndDraw = function()
 		this.runTime += this.stepTime - this.lastStepTime;
 	}
 
+	// If using Entity.Clear in the loop this should be commented out
+	//  to give a performance increase
 	this.canvas.Clear(this.GetColour());
 		
 	if (this.message)
@@ -534,15 +624,16 @@ Game.prototype.ClearStepAndDraw = function()
 			{
 				this.entities[i].Clear(this.canvas);
 				this.entityCount[this.entities[i].GetName()] -= 1;
+				this.deathCount[this.entities[i].GetName()] += 1;
 				delete this.entities[i];
 			}
 		}
 	}
 	
-	
 	this.stepCount += 1;
 }
 
+/** Clear the canvas, defaults to this.canvas **/
 Game.prototype.Clear = function(canvas)
 {
 	if (!canvas)
@@ -560,6 +651,7 @@ Game.prototype.Clear = function(canvas)
 	}
 }
 
+/** Draw **/
 Game.prototype.Draw = function()
 {
 	
@@ -598,6 +690,8 @@ Game.prototype.MainLoop = function()
 	if (this.levelDurations[this.level] && 
 		this.runTime > this.levelDurations[this.level])
 	{
+		if (g_identityCookie && this.player)
+			this.player.PostStats("Next Level",this)
 		this.NextLevel();
 		return;
 	}
@@ -606,33 +700,51 @@ Game.prototype.MainLoop = function()
 			
 	this.ClearStepAndDraw();
 	
-	if (this.player && !this.player.alive)
+	if (this.player && !this.player.alive && !this.player.alreadyDying)
 	{
+		this.player.alreadyDying = true;
+		if (this.audio)
+			this.audio.pause();
 		this.Clear();
 		this.Draw();
 		this.player.Draw(this.canvas);
 		
 		this.running = false;
-		this.player.DeathScene(this);
+		
 		for (var t in this.timeouts)
 		{
-			clearTimeout(this.timeouts[t]);
+			this.timeouts[t].Pause();
 			delete this.timeouts[t];
 		}
-		this.entities = [];
-		this.runTime = 0;
-		delete this.stepTime;
-		this.SetLevel(this.level);
+		
+		var deathCall;
+		// horrible callback code follows
+		// (seriously why isn't there a sleep() function
+		//	 don't give me that crap about callbacks being more elegant)
 		if (!this.enableAdverts)
-			this.AddTimeout("Restart", function() {this.Resume()}.bind(this), 1000);
+		{
+			deathCall = function() {
+				this.AddTimeout("Restart", function() {
+					this.SetLevel(this.level);
+					this.Resume();
+				}.bind(this),1000);
+			}
+		}
 		else
 		{
-			this.AddTimeout("Advert", function() {
-				this.canvas.SplashScreen(this.ChooseAdvert(), "",[1,1,1,1], function() {
-					this.AddTimeout("Restart", this.Resume.bind(this), 4000);
-				}.bind(this));
-			}.bind(this), 1000);
+			deathCall = function() {
+				this.AddTimeout("Advert", function() {
+					this.canvas.SplashScreen(this.ChooseAdvert(), "",[1,1,1,1], 
+					function() {
+							this.AddTimeout("Restart", function() {
+							this.SetLevel(this.level);
+							this.Resume();
+						}.bind(this),4000);
+					}.bind(this));
+				}.bind(this), 1000);
+			}
 		}
+		this.player.DeathScene(this, deathCall.bind(this));
 		return;
 	}
 	
@@ -662,6 +774,7 @@ Game.prototype.MainLoop = function()
 
 Game.prototype.GetNearestPlayer = function(position)
 {
+	// Maybe one day I will have more than one player...
 	return this.player;
 }
 
