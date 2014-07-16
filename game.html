@@ -15,10 +15,6 @@
     <script src="tutorial.js"></script>
     <script src="scene.js"></script>
     <script src="page.js"></script>
-	<noscript>
-		<p> Humphrey The Rabbit is a game in which Humphrey (controlled by the player) must avoid falling boxes, foxes, and various other hazards. Humphrey The Rabbit requires JavaScript. You are seeing this either because you are a search engine (in which case please rank me higher) or Javascript is disabled for this page or you are using lynx. Please enable Javascript.</p>
-	</noscript>
-
     <!-- Fragment shader program -->
 
     <script id="shader-fs" type="x-shader/x-fragment">
@@ -54,6 +50,15 @@
   
 
   <body id="body" onload="InitPage(); main();" onresize="InitPage();" style="-webkit-touch-callout: none !important; -webkit-user-select: none !important;">
+	  <!-- Noscript page -->
+    <noscript>
+	    <h2>Humphrey The Rabbit</h2>
+	    <p><img src="data/rabbit/drawing2.svg" width="20%" alt="humphrey the rabbit"/></p>
+	    <p> Humphrey The Rabbit is a game in which Humphrey (controlled by the player) must avoid falling boxes, foxes, and various other hazards. Humphrey The Rabbit requires Javascript. You are seeing this either because you are a search engine bot (in which case please rank me higher) or you are viewing a search engine result, or you are actually at this page but you have disabled Javascript or your browser does not support it. Enable Javascript to play.</p>
+	    <h2> This is what you are missing </h2>
+	    <p>   <img src="data/screenshot-2014-07-16.png" width="40%" alt="screenshot of game"/> </p>
+	</noscript>
+
 	<!-- Introduction -->
 	<audio id="theme">
 		<!--<source src="data/theme.ogg" type="audio/ogg">-->
@@ -83,7 +88,7 @@
 
 		<div id="middlePanel" style="margin:0 auto; width:650px; border:0px solid blue;">
 		-->	<!-- The canvas -->
-			<span id="loading">Initialising page. If nothing happens try Ctrl+R.</span>
+			<span id="loading" style="border:1px solid black;">Initialising page. If nothing happens try reloading (Ctrl+R).</span>
 			<canvas id="glcanvas" width="0" height="0">
 				The <code>canvas</code> tag isn't supported, <b>or</b> you have disabled scripts.
 			</canvas>
