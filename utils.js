@@ -33,10 +33,13 @@ function HttpGet(theUrl, callback)
 	xmlHttp = new XMLHttpRequest();
 	xmlHttp.open( "GET", theUrl, true);
 	xmlHttp.send( null );
-	xmlHttp.onreadystatechange = function() {
-		if (xmlHttp.readyState == 4 && xmlHttp.status == 200)
-		{
-			callback(xmlHttp.responseText);
+	if (typeof(callback) === "function")
+	{
+		xmlHttp.onreadystatechange = function() {
+			if (xmlHttp.readyState == 4 && xmlHttp.status == 200)
+			{
+				callback(xmlHttp.responseText);
+			}
 		}
 	}
 }

@@ -50,6 +50,8 @@ function Handshake()
 			g_maxLevelCookie = 0;
 			if (g_adblockCookie)
 				SetCookie("adblock", g_adblockCookie);
+
+			HttpGet("handshake.py")
 		}
 	}
 	else

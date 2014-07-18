@@ -183,7 +183,7 @@ def LastPlayer(form):
 def GraphLevelAttempts(form):
 	level = 1 if not form.has_key("level") else int(form["level"].value)
 	player = None if not form.has_key("player") else form["player"].value
-	target = [194,150][level-1]
+	target = [0,194,150,208][level]
 
 	conn = sqlite3.connect("stats.db")
 	c = conn.cursor()
@@ -194,14 +194,17 @@ def GraphLevelAttempts(form):
 		args += [player]
 	c.execute(query, args)
 	data = asarray(map(lambda e : e[0]/1e3, c.fetchall()))
-	
+	if len(data) == 0:
+		print("Conent-type: text/plain\n")
+		print("No data for level %d" % level)
+		return
 	
 	m = mean(data)
 	title("Level %d Attempts" % (level,))
 	xlabel("Time (s)")
 	ylabel("Attempts (total: %d)" % len(data))
-	width = len(data)/(data.max()-data.min())
-	nBins = 50/width
+	width = len(data)/max(1,(data.max()-data.min()))
+	nBins = 40#int(50/width)
 	a, b, c = hist(data,bins=nBins, color="green", alpha=0.5, edgecolor="darkgreen")
 	axvline(x=m,color='darkred',ls='-');
 	text(m+2,max(a),"mean = %d s"%m, color="darkred", rotation=270)

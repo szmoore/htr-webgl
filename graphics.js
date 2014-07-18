@@ -140,9 +140,9 @@ Canvas.prototype.SplashScreen = function(imagePath, text, backColour, onload)
 			{
 				var drawWidth = screen.frame.img.width;
 				var drawHeight = screen.frame.img.height;
-				if (drawWidth > this.width || this.width < 300)
+				if (drawWidth > this.width || this.width < 300 || drawWidth < 400) 
 				{
-					var scale = drawWidth / this.width;
+					var scale = Math.max(drawWidth / this.width, drawHeight/this.height);
 					drawWidth /= scale;
 					drawHeight /= scale;
 				}

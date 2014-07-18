@@ -230,16 +230,21 @@ Game.prototype.SetLevel = function(level)
 	/**  level specific code goes below here **/
 	
 	//TODO: Make NaN and Infinity levels
-	for (var i = 0; i < this.level*2; ++i)
+	for (var i = 0; i < Math.min(this.level*2,6); ++i)
 		this.AddHat();
 		
-		
-	for (var i = 0; i < this.level-1; ++i)
+	if (this.level >= 2)
 	{
-		if (i % 2 == 1)
-			this.AddEntity(new Wolf([1,1],[0,0],this.gravity,this.canvas));
-		else
-			this.AddEntity(new Ox([-1,1],[0,0],this.gravity,this.canvas));
+		this.AddEntity(new Ox([-1,1],[0,0],this.gravity,this.canvas));
+	}
+	if (this.level >= 3)
+	{
+		this.AddEntity(new Wolf([1,1],[0,0],this.gravity,this.canvas));
+	}
+
+	if (isNaN(this.level))
+	{
+		this.player.LoadSprites(this.canvas, "data/fox");
 	}
 
 	
@@ -347,11 +352,21 @@ Game.prototype.NextLevel = function(skipAd)
 			message = "It's a wolf. Honest.";
 			colour = [0.9,0.5,0.5,1];
 			break;
+		
 		default:
-			alert("Congratulations on beating level 3. There are no more levels. Yet. Starting again.");
-			this.level = -1;
-			this.NextLevel();
-			return;
+			if (isNaN(this.level))
+			{
+				boss = "data/rabbit/drawing2.svg";
+				taunt = "Role Reversal Time!";
+				colour = [0.9,0.5,0.5,1];
+			}
+			else
+			{
+				alert("Congratulations on beating level 3. There are no more levels. Yet. Starting again.");
+				this.level = -1;
+				this.NextLevel();
+				return;
+			}
 			break;
 	}
 	
@@ -690,7 +705,7 @@ Game.prototype.MainLoop = function()
 	if (this.levelDurations[this.level] && 
 		this.runTime > this.levelDurations[this.level])
 	{
-		if (g_identityCookie && this.player)
+		if (this.player)
 			this.player.PostStats("Next Level",this)
 		this.NextLevel();
 		return;

@@ -37,7 +37,7 @@ dbTables = {
 def AddPlayer(identity):
 	conn = sqlite3.connect("stats.db")
 	c = conn.cursor()
-	c.execute("INSERT INTO players(identity,nickname,created,lastContact,level,visits) VALUES (?,?,0,0,0,0)", (identity, "nemo"))
+	c.execute("INSERT INTO players(identity,nickname,created,lastContact,level,visits) VALUES (?,?,?,0,0,0)", (identity, "nemo", FloatNow()))
 	conn.commit()
 	conn.close()
 	

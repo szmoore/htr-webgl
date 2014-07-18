@@ -18,8 +18,8 @@ import helpers
 
 def Sanity(fields):
 	identity = helpers.GetIdentity()
-	if identity == "<anonymous>":
-		return "<anonymouse>"
+	#if identity == "<anonymous>":
+	#	return "<anonymous>"
 
 	try:
 		fields["level"] = int(fields["level"])
@@ -129,8 +129,9 @@ if __name__ == "__main__":
 
 	conn = sqlite3.connect("stats.db")
 	cursor = conn.cursor()
-	cursor.execute("UPDATE players SET lastContact=? WHERE identity=?", (helpers.FloatNow(), identity))
-	cursor.execute("UPDATE players SET nickname=? WHERE identity=?", (nickname, identity))
+	if identity != "<anonymous>":
+		cursor.execute("UPDATE players SET lastContact=? WHERE identity=?", (helpers.FloatNow(), identity))
+		cursor.execute("UPDATE players SET nickname=? WHERE identity=?", (nickname, identity))
 	
 	#if int(float(form["runtime"].value)) < 12000:
 	#	print("Content-type: text/plain\n")
@@ -147,10 +148,11 @@ if __name__ == "__main__":
 
 
 	# Get current Level
-	cursor.execute("SELECT level FROM players WHERE identity = ?", (identity,))
-	l = cursor.fetchall()
-	if len(l) > 0 and l[0][0] < values["level"]:
-		cursor.execute("UPDATE players SET level=? WHERE identity=?", (values["level"], identity))
+	if identity != "<anonymous>":
+		cursor.execute("SELECT level FROM players WHERE identity = ?", (identity,))
+		l = cursor.fetchall()
+		if len(l) > 0 and l[0][0] < values["level"]:
+			cursor.execute("UPDATE players SET level=? WHERE identity=?", (values["level"], identity))
 
 	
 	conn.commit()
