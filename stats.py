@@ -26,7 +26,7 @@ def Sanity(fields):
 	except:
 		return "Bad level"
 	
-	if fields["level"] < 0 or fields["level"] > 3:
+	if fields["level"] < 0: # or fields["level"] > 4:
 		return "Bad level"
 
 	try:
@@ -40,15 +40,15 @@ def Sanity(fields):
 	#if fields["type"] not in ["SQUISHED", "STABBED", "EATEN", "MAULED", "NEXTLEVEL"]:
 	#	return "Invalid Type"
 
-	if not (re.match("^[a-zA-Z ]+$", fields["type"])):
-		return "Invalid Type"
-	if len(fields["type"]) > 100:
-		return "Invalid Type"
+#	if not (re.match("^[a-zA-Z ]+$", fields["type"])):
+#		return "Invalid Type"
+#	if len(fields["type"]) > 100:
+#		return "Invalid Type"
 
 	x = fields["x"]
 	y = fields["y"]
-	if x > 1 or x < -1 or y > 1 or y < -1:
-		return "Invalid coords"
+#	if x > 1 or x < -1 or y > 1 or y < -1:
+#		return "Invalid coords"
 
 	last_active = helpers.LastContact(identity)
 	if last_active == None:
@@ -58,8 +58,8 @@ def Sanity(fields):
 	#if start < last_active:
 	#	return "Start before last active"
 	now = helpers.FloatNow()
-	if (start+runtime)/1e3 > (5+now/1e3): 
-		return "Impossible runtime; start %f + runtime %f = %f > %f" % (start, runtime, start+runtime, now)
+#	if (start+runtime)/1e3 > (5+now/1e3): 
+#		return "Impossible runtime; start %f + runtime %f = %f > %f" % (start, runtime, start+runtime, now)
 	return True
 
 if __name__ == "__main__":

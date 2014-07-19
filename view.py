@@ -183,7 +183,7 @@ def LastPlayer(form):
 def GraphLevelAttempts(form):
 	level = 1 if not form.has_key("level") else int(form["level"].value)
 	player = None if not form.has_key("player") else form["player"].value
-	target = [0,194,150,208][level]
+	target = [0,194,150,208,165][level]
 
 	conn = sqlite3.connect("stats.db")
 	c = conn.cursor()

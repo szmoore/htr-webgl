@@ -75,7 +75,7 @@ function Game(canvas, audio, document)
 	// Needed because some devices won't play audio so we have to check the time ourselves
 	//  instead of using a "ended" event listener.
 	// Level 0 is the tutorial and doesn't end at a specified time depending on player speed
-	this.levelDurations = [null, 198000,150000,210000];
+	this.levelDurations = [null, 198000,150000,210000,165000,null];
 	
 	this.localTime = new Date();
 	this.canvas = new Canvas(canvas); // Construct Canvas class on the HTML5 canvas
@@ -178,7 +178,7 @@ Game.prototype.Start = function(level)
 Game.prototype.SetLevel = function(level)
 {
 	
-	this.level = Math.min(level,3);
+	this.level = Math.min(level,5);
 	
 	// hooray globals
 	if (typeof(g_maxLevelCookie) != "undefined")
@@ -209,6 +209,7 @@ Game.prototype.SetLevel = function(level)
 	this.entities = [];
 	for (var t in this.timeouts)
 	{
+
 		this.timeouts[t].Pause();
 		delete this.timeouts[t];
 	}
@@ -233,13 +234,26 @@ Game.prototype.SetLevel = function(level)
 	for (var i = 0; i < Math.min(this.level*2,6); ++i)
 		this.AddHat();
 		
-	if (this.level >= 2)
+	
+	if (this.level == 2)
 	{
-		this.AddEntity(new Ox([-1,1],[0,0],this.gravity,this.canvas));
+		this.AddEntity(new Ox([0,1],[0,0],this.gravity,this.canvas));
 	}
-	if (this.level >= 3)
+	if (this.level == 3)
 	{
-		this.AddEntity(new Wolf([1,1],[0,0],this.gravity,this.canvas));
+		this.AddEntity(new Ox([-0.8,1],[0,0],this.gravity,this.canvas));
+		this.AddEntity(new Wolf([-0.8,1],[0,0],this.gravity,this.canvas));
+	}
+	if (this.level == 4)
+	{
+		this.AddEntity(new Ox([0,1],[0,0],this.gravity,this.canvas));
+		this.AddEntity(new Wolf([0.8,1],[0,0], this.gravity, this.canvas));
+		this.AddEntity(new Wolf([-0.8,1],[0,0],this.gravity,this.canvas));
+	}
+	
+	if (this.level == 5)
+	{
+		this.AddEntity(new Rox([-0.8,0],[0,0],this.canvas));
 	}
 
 	if (isNaN(this.level))
@@ -263,6 +277,10 @@ Game.prototype.GetColour = function()
 		return [0.8,0.6,0.6,1];
 	else if (this.level == 3)
 		return [1.0,0.9,0.8,1];
+	else if (this.level == 4)
+		return [1.0,0.7,1.0,1];
+	else if (this.level == 5)
+		return [0.8,0.9,1.0,1];
 	return [1,1,1,1];
 }
 
@@ -348,8 +366,42 @@ Game.prototype.NextLevel = function(skipAd)
 			break;
 		case 3:
 			boss = "data/wolf/drawing1.svg";
-			taunt = "Wolf(?) Time.";
+			taunt = "Wolf Time.";
 			message = "It's a wolf. Honest.";
+			colour = [0.9,0.5,0.5,1];
+			break;
+			
+		case 4:
+			boss = "data/wolf/drawing1.svg";
+			taunt = "More wol";
+			var choice = Math.round((new Date()).getTime()/1e3) % 6;
+			switch (choice)
+			{
+				case 0:
+					taunt += "fs";
+					break;
+				case 1:
+					taunt += "ves";
+					break;
+				case 2:
+					taunt += "fen";
+					break;
+				case 3:
+					taunt += "vies";
+					break;
+				case 4:
+					taunt += "fies";
+					break;
+				case 5:
+					taunt = "Wolf Brother Time!";
+					break;
+			}
+			if (choice != 5)
+			{
+				taunt += ". Because lazy developer.";
+			}
+					
+			
 			colour = [0.9,0.5,0.5,1];
 			break;
 		
@@ -362,10 +414,9 @@ Game.prototype.NextLevel = function(skipAd)
 			}
 			else
 			{
-				alert("Congratulations on beating level 3. There are no more levels. Yet. Starting again.");
-				this.level = -1;
-				this.NextLevel();
-				return;
+				boss = "data/rabbit/drawing2.svg";
+				taunt = "Mystery Level?";
+				colour = [0.9,0.5,0.5,1];
 			}
 			break;
 	}
@@ -487,7 +538,7 @@ Game.prototype.KeyDown = function(event)
 			this.Pause("Paused");
 			this.Message("Focus tab, press any key");
 		}
-		else
+		else if (this.player && this.player.alive)
 		{
 			this.Resume();
 			this.Message("");

@@ -41,6 +41,7 @@ Enemy.prototype.Step = function(game)
 	{
 		this.dazed -= this.delta/1000;
 		this.dazed = Math.max(this.dazed, 0);
+		this.dazed = Math.min(this.dazed, 2);
 	}
 
 	if (this.position[1] > 0.9)
@@ -256,6 +257,110 @@ Wolf.prototype.Die = function(reason, other, game)
 	game.AddTimeout("WolfTime", function() {
 		var xx = Math.random() > 0.5 ? 0.5 : -0.5;
 		this.AddEntity(new Wolf([xx, 1], [0,0], this.gravity, this.canvas));
-	}.bind(game), 5000*game.stepRate);
+	}.bind(game), 2000*game.stepRate);
 	if (!game.running) game.timeouts["WolfTime"].Pause();
 }
+
+
+
+function Rox(position, velocity, canvas)
+{
+	Enemy.call(this, position, velocity, [0,0], canvas,"");
+	this.frame = canvas.LoadTexture("data/rox/drawing1.svg");
+	for (var f in this.frameBase)
+		this.frameBase[f] = [this.frame];
+		
+	this.name = "Rox";
+	this.bounds = {min: [-40/canvas.width, -40/canvas.height], max: [40/canvas.width, 40/canvas.height]};
+	this.scale = [60/canvas.width, 40/canvas.height];
+	
+	this.health = 5;
+	this.speed = 0.65;
+	this.canJump = true;
+	this.jumpSpeed = 1.0;
+	
+	this.jumpWidths = 3;
+	
+	this.startPosition = [position[0],position[1]];
+	
+}
+Rox.prototype = Object.create(Enemy.prototype);
+Rox.prototype.constructor = Rox;
+Rox.prototype.CollisionActions = Object.create(Enemy.prototype.CollisionActions);
+
+Rox.prototype.Draw = function(canvas)
+{
+	if (!canvas.ctx)
+		return Entity.prototype.Draw.call(this,canvas);
+	
+	var tl = canvas.LocationGLToPix(this.Left(), this.Top());
+	var w = this.frame.img.width;
+	var h = this.frame.img.height;
+	if (this.scale)
+	{
+		w = this.scale[0] * canvas.width;
+		h = this.scale[1] * canvas.height;
+	}
+	var angle = Math.atan2(this.velocity[1],this.velocity[0]);
+	var flip = (Math.abs(angle) > Math.acos(0));
+	canvas.ctx.translate(tl[0]+w/2,tl[1]+h/2);
+	console.log("Angle " + String(angle));
+	
+	if (flip)
+	{
+		canvas.ctx.scale(1,-1);
+	}
+	canvas.ctx.rotate(-angle);
+	canvas.ctx.drawImage(this.frame.img, -w/2,-h/2, w, h);
+	if (flip)
+	{
+		canvas.ctx.scale(1,-1);
+	}
+	canvas.ctx.rotate(+angle);
+	canvas.ctx.translate(-tl[0]-w/2,-tl[1]-h/2);
+	
+}
+
+Rox.prototype.CollisionActions["Wall"] = function(other,instigator,game)
+{
+	this.velocity[0] = -this.velocity[0];
+	return false;
+}
+
+Rox.prototype.CollisionActions["Floor"] = function(other,instigator,game)
+{
+	this.Die(other.GetName(),other,game);
+	return true;
+}
+
+Rox.prototype.HandleCollision = function(other,instigator,game)
+{
+	var result = Enemy.prototype.HandleCollision.call(this,other,instigator,game);
+	if (other.Above(this))
+	{
+		this.velocity[1] = other.velocity[1]/2;
+		this.acceleration[1] = other.acceleration[1];
+	}
+	return result;
+	
+}
+
+Rox.prototype.Step = function(game)
+{
+	var homeDisp = [0,0];
+	for (var i = 0; i < this.position.length; ++i)
+		homeDisp[i] = this.position[i] - this.startPosition[i];
+		
+		
+	if (this.velocity[0] == 0)
+	{
+		this.velocity[0] = Math.random() > 0.5 ? this.speed : -this.speed;
+	}
+	this.acceleration[1] = (homeDisp[1] != 0) ? -2*homeDisp[1]/Math.abs(homeDisp[1]) : 0;
+	if (Math.abs(homeDisp) < 0.5*this.Width())
+		this.acceleration[1] = 0;
+
+	Entity.prototype.Step.call(this,game);
+}
+
+

@@ -13,14 +13,13 @@ import json
 if __name__ == "__main__":
 	sys.stdout.write("Content-type: application/json; charset=utf-8\r\n\r\n");
 	d = os.listdir("data/adverts")
-	#d += ["view.py?query=attempts&level=1"]
-	#d += ["view.py?query=attempts&level=2"]
-	
-	
-	d.sort(key = lambda e : random.random())
 	for i in xrange(len(d)):
 		d[i] = "data/adverts/"+d[i]
-	#d.insert(0,"data/adverts/advertising.svg")
+		
+	for x in xrange(1,5):
+		d += ["view.py?query=attempts&level=%d" % x]
+	d.sort(key = lambda e : random.random())
+	
 	sys.stdout.write(json.dumps(d)+"\n")
 	sys.exit(0)
 
