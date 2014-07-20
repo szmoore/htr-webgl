@@ -255,6 +255,12 @@ Game.prototype.SetLevel = function(level)
 	{
 		this.AddEntity(new Rox([-0.8,0],[0,0],this.canvas));
 	}
+	if (this.level == 6)
+	{
+		this.AddEntity(new Rox([-0.8,0.7],[0,0],this.canvas));
+		this.AddEntity(new Rox([+0.8,-0.3],[0,0],this.canvas));
+		
+	}
 
 	if (isNaN(this.level))
 	{
@@ -346,7 +352,7 @@ Game.prototype.NextLevel = function(skipAd)
 		case 0:
 			boss = "data/rabbit/drawing3.svg";
 			taunt = "Tutorial Time!";
-			message = "Avoid the boxes";
+			message = "Prepare to be amazed by the physics engine.";
 			colour = [0.5,0.5,0.9,1];
 			
 			break;
@@ -367,7 +373,7 @@ Game.prototype.NextLevel = function(skipAd)
 		case 3:
 			boss = "data/wolf/drawing1.svg";
 			taunt = "Wolf Time.";
-			message = "It's a wolf. Honest.";
+			message = "Bad Wolf";
 			colour = [0.9,0.5,0.5,1];
 			break;
 			
@@ -400,8 +406,15 @@ Game.prototype.NextLevel = function(skipAd)
 			{
 				taunt += ". Because lazy developer.";
 			}
+			message = "Wolfs are pack animals FYI.";
 					
 			
+			colour = [0.9,0.5,0.5,1];
+			break;
+		case 5:
+			boss = "data/rox/drawing1.svg";
+			taunt = "It is time to Rox.";
+			message = "(It's an eagle-thingy)";
 			colour = [0.9,0.5,0.5,1];
 			break;
 		
@@ -446,7 +459,8 @@ Game.prototype.AddEnemy = function()
 	
 	var enemy;
 	this.spawnedEnemies += 1;
-	if (this.level > 0 && (this.spawnedEnemies % (6-Math.min(4,this.level))) == 0 && 
+	if (this.level > 0 && this.level < 5 &&
+		(this.spawnedEnemies % (6-Math.min(4,this.level))) == 0 && 
 		(!this.entityCount["Fox"] || this.entityCount["Fox"] < 2+this.level))
 	{
 		enemy = new Fox([this.player.position[0], 1],[0,0], this.gravity, this.canvas)
@@ -834,8 +848,7 @@ Game.prototype.MainLoop = function()
 	var nextTime = Math.max(0, this.stepRate - actualTime);
 	this.AddTimeout("MainLoop", function() {
 		this.MainLoop()
-	}.bind(this), nextTime, this);
-		
+	}.bind(this), nextTime, this);	
 }
 
 Game.prototype.GetNearestPlayer = function(position)
@@ -851,8 +864,13 @@ Game.prototype.Message = function(text, timeout)
 	if (!this.document.message)
 		this.document.message = this.document.getElementById("message");
 	if (!this.document.message)
-		return;
-	this.document.message.innerHTML = text;
+	{
+		this.canvas.Message(text);
+	}
+	else
+	{
+		this.document.message.innerHTML = text;
+	}
 	if (timeout)
 	{
 		this.AddTimeout("Message Clear", function() {

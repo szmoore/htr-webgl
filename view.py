@@ -24,13 +24,34 @@ def HighScores(form):
 
 
 	try:
-		c.execute("SELECT nickname, identity, level, runtime, start FROM stats ORDER BY level DESC, runtime DESC LIMIT 15") 
-		scores = c.fetchall()
-		conn.close()
-	except:
+		query = "SELECT nickname, identity, level, runtime, start FROM stats"
+		things = []
+		if "nickname" in form:
+			query += " WHERE nickname=?"
+			things += [form["nickname"].value]
+			
+		if "level" in form:
+			if len(things) > 0:
+				query += " AND "
+			else:
+				query += " WHERE "
+			query += " level=?"
+			things += [int(form["level"].value)]
+
+		query += " ORDER BY level DESC, runtime DESC LIMIT 20"
+		sys.stderr.write(query+"\n")
+		c.execute(query, things)
+
+	except Exception as e:
 		print("Content-type: text/plain\n")
 		print("Database access error.")
+		print(str(e))
 		return
+		
+
+	
+	scores = c.fetchall()
+	conn.close()
 
 	print("Content-type: text/html\n")
 	print("<html><head><title>High Scores</title></head><body>")
@@ -160,7 +181,7 @@ def ActivePlayers(form):
 	cutoff = (float(datetime.datetime.now().strftime("%s")) - 60*mins)*1e3
 	conn = sqlite3.connect("stats.db")
 	c = conn.cursor()
-	c.execute("SELECT identity, start, runtime FROM stats WHERE start > ? GROUP BY identity", (cutoff,))
+	c.execute("SELECT nickname, identity, start, runtime FROM stats WHERE start > ? GROUP BY nickname", (cutoff,))
 	print("Content-type: text/plain\n")
 	print(str(c.fetchall()))
 	conn.close()
@@ -169,13 +190,13 @@ def ActivePlayers(form):
 def LastPlayer(form):
 	conn = sqlite3.connect("stats.db")
 	c = conn.cursor()
-	c.execute("SELECT identity, start, runtime FROM stats ORDER by start DESC LIMIT 1")
+	c.execute("SELECT nickname, identity, start, runtime FROM stats ORDER by start DESC LIMIT 1")
 	
 	print("Content-type: text/html\n")
 	print("<html><head><title>Last Player</title></head><body>")
 	print("<h1> Last Player</h1>")
 	p = c.fetchall()[0]
-	print("<p> %s played for %s s at %s </p>" % (str(p[0]), str(round(p[2]/1e3)), str(helpers.ReadableDate(p[1]))))
+	print("<p> %s played for %s s at %s </p>" % (str(p[0]), str(round(p[3]/1e3)), str(helpers.ReadableDate(p[1]))))
 	print("</body></html>")
 
 	conn.close()
@@ -183,7 +204,7 @@ def LastPlayer(form):
 def GraphLevelAttempts(form):
 	level = 1 if not form.has_key("level") else int(form["level"].value)
 	player = None if not form.has_key("player") else form["player"].value
-	target = [0,194,150,208,165][level]
+	target = [0,194,150,208,165,0][level]
 
 	conn = sqlite3.connect("stats.db")
 	c = conn.cursor()

@@ -2,7 +2,7 @@
 function InitPage()
 {	
 	var width = Math.min(0.9*window.screen.width, 640);
-	var height = Math.min(0.7*window.screen.height, Infinity);
+	var height = Math.min(0.7*window.screen.height, 800);
 	
 	var canvas = document.getElementById("glcanvas");
 	canvas.width = width;

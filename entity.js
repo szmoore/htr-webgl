@@ -535,7 +535,10 @@ SFXEntity.prototype = Object.create(Entity.prototype);
 SFXEntity.prototype.constructor = SFXEntity;
 SFXEntity.prototype.Step = function(game) {
 	if (this.life-- <= 0)
-		this.Die();
+	{
+		this.Die(this.GetName(),this,game);
+		return;
+	}
 	
 	for (var i = 0; i < this.position.length; ++i)
 		this.position[i] = this.parent.position[i]+this.offset[i];

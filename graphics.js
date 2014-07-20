@@ -105,6 +105,15 @@ Canvas.prototype.Text = function(text)
 	this.ctx.fillText(text,this.width/16, this.height/6, 14*this.width/16);
 }
 
+Canvas.prototype.Message = function(text)
+{
+	var fontSize = 12; // (1 +Math.round(text.length/40));
+	this.ctx.font = String(fontSize)+"px Comic Sans";
+	this.ctx.fillStyle = "rgba(0,0,0,1)";
+	this.ctx.beginPath();
+	this.ctx.fillText(text,this.width/16, 5*this.height/6, 14*this.width/16);
+}
+
 Canvas.prototype.SplashScreen = function(imagePath, text, backColour, onload)
 {
 	this.cancelSplash = false;

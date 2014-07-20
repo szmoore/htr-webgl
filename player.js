@@ -124,7 +124,7 @@ Player.prototype.CollisionActions["Fox"] = function(other, instigator, game)
 {
 	if (instigator && this.IsStomping(other))
 	{
-		other.sleep = Math.random() * Math.abs(this.velocity[1] - other.velocity[1]) * 5;
+		other.sleep = Math.random() * Math.abs(this.velocity[1] - other.velocity[1]) * 5 + 5;
 		other.velocity[0] /= 2;
 	}
 	else if (instigator && other.sleep)
@@ -181,6 +181,12 @@ Player.prototype.DeathScene = function(game, onload)
 			image = "data/wolf/drawing1.svg";
 			text = "MAUL!";
 			game.Message("You got Mauled!");
+			colour = [1,0,0,0.8];
+			break;
+		case "Rox":
+			image = "data/rox/drawing1.svg";
+			text = "SWOOP!";
+			game.Message("You got Swooped!");
 			colour = [1,0,0,0.8];
 			break;
 	}
