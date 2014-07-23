@@ -64,43 +64,27 @@
 		<!--<source src="data/theme.ogg" type="audio/ogg">-->
 		<!--Your browser does not support the <code>audio</code> tag.-->
 	</audio>
-	<!--
-	<div id="infoBar" style="font-size: x-small; position: relative; width:600px; height:auto; border:0px solid black; margin:0 auto;">
-		<div style="float:left; width:20%; border:0px solid blue;">
-			<a href="about.html">[About]</a>
-			<a href="hints.html">[Hints]</a>
-		</div>
-		<div style="float:right; width:20%; border:0px solid red;">
-			<a href="javascript:HideAds();" id="hideads" style="color:grey;">[Hide Advertisments]</a>
-		</div>
-		<div id="controls" style="margin:0 auto; text-align:center;  width:60%; border:0px solid green; display: none;">
-			<b>Left/Right:</b> Run <b>Up:</b> Jump/Climb <b>Down:</b> Stomp
-			<b>Space:</b>Pause/Unpause
-		</div>
-	</div>
 
 	<div id="container" style="width:100%; position:relative; overflow:hidden;">
-		<div id="leftPanel" style="float:left; width: 0px; text-align: right; border:0px solid black; overflow:hidden; display:none; height:480px">
+		<div id="leftPanel" style="float:left; text-align: right; border:0px solid black; overflow:hidden; display:block;">
+			<!-- Put links and things here -->
 		</div>
 
-		<div id="rightPanel" style="float:right; width: 0px; border:0px solid blue; overflow:hidden; display:none; height:480px">
+		<div id="rightPanel" style="float:right; border:2px; text-align: left; solid red; overflow:hidden; display:block;">
+			<!-- Put ads here -->
+			<object id="banner" style="width:0px; height:0px;" type="text/html" data="data/adverts/external.html"></object>
 		</div>
 
-		<div id="middlePanel" style="margin:0 auto; width:650px; border:0px solid blue;">
-		-->	<!-- The canvas -->
+		<div id="middlePanel" style="margin:0 auto; border:2px solid blue;">
+			<!-- The canvas -->
 			<span id="loading" style="border:1px solid black;">Initialising page. If nothing happens try reloading (Ctrl+R).</span>
 			<canvas id="glcanvas" width="0" height="0">
 				The <code>canvas</code> tag isn't supported, <b>or</b> you have disabled scripts.
 			</canvas>
-		<!--</div>
+		</div>
 
 	</div>
-	-->
 	<div id="statusBar" style="font-size: x-small; position:relative; width:auto; height:auto; border:0px solid red; margin:0 auto;">
-		<div id="not_message" style="float:left; width:33%;"></div>
-		<div id="misc" style="float:right; width:33%; font-size:x-small; text-align:right;">
-			<!--<a href="view.py?query=highscores" id="highScore">[HighScores]</a>-->
-		</div>
 		<div id="score" style="margin:0 auto; width:34%; text-align:center;"><span id="runtime">00:00:00</span>|<img src="data/hats/hat1.gif"> x <span id="lives">0</span></div>
 	</div>
 
