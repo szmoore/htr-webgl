@@ -75,7 +75,7 @@ function Game(canvas, audio, document)
 	// Needed because some devices won't play audio so we have to check the time ourselves
 	//  instead of using a "ended" event listener.
 	// Level 0 is the tutorial and doesn't end at a specified time depending on player speed
-	this.levelDurations = [null, 198000,150000,210000,165000,null];
+	this.levelDurations = [null, 198000,150000,210000,165000,2480000];
 	
 	this.localTime = new Date();
 	this.canvas = new Canvas(canvas); // Construct Canvas class on the HTML5 canvas
@@ -287,7 +287,7 @@ Game.prototype.GetColour = function()
 	else if (this.level == 4)
 		return [1.0,0.7,1.0,1];
 	else if (this.level == 5)
-		return [0.8,0.9,1.0,1];
+		return [0.6,0.5,0.5,1];
 	return [1,1,1,1];
 }
 
@@ -414,8 +414,8 @@ Game.prototype.NextLevel = function(skipAd)
 			break;
 		case 5:
 			boss = "data/rox/drawing1.svg";
-			taunt = "It is time to Rox.";
-			message = "(It's an eagle-thingy)";
+			taunt = "It is time to Roc.";
+			message = "(With sincere apologies to Ronny James Dio)";
 			colour = [0.9,0.5,0.5,1];
 			break;
 		

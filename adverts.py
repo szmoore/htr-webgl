@@ -13,7 +13,7 @@ import json
 if __name__ == "__main__":
 	sys.stdout.write("Content-type: application/json; charset=utf-8\r\n\r\n");
 	d = os.listdir("data/adverts")
-	d = ["data/adverts/"+str(x) for x in d if (x.split(".")[-1] in ["svg","png"])]
+	d = ["data/adverts/"+str(x) for x in d if (x.split(".")[-1] in ["svg"])]
 	
 		
 	for x in xrange(1,5):
