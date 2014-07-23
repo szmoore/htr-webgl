@@ -357,6 +357,7 @@ Game.prototype.tutorial = {
 		delete this.tutorial;
 		delete this.tutorialState;
 		this.player.lives = 0;
+		this.playedTutorial = true;
 		this.NextLevel();
 	},
 };

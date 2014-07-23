@@ -92,6 +92,7 @@ function Game(canvas, audio, document)
 	this.running = false;
 	this.runTime = 0;
 	this.entities = [];
+	this.playedTutorial = false;
 }
 
 Game.prototype.AddTimeout = function(name, onTimeout, wait)
@@ -342,7 +343,7 @@ Game.prototype.NextLevel = function(skipAd)
 	var message;
 
 	// The tutorial is optional
-	if (this.level == 0 && !confirm("Play the tutorial?"))
+	if (this.level == 0 && !confirm("Play the tutorial?\nIf you haven't before you really want to.\n\nTrust me."))
 	{
 		return this.NextLevel(); // Skip to level 1
 	}
@@ -824,6 +825,14 @@ Game.prototype.MainLoop = function()
 				}.bind(this), 1000);
 			}
 		}
+		
+		if (this.level == 1 && !this.playedTutorial && (!this.spawnCount || this.spawnCount <= 10))
+		{
+			this.level = -1;
+			this.NextLevel();
+			return;
+		}
+		
 		this.player.DeathScene(this, deathCall.bind(this));
 		return;
 	}
