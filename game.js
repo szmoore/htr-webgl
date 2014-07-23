@@ -826,12 +826,12 @@ Game.prototype.MainLoop = function()
 			}
 		}
 		
-		if (this.level == 1 && !this.playedTutorial && (!this.spawnCount || this.spawnCount <= 10))
-		{
-			this.level = -1;
-			this.NextLevel();
-			return;
-		}
+		//if (this.level == 1 && !this.playedTutorial && (!this.spawnCount || this.spawnCount <= 10))
+		//{
+		//	this.level = -1;
+		//	this.NextLevel();
+		//	return;
+		//}
 		
 		this.player.DeathScene(this, deathCall.bind(this));
 		return;
