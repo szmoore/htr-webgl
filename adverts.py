@@ -13,8 +13,8 @@ import json
 if __name__ == "__main__":
 	sys.stdout.write("Content-type: application/json; charset=utf-8\r\n\r\n");
 	d = os.listdir("data/adverts")
-	for i in xrange(len(d)):
-		d[i] = "data/adverts/"+d[i]
+	d = ["data/adverts/"+str(x) for x in d if (x.split(".")[-1] in ["svg","png"])]
+	
 		
 	for x in xrange(1,5):
 		d += ["view.py?query=attempts&level=%d" % x]
