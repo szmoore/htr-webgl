@@ -107,7 +107,7 @@ function main()
 		g_game.xmasMode = true;
 		welcome_message = "HTR: Xmas edition!";
 	}
-	else if (today.getMonth() == 2 && today.getDate() == 14)
+	else if (today.getMonth() == 1 && today.getDate() == 14)
 	{
 		g_game.romanticMode = true;
 		welcome_message += "\nLove: The Battlefield";
