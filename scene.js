@@ -96,6 +96,24 @@ function main()
 	var canvas = document.getElementById("glcanvas");
 	g_game = new Game(canvas, audio, document);
 	
+	var welcome_message = "Humphrey The Rabbit";
+	
+	//christmas mode and romantic mode setting
+	var today = new Date();
+	// Javascript's Date class' months are zero indexed. But the days are one indexed.
+	// Conshmistancy
+	if (today.getMonth() == 11 && today.getDate() > 23 && today.getDate() < 27)
+	{
+		g_game.xmasMode = true;
+		welcome_message = "HTR: Xmas edition!";
+	}
+	else if (today.getMonth() == 2 && today.getDate() == 14)
+	{
+		g_game.romanticMode = true;
+		welcome_message += "\nLove: The Battlefield";
+	}
+
+	
 	var adblock = GetCookie("adblock");
 	if (adblock === "yes")
 	{
@@ -138,5 +156,5 @@ function main()
 		this.splashPerformance = (new Date()).getTime() - this.splashPerformance;
 		//alert("splash took " + String(this.splashPerformance)+"ms");
 	}.bind(g_game, startLevel);
-	g_game.canvas.SplashScreen("data/rabbit/drawing2.svg", "Humphrey The Rabbit", [0.9,1.0,0.9,1],s);
+	g_game.canvas.SplashScreen("data/rabbit/drawing2.svg", welcome_message, [0.9,1.0,0.9,1],s);
 }

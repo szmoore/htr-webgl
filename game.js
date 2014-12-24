@@ -194,7 +194,12 @@ Game.prototype.SetLevel = function(level)
 	this.spawnedEnemies = 0;
 	if (this.audio)
 	{
-		this.audio.src = "data/theme"+this.level+".ogg";
+		if (this.romanticMode === true)
+			this.audio.src = "data/romanticmode.ogg";
+		else if (this.xmasMode === true && this.level === 1)
+			this.audio.src = "data/xmasmode.ogg";
+		else
+			this.audio.src = "data/theme"+this.level+".ogg";
 		this.audio.load();
 		this.audio.pause();
 		//this.audio.play();
@@ -274,8 +279,10 @@ Game.prototype.SetLevel = function(level)
 /** Get background draw colour (in OpenGL RGBA) **/
 Game.prototype.GetColour = function()
 {
-	if (this.romanticMode)
+	if (this.romanticMode === true)
 		return [1,0.9,0.9,1];
+	else if (this.xmasMode === true && this.level === 1)
+		return [0.9,0.9,1,1];
 	else if (this.level == 0)
 		return [0.9,1,0.9,1];
 	else if (this.level == 1)
@@ -470,6 +477,18 @@ Game.prototype.AddEnemy = function()
 	else
 	{
 		enemy = new Box([this.player.position[0], 1],[0,0], this.gravity, this.canvas)
+		// hack for Christmas and Romantic Mode)
+		if (this.xmasMode === true)
+		{
+			enemy.frame = this.canvas.LoadTexture("data/box/box_xmas"+enemy.index+".gif");
+			enemy.damagedFrame = enemy.frame; // you can't hurt the merry
+		}
+		else if (this.romanticMode === true)
+		{
+			enemy.frame = this.canvas.LoadTexture("data/box/box_valentine.gif");
+			enemy.damagedFrame = enemy.frame; // you can't hurt the lovely
+		}
+			
 	}
 	
 	if (this.spawnedEnemies % 10 == 0)
