@@ -110,7 +110,7 @@ Game.prototype.Pause = function(message,image	, colour)
 	{
 		this.timeouts[t].Pause();
 	}
-	if (this.audio)
+	if (this.audio && typeof(this.audio.pause) === "function")
 		this.audio.pause();
 		
 	this.Draw();

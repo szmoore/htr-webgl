@@ -8,7 +8,10 @@ Game.prototype.tutorial = {
 	},
 	
 	"move1" : function() {
-		this.message = "Touch: Humphrey moves towards finger"
+		if (g_touchBarCookie === "yes")
+			this.message = "Crappy Touch: Press buttons. Wait...";
+		else
+			this.message = "Touch: Humphrey moves towards finger. NO SWIPING."
 		this.tutorialState = "move2";
 		this.tutorialTimeout = 2000;
 	},

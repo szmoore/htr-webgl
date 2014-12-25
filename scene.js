@@ -24,6 +24,7 @@ var g_identityCookie;
 var g_nicknameCookie;
 var g_maxLevelCookie;
 var g_adblockCookie;
+var g_touchBarCookie;
 
 function Handshake()
 {
@@ -60,7 +61,7 @@ function Handshake()
 		g_nicknameCookie = GetCookie("nickname");
 		g_maxLevelCookie = GetCookie("maxLevel");
 		if (g_adblockCookie)
-				SetCookie("adblock", g_adblockCookie);
+			SetCookie("adblock", g_adblockCookie);
 		
 		// For our legacy users who won't have the nickname yet (hahaha I said legacy)
 		if (!g_nicknameCookie || g_nicknameCookie == "")
@@ -79,6 +80,22 @@ function Handshake()
 			SetCookie("maxLevel", 0);
 		}
 	}
+	if (g_touchBarCookie)
+		SetCookie("touchBar", g_touchBarCookie);
+	g_touchBarCookie = GetCookie("touchBar");
+
+	if (g_touchBarCookie === "yes")
+	{
+		console.log("Enable touch bar");
+		var touchBar = document.getElementById("touchBar");
+		if (typeof(touchBar) !== "undefined")
+		{
+			touchBar.style.display = "block";
+			InitPage();
+		}
+		else
+			console.log("Failed to enable button controls");
+	}
 	
 	console.log("You are: "+String(g_identityCookie));
 	console.log("Your nickname is: "+String(g_nicknameCookie));
@@ -91,8 +108,13 @@ function Handshake()
 function main() 
 {
 	Handshake();
-	
 	var audio = document.getElementById("theme");
+	// Deal with browsers that can't play audio
+	if (typeof(audio.pause) !== "function" || typeof(audio.play) !== "function")
+	{
+		audio = undefined;
+	}
+
 	var canvas = document.getElementById("glcanvas");
 	g_game = new Game(canvas, audio, document);
 	

@@ -5,7 +5,7 @@
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
     <meta name="viewport" content="width=device-width, user-scalable=no">
     <link rel="stylesheet" href="webgl.css" type="text/css">
-   
+    <!-- for remote debugging -->  <!--<script src="http://jsconsole.com/remote.js?[insert thing here]"></script>-->
     <script src="utils.js"></script>
     <script src="graphics.js"></script>
     <script src="entity.js"></script>
@@ -90,15 +90,17 @@
 	</div>
 
 	<!--<div id="spacer" style="position:relative; width:auto; height:50px; margin:0 auto; display: block;"></div>-->
-	
-	<!-- For touch screen devices -->
-	<!--
-	<div id="touchBar" style="position:relative; width:auto; height:auto; margin:0 auto; border:0px solid black; text-align:center; display: none;">
-		<img id="touchLeft" src="data/rabbit/left1.gif" style="width:25%">
-		<img id="touchUp" src="data/rabbit/up.gif" style="width:25%">
-		<img id="touchRight" src="data/rabbit/right1.gif" style="width:25%">
-		<img id="touchDown" src="data/rabbit/down.gif" style="width:25%">
-	</div> -->
+
+	<!-- For touch screen devices that don't support touch events -->	
+	<div id="touchBar" style="position:relative; width:auto; height:auto; margin:0 auto; border:0px solid black; text-align:center;display: none;">
+		<button onclick="g_game.KeyDown({keyCode:38})"><img id="touchUp" src="data/rabbit/up.gif" style="height:96px"></button>
+		<button onclick="g_game.KeyDown({keyCode:37})">	<img id="touchLeft" src="data/rabbit/left1.gif" style="height:96px"> </button>
+	 	<button onclick="g_game.KeyUp({keyCode:37}); g_game.KeyUp({keyCode:38}); g_game.KeyUp({keyCode:39}); g_game.KeyUp({keyCode:40});">
+			<img id="touchRest" src="data/rabbit/rest.gif" style="height:96px;"/>
+		</button>
+		<button onclick="g_game.KeyDown({keyCode:39})"><img id="touchRight" src="data/rabbit/right1.gif" style="height:96px"></button>
+		<button onclick="g_game.KeyDown({keyCode:40})"><img id="touchDown" src="data/rabbit/down.gif" style="height:96px"></button>
+	</div> 
 
 
 	

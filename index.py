@@ -68,6 +68,9 @@ def main(argv):
 	
 		if "adblock" in form:
 			print("g_adblockCookie = \"%s\";" % form["adblock"].value)
+
+		if "touchBar" in form:
+			print("g_touchBarCookie = \"%s\";" % form["touchBar"].value)
 	
 	except Exception as e:
 		print("console.log(\"Server database error: %s\")" % str(e))
