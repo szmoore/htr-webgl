@@ -610,6 +610,10 @@ Game.prototype.KeyUp = function(event)
 
 Game.prototype.TouchDown = function(event)
 {
+	if (!this.running)
+	{
+		this.Resume();
+	}
 	this.keyState = [];
 	if (!this.player || !this.canvas)
 		return;
