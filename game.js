@@ -47,6 +47,9 @@ Timeout.prototype.Pause = function()
  */
 Timeout.prototype.Resume = function()
 {
+	if (this.running)
+		return;
+
 	this.running = true;
 	//console.log("Timeout <" + this.name + "> resumed with " + String(this.wait) + " ms remaining");
 	this.id = setTimeout(function(game) {
@@ -352,7 +355,7 @@ Game.prototype.NextLevel = function(skipAd)
 	// The tutorial is optional
 	if (this.level == 0 && !confirm("Play the tutorial?\nIf you haven't before you really want to.\n\nTrust me."))
 	{
-		return this.NextLevel(); // Skip to level 1
+		return this.NextLevel(true); // Skip to level 1
 	}
 	
 	switch (this.level)
@@ -610,7 +613,7 @@ Game.prototype.KeyUp = function(event)
 
 Game.prototype.TouchDown = function(event)
 {
-	if (!this.running)
+	if (!this.running && this.player && this.player.alive)
 	{
 		this.Resume();
 	}
@@ -729,7 +732,8 @@ Game.prototype.ClearStepAndDraw = function()
 				this.entities[i].Clear(this.canvas);
 				this.entityCount[this.entities[i].GetName()] -= 1;
 				this.deathCount[this.entities[i].GetName()] += 1;
-				delete this.entities[i];
+				if (this.entities[i] !== this.player)
+					delete this.entities[i];
 			}
 		}
 	}
@@ -857,6 +861,7 @@ Game.prototype.MainLoop = function()
 		//}
 		
 		this.player.DeathScene(this, deathCall.bind(this));
+		this.player.alreadyDying = false;
 		return;
 	}
 	

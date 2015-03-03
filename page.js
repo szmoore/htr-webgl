@@ -6,6 +6,12 @@ function InitPage()
 	var width = Math.min(0.9*screenWidth, 640);
 	var height = Math.min(screenHeight-64, 800);
 
+	if (typeof(g_game) !== "undefined" && typeof(g_game.canvas) != "undefined")
+	{
+		g_game.canvas.width = width;
+		g_game.canvas.height = height;
+	}
+
 		
 	var touchBar = document.getElementById("touchBar");
 	if (typeof(touchBar) !== "undefined" && touchBar.style.display === "block")
