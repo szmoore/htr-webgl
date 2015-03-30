@@ -731,7 +731,14 @@ Game.prototype.ClearStepAndDraw = function()
 			{
 				this.entities[i].Clear(this.canvas);
 				this.entityCount[this.entities[i].GetName()] -= 1;
-				this.deathCount[this.entities[i].GetName()] += 1;
+				if (!this.deathCount[this.entities[i].GetName()])
+				{
+					this.deathCount[this.entities[i].GetName()] = 1;
+				}
+				else
+				{
+					this.deathCount[this.entities[i].GetName()] += 1;
+				}
 				if (this.entities[i] !== this.player)
 					delete this.entities[i];
 			}

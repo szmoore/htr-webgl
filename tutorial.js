@@ -4,7 +4,7 @@ Game.prototype.tutorial = {
 	"start" : function () {
 		this.message = "Move around";
 		this.tutorialState = "move1";
-		this.tutorialTimeout = 2000;
+		this.tutorialTimeout = 4000;
 	},
 	
 	"move1" : function() {
@@ -13,19 +13,19 @@ Game.prototype.tutorial = {
 		else
 			this.message = "Touch: Humphrey moves towards finger. NO SWIPING."
 		this.tutorialState = "move2";
-		this.tutorialTimeout = 2000;
+		this.tutorialTimeout = 8000;
 	},
 	
 	"move2" : function() {
 		this.message = "Keyboard: W,S,A,D or Arrow keys"
 		this.tutorialState = "climb";
-		this.tutorialTimeout = 2000;
+		this.tutorialTimeout = 5000;
 	},
 	
 	"move3" : function() {
 		this.message = "Mouse: Hold down and move";
 		this.tutorialState = "climb";
-		this.tutorialTimeout = 2000;
+		this.tutorialTimeout = 5000;
 	},
 	
 	"climb" : function () {
@@ -33,7 +33,7 @@ Game.prototype.tutorial = {
 		this.tutorialState = "hat1";
 		this.tutorialTimeout = 8000;
 	},
-	
+	
 	"hat1" : function () {
 		this.message = "Hats are lives";
 		this.tutorialState = "hat2";
@@ -228,6 +228,8 @@ Game.prototype.tutorial = {
 		this.message = "We don't have all day...";
 		this.tutorial.fox.Step = Entity.prototype.Step;
 		this.tutorial.fox.velocity = [0,0];
+		if (Math.abs(this.tutorial.fox.position[0]) > 0.4)
+			this.tutorial.fox.position[0] = 0.4*(this.tutorial.fox.position[0])/Math.abs(this.tutorial.fox.position[0]);
 		this.tutorial.foxPrison = new Entity(this.tutorial.fox.position,
 		this.tutorial.fox.velocity,this.gravity, this.canvas);
 		this.tutorial.foxPrison.Step = function(game) {};
@@ -270,6 +272,9 @@ Game.prototype.tutorial = {
 			this.tutorial["done"].call(this);
 			return;
 		}				
+		if (Math.abs(this.tutorial.fox.position[0]) > 0.4)
+			this.tutorial.fox.position[0] = 0.4*(this.tutorial.fox.position[0])/Math.abs(this.tutorial.fox.position[0]);
+
 		var xx = this.tutorial.fox.position[0];
 		if (xx > 0)
 			xx -= this.tutorial.fox.Width();

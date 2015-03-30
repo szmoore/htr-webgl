@@ -190,8 +190,8 @@ Player.prototype.DeathScene = function(game, onload)
 			colour = [1,0,0,0.8];
 			break;
 	}
-	if (g_identityCookie)
-		this.PostStats("Killed "+this.deathType,game)
+//	if (g_identityCookie)
+	this.PostStats("Killed "+this.deathType,game)
 		
 	game.canvas.SplashScreen(image, text, colour, onload);
 }

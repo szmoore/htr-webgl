@@ -6,12 +6,16 @@ import sys
 import os
 import sqlite3
 import datetime
-
+import requests
 import tempfile
+import re
 os.environ['MPLCONFIGDIR'] = tempfile.mkdtemp()
 import matplotlib
 matplotlib.use('Agg')
 from pylab import *
+from mpl_toolkits.basemap import Basemap
+
+from scipy.stats import gaussian_kde
 
 import helpers
 
@@ -201,8 +205,125 @@ def LastPlayer(form):
 
 	conn.close()
 
+def GetAccesses():
+	f = open("../../rabbitgame.access", "r")
+	data = asarray([[datetime.datetime.strptime(l.split(" ")[5].strip("["), "%d/%b/%Y:%H:%M:%S"), l.split(" ")[0]] for l in f.readlines()])
+	f.close()
+	return data
+
+def IPToXY(ip):
+	try:
+#	if True:
+		#response = urllib.urlopen('http://api.hostip.info/get_html.php?ip=%s&position=true' % ip).read()	
+		#y = float(re.search("Latitude: (\d+.\d+)").group(1))
+		#x = float(re.search("Longitude: (\d+.\d+)").group(1))
+		url = "{}/{}".format("http://ip-api.com/json/", ip)
+		response = requests.get(url)
+		response.raise_for_status()
+		x = float(response.json()["lon"])
+		y = float(response.json()["lat"])
+		return [x,y]
+	except:
+		return None
+
+def GraphAccessesMap(form):
+	data = GetAccesses()
+	if data.size == 0:
+		print("Content-type: text/plain\n\nNo data\n")
+		return
+
+	m = Basemap(projection="mill", lon_0=120)
+	m.drawcoastlines()
+	m.drawparallels(arange(-90,90,30), labels=[1,0,0,0])
+	m.drawmeridians(arange(m.lonmin, m.lonmax+30, 60), labels=[0,0,0,1])
+	#m.drawmapboundary(fill_color="aqua")
+	#m.fillcontinents(color="white", lake_color="aqua")
+	last=500
+	raw_xy = asarray([m(xy[0], xy[1]) for xy in [IPToXY(ip) for i,ip in enumerate(data[-last:,1]) if ip != data[-last:,1][i-1] or i==0] if xy != None])
+
+	xy = vstack([raw_xy[:,0],raw_xy[:,1]])
+	z = gaussian_kde(xy)(xy)
+	idx = z.argsort()
+	x,y,z = raw_xy[:,0][idx], raw_xy[:,1][idx], z[idx]
+
+
+
+	m.scatter(x,y,c=z,marker='o')
+	print("Content-type: image/png\n")
+	savefig(sys.stdout, format="png")
+	savefig("data/accessmap.svg", format="svg")
+
+def GraphAccesses(form):
+	data = GetAccesses()
+	if data.size == 0:
+		print("Content-type: text/plain\n\nNo data\n")
+		return
+	title("Access Events")
+	xlabel("Date")
+	ylabel("Count")
+	plot(data[:,0], arange(data.shape[0]), '-x')
+	gcf().autofmt_xdate()
+	print("Content-type: image/png\n")
+	savefig(sys.stdout, format="png")
+
+def GraphPlayerCount(form):
+	level = 0 if not form.has_key("level") else int(float(form["level"].value))
+	conn = sqlite3.connect("stats.db")
+	c = conn.cursor()
+	query = "SELECT MIN(created)/1000, level, nickname FROM players WHERE nickname != 'nemo' AND level >= ? GROUP BY nickname"
+	args = [level]
+	c.execute(query, args)
+	results = asarray(c.fetchall())
+	if results.size == 0:
+		print("Content-type: text/plain\n\nNo data\n")
+		conn.close()
+		return
+	x = asarray([datetime.datetime.fromtimestamp(int(float(d))) for d in results[:,0]])
+	x.sort()
+	y = arange(len(x))
+
+	title("Players")
+	xlabel("Date")
+	ylabel("Count")
+	plot(x, y, '-x')
+	gcf().autofmt_xdate()
+	print("Content-type: image/png\n")
+	savefig(sys.stdout, format="png")
+	conn.close()
+
+def GraphEventLocations(form):
+	level = None if not form.has_key("level") else int(float(form["level"].value))
+	conn = sqlite3.connect("stats.db")
+	c = conn.cursor()
+	query = "SELECT x,y FROM stats WHERE type LIKE '%Kill%'"
+	if type(level) == int:
+		query += " AND level = ?"
+		args = [level]
+	else:
+		args = []
+	c.execute(query, args)
+	results = asarray(c.fetchall())
+	if results.size == 0:
+		print("Content-type: text/plain\n\nNo data\n")
+		conn.close()
+		return
+	x = asarray([float(d) for d in results[:,0]])
+	y = asarray([float(d) for d in results[:,1]])
+	xy = vstack([x,y])
+	z = gaussian_kde(xy)(xy)
+	idx = z.argsort()
+	x,y,z = x[idx], y[idx], z[idx]
+
+	scatter(x,y,c=z,edgecolor='')
+	xlim([-1,1])
+	ylim([-1,1])
+	print("Content-type: image/png\n")
+	savefig(sys.stdout, format="png")
+	conn.close()
+
+
 def GraphLevelAttempts(form):
-	level = 1 if not form.has_key("level") else int(form["level"].value)
+	level = 1 if not form.has_key("level") else int(float(form["level"].value))
 	player = None if not form.has_key("player") else form["player"].value
 	target = [0,194,150,208,165,0][level]
 
@@ -235,6 +356,7 @@ def GraphLevelAttempts(form):
 
 	print("Content-type: image/png\n")
 	savefig(sys.stdout, format="png")
+	conn.close()
 
 
 if __name__ == "__main__":
@@ -258,7 +380,11 @@ if __name__ == "__main__":
 		"players" : PlayerList,
 		"active" : ActivePlayers,
 		"last" : LastPlayer,
-		"attempts" : GraphLevelAttempts
+		"attempts" : GraphLevelAttempts,
+		"playercount" : GraphPlayerCount,
+		"accesslog" : GraphAccesses,
+		"accessmap" : GraphAccessesMap,
+		"deathloc" : GraphEventLocations
 	}
 
 	if form.has_key("query") and form["query"].value in api:
