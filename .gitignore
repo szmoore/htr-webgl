@@ -12,3 +12,4 @@ leftPanel.html
 data/adverts/external.html
 gitignore/*
 *.geany
+*.o
