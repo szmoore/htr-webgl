@@ -65,8 +65,9 @@ Timeout.prototype.constructor = Timeout;
  * @param audio - HTML5 audio element to use for sound
  * @param document - The webpage DOM
  */
-function Game(canvas, audio, document)
+function Game(canvas, audio, document, multiplayer)
 {
+	Debug("Construct Game");
 	this.document = document;
 	this.audio = audio;
 	this.level = -1;
@@ -96,7 +97,22 @@ function Game(canvas, audio, document)
 	this.runTime = 0;
 	this.entities = [];
 	this.playedTutorial = false;
+	
+	this.webSockets = [];
+	this.multiplayer = multiplayer;
+	if (this.multiplayer)
+	{
+		Debug("Open WebSocket Connection");
+		var con = new WebSocket("ws://localhost:7681", "ws");
+		con.onopen = function() {console.log("open sesame")}
+		con.onclose = function(e) {console.log("close sesame"); console.log(e.reason);}
+		con.onerror = function(e) {console.log("websocket error"); console.log(e); console.log(String(e));}
+		con.onmessage = function(e) {this.MultiplayerSync(e.data);}.bind(this) // didn't want to use a global here :(
+		this.webSockets.push(con);
+	}
+	Debug("Constructed Game");
 }
+
 
 Game.prototype.AddTimeout = function(name, onTimeout, wait)
 {
@@ -170,6 +186,10 @@ Game.prototype.Resume = function()
 		}
 	}
 	this.canvas.Clear(this.GetColour());
+	if (this.background)
+	{
+		
+	}
 
 }
 
@@ -181,7 +201,7 @@ Game.prototype.Start = function(level)
 
 Game.prototype.SetLevel = function(level)
 {
-	
+	Debug("Set level " + String(level));
 	this.level = Math.min(level,5);
 	
 	// hooray globals
@@ -214,7 +234,7 @@ Game.prototype.SetLevel = function(level)
 	this.runTime = 0;
 	this.stepCount = 0;
 	this.keyState = [];
-	this.webSockets = [];
+	
 	this.entities = [];
 	for (var t in this.timeouts)
 	{
@@ -235,6 +255,24 @@ Game.prototype.SetLevel = function(level)
 	// Add the player
 	this.player = new Player([0,0],[0,0],this.gravity, this.canvas, "data/rabbit");
 	this.AddEntity(this.player);
+	
+	if (this.multiplayer && this.playerCount && this.playerCount > 1)
+	{
+		this.multiplayer = []
+		this.multiplayer[this.playerID] = this.player;
+		this.player.playerID = this.playerID;
+		
+		this.player.position[0] = -(this.player.Width()/2)*this.playerCount + this.player.Width()*this.playerID;
+		
+		for (var i = 0; i < this.playerCount; ++i)
+		{
+			if (i == this.playerID) continue;
+			var x = -(this.player.Width()/2)*this.playerCount + this.player.Width()*i;
+			this.multiplayer[i] = new Player([x, 0], [0,0], this.gravity, this.canvas, "data/rabbit");
+			this.multiplayer[i].playerID = i;
+			this.AddEntity(this.multiplayer[i]);
+		}
+	}
 	
 
 	/**  level specific code goes below here **/
@@ -276,7 +314,7 @@ Game.prototype.SetLevel = function(level)
 		this.player.LoadSprites(this.canvas, "data/fox");
 	}
 
-	
+	Debug("");
 }
 
 /** Get background draw colour (in OpenGL RGBA) **/
@@ -586,7 +624,7 @@ Game.prototype.KeyDown = function(event)
 	
 	for (var i = 0; i < this.webSockets.length; ++i)
 	{
-		this.webSockets.send("+"+event.keyCode+"\n");
+		this.webSockets[i].send("+"+event.keyCode+"\n");
 	}
 }
 
@@ -606,7 +644,7 @@ Game.prototype.KeyUp = function(event)
 		return;
 	for (var i = 0; i < this.webSockets.length; ++i)
 	{
-		this.webSockets.send("-"+event.keyCode+"\n");
+		this.webSockets[i].send("-"+event.keyCode+"\n");
 	}	
 }
 
@@ -725,7 +763,20 @@ Game.prototype.ClearStepAndDraw = function()
 		{
 			 // noticably faster on smartphone, but obviously causes issues with overlapping objects :(
 			//this.entities[i].Clear(this.canvas);
-			this.entities[i].Step(this);
+			
+			// Hacky - use different key states when in multiplayer
+			if (this.entities[i].name == "Humphrey" && this.multiplayerKeyState)
+			{
+				console.log("Multiplayer; load key state for "+str(this.playerID))
+				this.oldKeyState = this.keyState;
+				this.keyState = this.multiplayerKeyState[this.entities[i].playerID];	
+				this.entities[i].Step(this);
+				this.keyState = this.oldKeyState;		
+			}
+			else
+			{
+				this.entities[i].Step(this);
+			}
 			this.entities[i].Draw(this.canvas);
 			if (!this.entities[i].alive)
 			{
@@ -801,6 +852,7 @@ Game.prototype.MainLoop = function()
 		this.Message("Focus tab and press space");
 		return;
 	}
+	
 	
 	if (this.levelDurations[this.level] && 
 		this.runTime > this.levelDurations[this.level])
@@ -944,3 +996,43 @@ Game.prototype.UpdateDOM = function(player)
 }
 
 
+/**
+ * Called whenever a WebSocket message is received
+ */
+Game.prototype.MultiplayerSync = function(message)
+{
+	
+		Debug("WS: " + String(message));
+		tokens = message.split(" ");
+		if (!this.messageCount)
+		{
+			this.messageCount = 0;
+		}
+		
+		if (tokens[0] === "MULTIPLAYER")
+		{
+			this.multiplayer = [];
+			this.playerID = parseInt(tokens[1]);
+			this.playerCount = parseInt(tokens[2]);
+			//this.multiplayer[this.playerID] = this.player;
+			//this.player.playerID = this.playerID;
+			
+			this.multiplayerKeyState = [];
+			for (var i = 0; i < this.playerCount+1; ++i)
+			{
+				this.multiplayerKeyState[i] = [];
+			}
+		}
+		else
+		{
+			var playerID = parseInt(tokens[0]);
+			var keyCode = parseInt(tokens[1]);
+			if (keyCode < 0)
+				this.multiplayerKeyState[playerID][Math.abs(keyCode)] = false;
+			else
+				this.multiplayerKeyState[playerID][Math.abs(keyCode)] = true;
+		}
+		
+		
+		++this.messageCount;
+}

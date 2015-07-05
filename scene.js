@@ -107,7 +107,7 @@ function Handshake()
  */
 function main() 
 {
-	Handshake();
+	//Handshake();
 	var audio = document.getElementById("theme");
 	// Deal with browsers that can't play audio
 	if (typeof(audio.pause) !== "function" || typeof(audio.play) !== "function")
@@ -116,7 +116,8 @@ function main()
 	}
 
 	var canvas = document.getElementById("glcanvas");
-	g_game = new Game(canvas, audio, document);
+	g_game = new Game(canvas, audio, document, true);
+
 	
 	var welcome_message = "Humphrey The Rabbit";
 	
@@ -161,7 +162,7 @@ function main()
 	canvas.addEventListener("mousemove", function(event) {g_game.MouseMove(event)});
 	canvas.addEventListener("mouseup", function(event) {g_game.MouseUp(event)});
 	
-	var startLevel = 0;
+	var startLevel = 1;
 	if (g_maxLevelCookie && g_maxLevelCookie >= 2)
 	{
 		startLevel = prompt("Start at level (1-"+String(g_maxLevelCookie)+")?", String(g_maxLevelCookie));

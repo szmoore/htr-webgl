@@ -234,6 +234,11 @@ Player.prototype.Draw = function(canvas)
 	{
 		this.shield.Draw(canvas);
 	}
+	
+	if (typeof(this.playerID) !== "undefined")
+	{
+		Entity.prototype.DrawText.call(this, canvas, String(this.playerID));
+	}
 
 }
 

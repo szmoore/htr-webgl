@@ -107,3 +107,8 @@ String.prototype.toHHMMSS = function ()
 	return time;
 }
 
+Debug = function(message)
+{
+	document.getElementById("debug").innerHTML=message;
+}
+

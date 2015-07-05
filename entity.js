@@ -190,9 +190,35 @@ Entity.prototype.Step = function(game)
 	this.UpdateFrames();
 	this.UpdateFrameNumber();
 
+	// Error check
+	var error = false;
+	for (var i = 0; i < this.position.length; ++i)
+	{
+		if (typeof(this.position[i]) != "number" || isNaN(this.position[i]))
+		{
+			error = true;
+			//console.error("Position "+String(i)+" of "+this.GetName()+" invalid: " + String(this.position[i]));
+			this.position[i] = this.lastPosition[i];
+		}
+		if (typeof(this.velocity[i]) != "number" || isNaN(this.velocity[i]))
+		{
+			error = true;
+			//console.error("Velocity "+String(i)+" of "+this.GetName()+" invalid: " + String(this.velocity[i]));
+		}
+		if (typeof(this.acceleration[i]) != "number" || isNaN(this.acceleration[i]))
+		{
+			error = true;
+			//console.error("Acceleration "+String(i)+" of "+this.GetName()+" invalid: " + String(this.acceleration[i]));
+		}
+
+	}
 	// Finalise step
 	this.lastUpdateTime = currentTime;
-	for (var i =0; i < this.position.length; ++i) this.lastPosition[i] = this.position[i];
+	if (!error)
+	{
+		for (var i =0; i < this.position.length; ++i) this.lastPosition[i] = this.position[i];
+	}
+	
 }
 
 Entity.prototype.Top = function() {return this.position[1] + this.bounds.max[1];}
@@ -360,6 +386,24 @@ Entity.prototype.Clear = function(canvas)
 	canvas.ctx.rect(tl[0], tl[1], w, h);
 	canvas.ctx.fillStyle = canvas.fillStyle;
 	canvas.ctx.fill();
+}
+
+Entity.prototype.DrawText = function(canvas, text)
+{
+	if (!canvas.ctx) return;
+	var tl = canvas.LocationGLToPix(this.Left(), this.Top());
+	var w = this.frame.img.width;
+	var h = this.frame.img.height;
+	if (this.scale)
+	{
+		w = this.scale[0] * width;
+		h = this.scale[1] * height;
+	}
+	var old = canvas.ctx.textAlign;
+	canvas.ctx.textAlign = "center";
+	canvas.ctx.fillStyle = "black";
+	canvas.ctx.fillText(text, tl[0]+w/2, tl[1]-h, w);	
+	canvas.ctx.textAlign = old;
 }
 
 /**

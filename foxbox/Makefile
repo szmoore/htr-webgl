@@ -3,7 +3,7 @@
 
 ARCH := $(shell uname -m)
 
-# In case we want to run a Windblows HTR server
+# In case we want to run a Windblows HTR server (we won't)
 ifeq ($(ARCH), win32)
 	CXX = i686-w64-mingw32-g++ -std=c++11 -g -Wall -Werror -Wshadow -pedantic
 else
@@ -13,7 +13,7 @@ RM = rm -f
 
 BIN = foxbox
 MAIN = main.o
-OBJ = 
+OBJ = game.o
 LIB_x86_64 = -lfoxbox -pthread
 LIB_i386 =
 LIB_i686 = $(LIB_i386)
@@ -29,11 +29,11 @@ CFLAGS := $(CFLAGS_$(ARCH)) -I../../include
 
 LINKOBJ = $(OBJ)
 
-run : $(BIN)
-	pkill -2 $(BIN) || echo
-	xdotool search --desktop 0 "Firefox" windowactivate
-	d=$(pwd)
-	./$(BIN) $(ARGS)
+#run : $(BIN)
+#	pkill -2 $(BIN) || echo
+#	xdotool search --desktop 0 "Firefox" windowactivate
+#	d=$(pwd)
+#	./$(BIN) $(ARGS)
 
 $(BIN) : $(LINKOBJ) $(MAIN) $(LINKOBJ)
 	echo $(LINKOBJ)
@@ -41,7 +41,7 @@ $(BIN) : $(LINKOBJ) $(MAIN) $(LINKOBJ)
 	
 
 	
-%.o : %.cpp
+%.o : %.cpp %.hpp
 	$(CXX) $(CFLAGS) -c -o $@ $<
 
 %_asm.o : %_asm.S

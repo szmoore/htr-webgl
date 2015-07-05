@@ -1,83 +1,67 @@
-#include <foxbox/http.h>
-#include <foxbox/socket.h>
+#include <foxbox/websocket.h>
 #include <iostream>
 #include <sstream>
 #include <thread>
 #include <mutex>
 #include <map>
 
+#include "game.hpp"
+
 using namespace std;
 using namespace Foxbox;
 
 
-void server(int port, int id)
+
+bool g_running = true;
+int Serve(int port, int id)
 {
-	TCP::Server server(port);
-	
-	while (true)
+	WS::Server player(port);
+	WS::Server stalker(port);
+	while (g_running)
 	{
-		server.Listen();
+		Debug("Wait for player...");
+		player.Listen();
 		
-	}
-}
-
-int main(int argc, char ** argv)
-{
-
-	chdir("..");
-	int port = (argc == 2) ? atoi(argv[1]) : 8080;
-	int count = 0;
-	while (true)
-	{
-		TCP::Server server(port);
-		server.Listen();
-		while (server.Valid())
+		Debug("Found player!");
+		player.Send("PLAYER\n");
+		
+		Debug("Wait for stalker...");
+		do
 		{
-			Debug("Connected; wait for request");
-			HTTP::Request req;
-			if (!req.Receive(server))
+			stalker.Listen();
+			if (!stalker.Valid())
 			{
-				Debug("Invalid request!");
-				server.Close();
-				server.Listen();
+				Warn("Invalid connection attempt");
+				HTTP::SendPlain(stalker.TCP(), 400, "This is a WebSocket server");
+				stalker.Close();
 				continue;
 			}
-			Debug("Got request! Path is: %s", req.Path().c_str());
-		
-			string & api = req.SplitPath().front();
-			if (api == "cookies")
-			{
-				HTTP::SendJSON(server, req.Cookies());
-			}
-			else if (api == "headers")
-			{
-				HTTP::SendJSON(server, req.Headers());
-			}
-			else if (api == "echo")
-			{
-				HTTP::SendJSON(server, req.Params());
-			}
-			else if (api == "meta")
-			{
-				stringstream s; s << ++count;
-				map<string,string> m;
-				m["request_number"] = s.str();
-				HTTP::SendJSON(server, m);
-			}
-			//else if (api == "file")
-			//{
-			//	HTTP::SendFile(server, req.SplitPath().back());
-			//}
-			else
-			{
-				Debug("Sending file...");
-				HTTP::SendFile(server, req.Path());
-				Debug("Sent file");
-			}
-			server.Close();
-			server.Listen();
-			Debug("Finished request.");
 		}
+		while (!stalker.Valid());
+		Debug("Found stalker!");
+		stalker.Send("STALKER");
+		
+		while (player.CanReceive(-1) && stalker.CanSend(-1))
+		{
+			string buffer;
+			player.GetToken(buffer);
+			stalker.Send(buffer);
+		}
+		if (player.Valid()) player.Close();
+		if (stalker.Valid()) stalker.Close();
 	}
+	return 0;
 }
 
+#define POOL_SIZE 1
+int main(int argc, char ** argv)
+{
+	int port = (argc == 2) ? atoi(argv[1]) : 7681;
+	
+	while (g_running)
+	{
+		Game game(port, 2);
+		game.Play();
+	}
+	
+}

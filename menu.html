@@ -1,0 +1,41 @@
+<!doctype html>
+<html>
+<head>
+	<title>Humphrey The Rabbit: Menu</title>
+
+</head>
+<body>
+
+<div id="container" style="width:100%; position:relative; overflow:hidden;">
+		<div id="leftPanel" style="float:left; text-align: right; border:1px solid black; overflow:hidden; display:block;">
+			<!-- Put links and things here -->
+		</div>
+
+		<div id="rightPanel" style="float:right; border:2px; text-align: left; solid red; overflow:hidden; display:block;">
+			<!-- Put ads here -->
+			<object id="banner" style="width:0px; height:0px;" type="text/html" data="data/adverts/external.html"></object>
+		</div>
+		
+		<div id="middlePanel" style="text-align: center; width:50%; margin:0 auto; border:2px solid blue;">
+		<h1> Humphrey The Rabbit</h1>
+		<p><img src="data/rabbit/drawing2.svg"/></p>
+		<p><span><b>Name: </b></span><input type="text" style="width:40%"></input> </p>
+		<p><span><b></b></span><input type="number" style="width:40%"></input></p>
+		<button style="width:50%"><b>Start Game</b></button>
+		<a href="about.html"><button style="width:50%">About</button></a>
+		<a href="query.py"><button  style="width:50%">Statistics</button></a>
+		<button style="width:50%">Advanced Settings</button>
+		
+		<div id="advancedSettings" style="text-align: center"></div>
+		<h4>Game Type</h4>
+			<input type="radio" name="mode" value="classic">Singleplayer</input>
+			<input type="radio" name="mode" value="coop">Multiplayer</input>
+
+		
+		</div>
+		
+</div>
+
+
+</body>
+</html>
