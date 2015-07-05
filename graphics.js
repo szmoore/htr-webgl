@@ -114,6 +114,18 @@ Canvas.prototype.Message = function(text)
 	this.ctx.fillText(text,this.width/16, 5*this.height/6, 14*this.width/16);
 }
 
+Canvas.prototype.SetBackground = function(imagePath)
+{
+	if (typeof(imagePath) == "string")
+		this.background = this.LoadTexture(imagePath, function() {});
+}
+
+Canvas.prototype.DrawBackground = function()
+{
+	if (typeof(this.background) != "undefined" && typeof(this.background.img) != "undefined")
+		this.ctx.drawImage(this.background.img, 0, 0, this.width, this.height);
+}
+
 Canvas.prototype.SplashScreen = function(imagePath, text, backColour, onload)
 {
 	this.cancelSplash = false;

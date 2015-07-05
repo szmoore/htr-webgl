@@ -80,6 +80,7 @@ function Game(canvas, audio, document, multiplayer)
 	//  instead of using a "ended" event listener.
 	// Level 0 is the tutorial and doesn't end at a specified time depending on player speed
 	this.levelDurations = [null, 198000,150000,210000,165000,2480000];
+	this.backgrounds = [null, "data/backgrounds/forest1_cropped.jpg", "data/backgrounds/forest1_cropped.jpg", "data/backgrounds/forest1_cropped.jpg", "data/backgrounds/forest1_cropped.jpg"]
 	
 	this.localTime = new Date();
 	this.canvas = new Canvas(canvas); // Construct Canvas class on the HTML5 canvas
@@ -186,10 +187,7 @@ Game.prototype.Resume = function()
 		}
 	}
 	this.canvas.Clear(this.GetColour());
-	if (this.background)
-	{
-		
-	}
+	
 
 }
 
@@ -313,6 +311,8 @@ Game.prototype.SetLevel = function(level)
 	{
 		this.player.LoadSprites(this.canvas, "data/fox");
 	}
+	
+	this.canvas.SetBackground(this.backgrounds[this.level]);
 
 	Debug("");
 }
@@ -750,6 +750,7 @@ Game.prototype.ClearStepAndDraw = function()
 	// If using Entity.Clear in the loop this should be commented out
 	//  to give a performance increase
 	this.canvas.Clear(this.GetColour());
+	this.canvas.DrawBackground();
 		
 	if (this.message)
 	{
