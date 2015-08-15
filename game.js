@@ -814,7 +814,7 @@ Game.prototype.ClearStepAndDraw = function()
 	}
 	
 	this.stepCount += 1;
-	Debug(String(this.player.angle));
+	//Debug(String(this.player.angle));
 }
 
 /** Clear the canvas, defaults to this.canvas **/
