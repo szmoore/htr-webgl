@@ -28,6 +28,7 @@ function Entity(position, velocity, acceleration, canvas, spritePath)
 	
 	this.frameRate = 3; // magic frame rate number
 	this.frameNumber = 0;
+	this.angle = 0;
 	this.solid = true;
 	
 	this.distanceMoved = 0;
@@ -62,7 +63,7 @@ Entity.prototype.UpdateFrames = function()
 {
 	if (!this.frameBase)
 		return;
-		
+	
 	if (typeof(this.sleep) !== "undefined" && this.sleep > 0)
 	{
 		this.sleep -= 0.01;
@@ -117,7 +118,9 @@ Entity.prototype.Step = function(game)
 {
 	if (!this.alive)
 		return;
-		
+	
+	this.holdFrame = false;
+	this.angle = 0;
 	var currentTime = (new Date()).getTime();
 	if (!this.lastUpdateTime)
 	{
@@ -141,7 +144,7 @@ Entity.prototype.Step = function(game)
 			this.velocity[i] += this.delta * this.acceleration[i] / 1000;
 	}
 
-	
+	this.UpdateFrames();
 
 
 	// Update position
@@ -186,8 +189,10 @@ Entity.prototype.Step = function(game)
 				}
 		}
 	}
+	if (!this.holdFrame)
+		this.UpdateFrames();
 	this.distanceMoved += Math.sqrt(Math.pow(this.position[0]-this.lastPosition[0],2)+Math.pow(this.position[1]-this.lastPosition[1],2))
-	this.UpdateFrames();
+	
 	this.UpdateFrameNumber();
 
 	// Error check
@@ -320,6 +325,12 @@ Entity.prototype.HandleCollision = function(other, instigator,game)
 		return false;	
 	if (instigator)
 		other.HandleCollision(this, false, game);
+	this.CanJump(other);
+	return true;
+}
+
+Entity.prototype.CanJump = function(other)
+{
 	if (typeof(this.canJump) !== "undefined") 
 	{
 		if (!other.canJump)
@@ -327,7 +338,6 @@ Entity.prototype.HandleCollision = function(other, instigator,game)
 		else
 			this.canJump = (this.Top() > other.Top());
 	}	
-	return true;
 }
 
 
@@ -431,7 +441,11 @@ Entity.prototype.Draw = function(canvas)
 				w = this.scale[0] * width;
 				h = this.scale[1] * height;
 			}
-			ctx.drawImage(this.frame.img, tl[0], tl[1], w, h);
+			ctx.translate(tl[0]+w/2, tl[1]+h/2);
+			ctx.rotate(this.angle);
+			ctx.drawImage(this.frame.img, -w/2,-h/2, w, h);
+			ctx.rotate(-this.angle);
+			ctx.translate(-tl[0]-w/2, -tl[1]-h/2);
 			return;
 		}
 

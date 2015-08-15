@@ -39,6 +39,7 @@ Player.prototype.HandleKeys = function(keys)
 	}
 	if ((keys[40] || keys[83]) && this.velocity[1] > -5) // down or S
 		this.velocity[1] -= this.stomp;
+	this.keys = keys;
 }
 
 Player.prototype.Step = function(game)
@@ -108,7 +109,36 @@ Player.prototype.CollisionActions["Box"] = function(other, instigator, game)
 			this.position[1] += 0.07*other.Height();
 		return false;
 	}
+	this.WallRun(other, instigator, game);
 }
+
+Player.prototype.WallRun = function(other, instigator, game)
+{
+	if (other.position[0] > this.position[0] && this.keys && 
+		(this.keys[37] || this.keys[65]) && (this.keys[38] || this.keys[87]))
+	{
+		this.angle = Math.PI/2;
+		this.frames = this.frameBase.left;
+		this.holdFrame = true;
+	}
+	else if (other.position[0] < this.position[0] && this.keys &&
+		(this.keys[39] || this.keys[68]) && (this.keys[38] || this.keys[87]))
+	{
+		this.angle = -Math.PI/2;
+		this.frames = this.frameBase.right;
+		this.holdFrame = true;
+	}
+	
+	this.CanJump(other);	
+}
+
+Player.prototype.CollisionActions["Wall"] = function(other, instigator, game)
+{
+	this.WallRun(other, instigator, game);
+	return true;
+} 
+
+
 
 
 

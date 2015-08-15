@@ -791,6 +791,8 @@ Game.prototype.ClearStepAndDraw = function()
 			else
 			{
 				this.entities[i].Step(this);
+				if (this.entities[i].angle != 0)
+					console.log("Angle is " + String(this.entities[i].angle));
 			}
 			this.entities[i].Draw(this.canvas);
 			if (!this.entities[i].alive)
@@ -812,6 +814,7 @@ Game.prototype.ClearStepAndDraw = function()
 	}
 	
 	this.stepCount += 1;
+	Debug(String(this.player.angle));
 }
 
 /** Clear the canvas, defaults to this.canvas **/
