@@ -105,10 +105,10 @@ function Game(canvas, audio, document, multiplayer)
 	{
 		Debug("Open WebSocket Connection");
 		var con = new WebSocket("ws://localhost:7681", "ws");
-		con.onopen = function() {console.log("open sesame")}
-		con.onclose = function(e) {console.log("close sesame"); console.log(e.reason);}
-		con.onerror = function(e) {console.log("websocket error"); console.log(e); console.log(String(e));}
-		con.onmessage = function(e) {this.MultiplayerSync(e.data);}.bind(this) // didn't want to use a global here :(
+		con.onopen = function() {console.log("Connected to WebSocket")}
+		con.onclose = function(e) {console.log("Closed WebSocket sesame"); console.log(e.reason);}
+		con.onerror = function(e) {console.log("WebSocket Error"); console.log(e); console.log(String(e));}
+		con.onmessage = function(e) {this.MultiplayerSync(e.data);}.bind(this); // didn't want to use a global here :(
 		this.webSockets.push(con);
 	}
 	Debug("Constructed Game");
@@ -350,9 +350,16 @@ Game.prototype.ChooseAdvert = function(trial)
 		if (trial)
 			return;
 		HttpGet("adverts.py", function(response) {
-			this.advertChoices = JSON.parse(response);
-			this.advertChoiceIndex = -1;
-			this.ChooseAdvert(true);
+			try
+			{
+				this.advertChoices = JSON.parse(response);
+				this.advertChoiceIndex = -1;
+				this.ChooseAdvert(true);
+			}
+			catch (err)
+			{
+				this.ChooseAdvert(true);
+			}
 		}.bind(this));
 		return;
 	}
@@ -507,17 +514,18 @@ Game.prototype.AddEnemy = function()
 {
 	
 	var enemy;
+	var targetPlayer = this.GetTargetPlayer();
 	this.spawnedEnemies += 1;
 	if (this.level > 0 && this.level < 5 &&
 		(this.spawnedEnemies % (6-Math.min(4,this.level))) == 0 && 
 		(!this.entityCount["Fox"] || this.entityCount["Fox"] < 2+this.level))
 	{
-		enemy = new Fox([this.player.position[0], 1],[0,0], this.gravity, this.canvas)
+		enemy = new Fox([targetPlayer.position[0], 1],[0,0], this.gravity, this.canvas)
 		
 	}
 	else
 	{
-		enemy = new Box([this.player.position[0], 1],[0,0], this.gravity, this.canvas)
+		enemy = new Box([targetPlayer.position[0], 1],[0,0], this.gravity, this.canvas)
 		// hack for Christmas and Romantic Mode)
 		if (this.xmasMode === true)
 		{
@@ -563,7 +571,8 @@ Game.prototype.AddCloud = function()
  */
 Game.prototype.AddHat = function()
 {
-	var hat = new Hat([this.player.position[0], 1], [0,0], [0.8*this.gravity[0], 0.8*this.gravity[1]], this.canvas);
+	var targetPlayer = this.GetTargetPlayer();
+	var hat = new Hat([targetPlayer.position[0], 1], [0,0], [0.8*this.gravity[0], 0.8*this.gravity[1]], this.canvas);
 	this.AddEntity(hat); 
 
 }
@@ -619,6 +628,11 @@ Game.prototype.KeyDown = function(event)
 			this.Message("");
 		}
 	}
+	if (event.keyCode >= 48 && event.keyCode <= 53)
+	{
+		this.SetLevel(event.keyCode-48);
+	}
+	
 	if (!this.webSockets)
 		return;
 	
@@ -929,8 +943,19 @@ Game.prototype.MainLoop = function()
 	{
 		if (!this.document.runtime)
 			this.document.runtime = this.document.getElementById("runtime");
+		if (!this.document.level)
+			this.document.level = this.document.getElementById("level");
+		if (this.document.level)
+		{
+			this.document.level.innerHTML = String(this.level);
+		}
 		if (this.document.runtime)
-			this.document.runtime.innerHTML = (""+this.runTime/1000).toHHMMSS();
+		{
+			var totalTime = this.runTime;
+			for (var i = 1; i < this.level; ++i)
+				totalTime += this.levelDurations[i];
+			this.document.runtime.innerHTML = (""+totalTime/1000).toHHMMSS();
+		}
 	}
 	
 	var actualTime = 0;
@@ -996,6 +1021,10 @@ Game.prototype.UpdateDOM = function(player)
 	}
 }
 
+Game.prototype.GetTargetPlayer = function()
+{
+	return this.player;
+}
 
 /**
  * Called whenever a WebSocket message is received
