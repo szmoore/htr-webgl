@@ -47,6 +47,9 @@ void Game::Play()
 	do
 	{
 		input = Socket::Select(m_players, NULL, 30);
+		if (input == NULL)
+			break;
+			
 		unsigned index = 0;
 		for (index = 0; index < m_players.size(); ++index)
 		{
@@ -65,7 +68,14 @@ void Game::Play()
 		{
 			m_players[i]->Send("%u %s\n", index, message.c_str());
 		}
+		if (message == "Q")
+		{
+			vector<Foxbox::Socket*>::iterator it = m_players.begin()+index;
+			if (it != m_players.end())
+				m_players.erase(it);
+			Debug("Erased player %u from group");
+		}
 	}
-	while (input != NULL);
+	while (input != NULL && m_players.size() > 1);
 	Debug("Received no input from any player for 30s");
 }

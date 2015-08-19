@@ -620,12 +620,16 @@ Game.prototype.KeyDown = function(event)
 		if (this.running)
 		{
 			this.Pause("Paused");
+			this.playerPaused = this.playerID;
 			this.Message("Focus tab, press any key");
 		}
 		else if (this.player && this.player.alive)
 		{
-			this.Resume();
-			this.Message("");
+			if (this.playerPaused == this.playerID)
+			{
+				this.Resume();
+				this.Message("");
+			}
 		}
 	}
 	if (event.keyCode >= 48 && event.keyCode <= 53)
@@ -782,7 +786,7 @@ Game.prototype.ClearStepAndDraw = function()
 			// Hacky - use different key states when in multiplayer
 			if (this.entities[i].name == "Humphrey" && this.multiplayerKeyState)
 			{
-				console.log("Multiplayer; load key state for "+str(this.playerID))
+				console.log("Multiplayer; load key state for "+String(this.playerID));
 				this.oldKeyState = this.keyState;
 				this.keyState = this.multiplayerKeyState[this.entities[i].playerID];	
 				this.entities[i].Step(this);
@@ -864,7 +868,7 @@ Game.prototype.MainLoop = function()
 	if (!this.running)
 		return;
 		
-	if (this.document && !this.document.hasFocus())
+	if (this.document && (!this.document.hasFocus() && (!this.multiplayer || this.multiplayer.length <= 1)))
 	{
 		this.Pause("Paused");
 		this.Message("Focus tab and press space");
@@ -1064,6 +1068,19 @@ Game.prototype.MultiplayerSync = function(message)
 				this.multiplayerKeyState[playerID][Math.abs(keyCode)] = false;
 			else
 				this.multiplayerKeyState[playerID][Math.abs(keyCode)] = true;
+			// multiplayer pause
+			if (keyCode == 32 && playerID != this.playerID)
+			{
+				if (this.running)
+				{
+					this.playerPaused = playerID;
+					this.Pause("Paused by " + String(playerID));
+				}
+				else if (playerID == this.playerPaused)
+				{
+					this.Resume();
+				}
+			}
 		}
 		
 		

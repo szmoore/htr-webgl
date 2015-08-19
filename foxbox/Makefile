@@ -41,7 +41,7 @@ $(BIN) : $(LINKOBJ) $(MAIN) $(LINKOBJ)
 	
 
 	
-%.o : %.cpp %.hpp
+%.o : %.cpp
 	$(CXX) $(CFLAGS) -c -o $@ $<
 
 %_asm.o : %_asm.S
