@@ -77,6 +77,7 @@ Player.prototype.Die = function(deathType, other, game)
 		//if (g_identityCookie)
 		//	this.PostStats("Lose life "+deathType,game)
 	}
+	game.LoseLife();
 }
 
 
@@ -126,6 +127,20 @@ Player.prototype.WallRun = function(other, instigator, game)
 	{
 		this.angle = -Math.PI/2;
 		this.frames = this.frameBase.right;
+		this.holdFrame = true;
+	}
+	else if (other.position[0] > this.position[0] && this.keys && 
+		(this.keys[37] || this.keys[65]) && (this.keys[40] || this.keys[83]))
+	{
+		this.angle = Math.PI/2;
+		this.frames = this.frameBase.right;
+		this.holdFrame = true;
+	}
+	else if (other.position[0] < this.position[0] && this.keys &&
+		(this.keys[39] || this.keys[68]) && (this.keys[40] || this.keys[83]))
+	{
+		this.angle = -Math.PI/2;
+		this.frames = this.frameBase.left;
 		this.holdFrame = true;
 	}
 	
@@ -293,7 +308,8 @@ Player.prototype.GainLife = function(life, game)
 {
 	this.lives++;
 	this.AddShield(game);
-	game.UpdateDOM(this);	
+	game.UpdateDOM(this);
+	game.GainLife();
 	//if (g_identityCookie)
 	//	this.PostStats("Gain life",game)
 }

@@ -111,6 +111,7 @@ function Game(canvas, audio, document, multiplayer)
 		con.onmessage = function(e) {this.MultiplayerSync(e.data);}.bind(this); // didn't want to use a global here :(
 		this.webSockets.push(con);
 	}
+	this.playerCount = 1;
 	Debug("Constructed Game");
 }
 
@@ -135,6 +136,9 @@ Game.prototype.Pause = function(message,image	, colour)
 		
 	this.Draw();
 	this.UpdateDOM(this.player);
+	
+	if (message === null || image === null)
+		return;
 	
 	if (typeof(image) === "undefined")
 		image = "data/rabbit/drawing2.svg";
@@ -495,6 +499,7 @@ Game.prototype.NextLevel = function(skipAd)
 		this.AddTimeout("Level"+String(this.level),
 			function() {
 				this.Resume();
+				this.MultiplayerWait("level");
 				if (this.level == 0) // Hacky but more concise
 					this.Tutorial("start");
 			}.bind(this) ,2000);
@@ -669,7 +674,8 @@ Game.prototype.KeyUp = function(event)
 
 Game.prototype.TouchDown = function(event)
 {
-	if (!this.running && this.player && this.player.alive)
+	if (!this.running && this.player && this.player.alive
+		&& (!this.multiplayer || this.multiplayer.length <= 1))
 	{
 		this.Resume();
 	}
@@ -786,7 +792,7 @@ Game.prototype.ClearStepAndDraw = function()
 			// Hacky - use different key states when in multiplayer
 			if (this.entities[i].name == "Humphrey" && this.multiplayerKeyState)
 			{
-				console.log("Multiplayer; load key state for "+String(this.playerID));
+				//console.log("Multiplayer; load key state for "+String(this.playerID));
 				this.oldKeyState = this.keyState;
 				this.keyState = this.multiplayerKeyState[this.entities[i].playerID];	
 				this.entities[i].Step(this);
@@ -1030,7 +1036,32 @@ Game.prototype.UpdateDOM = function(player)
 
 Game.prototype.GetTargetPlayer = function()
 {
-	return this.player;
+	if (!this.multiplayer || !this.playerCount || this.playerCount <= 1)
+		return this.player;
+	if (typeof(this.playerTargetIndex) === "undefined")
+		this.playerTargetIndex = 0;
+	else
+		this.playerTargetIndex += 1;
+	this.playerTargetIndex %= this.multiplayer.length;
+	return this.multiplayer[this.playerTargetIndex];
+}
+
+Game.prototype.MultiplayerWait = function(id)
+{
+	if (!this.multiplayer || this.multiplayer.length <= 1)
+		return;
+	Debug("Multiplayer Wait");
+	console.log("Multiplayer wait " + String(id));
+	for (var i = 0; i < this.webSockets.length; ++i)
+	{
+		this.webSockets[i].send("WAIT "+String(id)+"\n");
+	}		
+	for (var i = 0; i < this.multiplayer.length; ++i)
+	{
+		this.multiplayer[i].multiplayerWait = id;
+	}
+	delete this.multiplayer[this.playerID].multiplayerWait;
+	this.Pause("MULTIPLAYER SYNC");
 }
 
 /**
@@ -1059,6 +1090,33 @@ Game.prototype.MultiplayerSync = function(message)
 			{
 				this.multiplayerKeyState[i] = [];
 			}
+			console.log("Multiplayer Init with " + String(this.playerCount) + " players");
+			//this.SetLevel(this.level);
+		}
+		else if (tokens[1] == "LIFE")
+		{
+			var playerID = parseInt(tokens[0]);
+			if (playerID != this.playerID)
+				this.player.GainLife();
+		}
+		else if (tokens[1] == "WAIT")
+		{
+			var playerID = parseInt(tokens[0]);
+			if (playerID != this.playerID)
+			{
+				delete this.multiplayer[playerID].multiplayerWait;
+			}
+			var stillWaiting = 0;
+			for (var i = 0; i < this.multiplayer.length; ++i)
+			{
+				if (this.multiplayer[playerID].multiplayerWait)
+					stillWaiting++;
+			}
+			if (stillWaiting == 0)
+			{
+				Debug("Resume");
+				this.Resume();
+			}
 		}
 		else
 		{
@@ -1085,4 +1143,20 @@ Game.prototype.MultiplayerSync = function(message)
 		
 		
 		++this.messageCount;
+}
+
+Game.prototype.GainLife = function()
+{
+	for (var i = 0; i < this.webSockets.length; ++i)
+	{
+		this.webSockets[i].send("LIFE\n");
+	}	
+}
+
+Game.prototype.LoseLife = function()
+{
+	for (var i = 0; i < this.webSockets.length; ++i)
+	{
+		this.webSockets[i].send("DEATH\n");
+	}	
 }
