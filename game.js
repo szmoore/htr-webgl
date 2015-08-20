@@ -80,7 +80,12 @@ function Game(canvas, audio, document, multiplayer)
 	//  instead of using a "ended" event listener.
 	// Level 0 is the tutorial and doesn't end at a specified time depending on player speed
 	this.levelDurations = [null, 198000,150000,210000,165000,2480000];
-	this.backgrounds = ["data/backgrounds/forest1_cropped.jpg", "data/backgrounds/flowers2.jpg", "data/backgrounds/forest1_cropped.jpg", "data/backgrounds/forest1_cropped.jpg", "data/backgrounds/forest1_cropped.jpg"]
+	this.backgrounds = ["data/backgrounds/forest1_cropped.jpg", 
+		"data/backgrounds/flowers2.jpg", 
+		"data/backgrounds/forest1_cropped.jpg", 
+		"data/backgrounds/dark1.jpg", 
+		"data/backgrounds/forest1_cropped.jpg",
+		"data/backgrounds/forest1_cropped.jpg"]
 	
 	this.localTime = new Date();
 	this.canvas = new Canvas(canvas); // Construct Canvas class on the HTML5 canvas
