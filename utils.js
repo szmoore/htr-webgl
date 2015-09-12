@@ -34,7 +34,15 @@ function HttpGet(theUrl, callback)
 	var xmlHttp = null;
 
 	xmlHttp = new XMLHttpRequest();
-	xmlHttp.open( "GET", theUrl, true);
+	console.log("GET " + theUrl);
+	try
+	{
+		xmlHttp.open( "GET", theUrl, true);
+	}
+	catch (err)
+	{
+		console.log("Error getting url " + theUrl + " : " + err.message);
+	}
 	xmlHttp.send( null );
 	if (typeof(callback) === "function")
 	{

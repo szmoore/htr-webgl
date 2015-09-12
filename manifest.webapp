@@ -1,0 +1,15 @@
+{
+  "name": "Humphrey The Rabbit",
+  "description": "Dodge boxes, foxes, oxes, and other things that don't ryhme.",
+  "launch_path": "/index.py",
+  "icons": {
+    "512": "/data/icon-512.png",
+    "128": "/data/icon-128.png"
+  },
+  "developer": {
+    "name": "Humphrey The Rabbit",
+    "url": "http://rabbitgame.net"
+  },
+  "default_locale": "en"
+}
+

@@ -358,18 +358,25 @@ Game.prototype.ChooseAdvert = function(trial)
 	{
 		if (trial)
 			return;
-		HttpGet("adverts.py", function(response) {
-			try
-			{
-				this.advertChoices = JSON.parse(response);
-				this.advertChoiceIndex = -1;
-				this.ChooseAdvert(true);
-			}
-			catch (err)
-			{
-				this.ChooseAdvert(true);
-			}
-		}.bind(this));
+		try
+		{
+			HttpGet("adverts.py", function(response) {
+				try
+				{
+					this.advertChoices = JSON.parse(response);
+					this.advertChoiceIndex = -1;
+					this.ChooseAdvert(true);
+				}
+				catch (err)
+				{
+					this.ChooseAdvert(true);
+				}
+			}.bind(this));
+		}
+		catch (err)
+		{
+			this.ChooseAdvert(true);
+		}
 		return;
 	}
 	// Go through the adverts in order (order is chosen by the server in adverts.py)

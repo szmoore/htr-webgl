@@ -155,8 +155,8 @@ function Fox(position, velocity, acceleration, canvas)
 {
 	Enemy.call(this, position, velocity, acceleration, canvas, "data/fox");
 	this.name = "Fox";
-	this.speed = 0.5;
-	this.jumpSpeed = 0.7;
+	this.speed = 0.3;
+	this.jumpSpeed = 0.6;
 	this.canJump = false;
 }
 Fox.prototype = Object.create(Enemy.prototype);
