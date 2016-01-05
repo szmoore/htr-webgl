@@ -83,7 +83,7 @@ function Game(canvas, audio, document, multiplayer)
 	this.backgrounds = ["data/backgrounds/forest1_cropped.jpg", 
 		"data/backgrounds/flowers2.jpg", 
 		"data/backgrounds/forest1_cropped.jpg", 
-		"data/backgrounds/dark1.jpg", 
+		"data/backgrounds/dark1.png", 
 		"data/backgrounds/forest1_cropped.jpg",
 		"data/backgrounds/forest1_cropped.jpg"]
 	
@@ -111,8 +111,8 @@ function Game(canvas, audio, document, multiplayer)
 		Debug("Open WebSocket Connection");
 		var con = new WebSocket("ws://localhost:7681", "ws");
 		con.onopen = function() {console.log("Connected to WebSocket")}
-		con.onclose = function(e) {console.log("Closed WebSocket sesame"); console.log(e.reason);}
-		con.onerror = function(e) {console.log("WebSocket Error"); console.log(e); console.log(String(e));}
+		con.onclose = function(e) {console.log("Closed WebSocket sesame"); console.log(e.reason); delete g_game.multiplayer;}
+		con.onerror = function(e) {console.log("WebSocket Error"); console.log(e); console.log(String(e)); delete g_game.multiplayer;}
 		con.onmessage = function(e) {this.MultiplayerSync(e.data);}.bind(this); // didn't want to use a global here :(
 		this.webSockets.push(con);
 	}
@@ -322,7 +322,6 @@ Game.prototype.SetLevel = function(level)
 	}
 	
 	this.canvas.SetBackground(this.backgrounds[this.level]);
-
 	Debug("");
 }
 
@@ -511,7 +510,7 @@ Game.prototype.NextLevel = function(skipAd)
 		this.AddTimeout("Level"+String(this.level),
 			function() {
 				this.Resume();
-				this.MultiplayerWait("level");
+				//this.MultiplayerWait("level");
 				if (this.level == 0) // Hacky but more concise
 					this.Tutorial("start");
 			}.bind(this) ,2000);
@@ -1072,7 +1071,9 @@ Game.prototype.MultiplayerWait = function(id)
 	{
 		this.multiplayer[i].multiplayerWait = id;
 	}
-	delete this.multiplayer[this.playerID].multiplayerWait;
+
+	if (this.multiplayer && this.playerID && this.multiplayer[this.playerID].multiplayerWait)
+		delete this.multiplayer[this.playerID].multiplayerWait;
 	this.Pause("MULTIPLAYER SYNC");
 }
 
