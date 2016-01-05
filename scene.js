@@ -107,6 +107,7 @@ function Handshake()
  */
 function main() 
 {
+	//window.onerror = function(e) {alert(e);}
 	Handshake();
 	var audio = document.getElementById("theme");
 	// Deal with browsers that can't play audio
@@ -116,7 +117,7 @@ function main()
 	}
 
 	var canvas = document.getElementById("glcanvas");
-	g_game = new Game(canvas, audio, document, true);
+	g_game = new Game(canvas, audio, document, false);
 
 	
 	var welcome_message = "Humphrey The Rabbit";
