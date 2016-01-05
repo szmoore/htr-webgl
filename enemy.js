@@ -169,8 +169,8 @@ function Ox(position, velocity, acceleration, canvas)
 	this.bounds = {min: [-40/canvas.width, -48/canvas.height], max: [40/canvas.width, 40/canvas.height]};
 	this.scale = [48/canvas.width, 48/canvas.height];
 	
-	this.health = 20;
-	this.speed = 0.55;
+	this.health = 7;
+	this.speed = 0.25;
 	this.canJump = true;
 	this.jumpSpeed = 0.5;
 	this.danceWidths = 2;
@@ -231,9 +231,9 @@ function Wolf(position, velocity, acceleration, canvas)
 	this.scale = [40/canvas.width, 40/canvas.height];
 	
 	this.health = 5;
-	this.speed = 0.65;
+	this.speed = 0.4;
 	this.canJump = true;
-	this.jumpSpeed = 1.0;
+	this.jumpSpeed = 0.7;
 	
 	this.jumpWidths = 3;
 	
@@ -276,7 +276,7 @@ function Rox(position, velocity, canvas)
 	this.scale = [60/canvas.width, 40/canvas.height];
 	
 	this.health = 5;
-	this.speed = 0.65;
+	this.speed = 0.45;
 	this.canJump = true;
 	this.jumpSpeed = 0.4;
 	this.damping = 0.5;

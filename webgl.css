@@ -24,6 +24,9 @@ body {
 	-moz-user-select: none !important;
 	-ms-user-select: none !important;
 	user-select: none !important;
+	-webkit-text-size-adjust: none !important;
+	-webkit-appearance: none;
+	text-align: center;
 }
 
 div {

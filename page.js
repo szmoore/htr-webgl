@@ -6,32 +6,41 @@ function InitPage()
 	var width = Math.min(0.9*screenWidth, 640);
 	var height = Math.min(screenHeight-64, 800);
 
-	if (typeof(g_game) !== "undefined" && typeof(g_game.canvas) != "undefined")
-	{
-		g_game.canvas.width = width;
-		g_game.canvas.height = height;
-	}
-
 		
 	var touchBar = document.getElementById("touchBar");
 	if (typeof(touchBar) !== "undefined" && touchBar.style.display === "block")
 	{
-		height -= 96;
-		/*
+
+		absorbEvent = function (e) {
+			e.preventDefault();
+			e.stopPropagation();
+			e.cancelBubble = true;
+			e.returnValue = false;
+		}
+	
+		height -= 1*48;
 		var touchLeft = document.getElementById("touchLeft");	
-		touchLeft.addEventListener("mousedown", function(ev) {g_game.KeyDown({keyCode : 37}); console.log("Foey");}, false);
-		touchLeft.addEventListener("mouseup", function(ev){g_game.KeyUp({keyCode : 37})});
+		touchLeft.ontouchstart = function (e) {absorbEvent(e); g_game.KeyDown({keyCode:37});};
+		touchLeft.ontouchend = function (e) {absorbEvent(e); g_game.KeyUp({keyCode:37});}
+		touchLeft.ontouchmove = absorbEvent;
+		touchLeft.ontouchcancel = touchLeft.ontouchend;;
 		var touchRight = document.getElementById("touchRight");
-		touchRight.addEventListener("mousedown", function(ev){g_game.KeyDown({keyCode : 39})});
-		touchRight.addEventListener("mouseup", function(ev){g_game.KeyUp({keyCode : 39})});
+		touchRight.ontouchstart = function (e) {absorbEvent(e); g_game.KeyDown({keyCode:39});};	
+		touchRight.ontouchend = function (e) {absorbEvent(e); g_game.KeyUp({keyCode:39});};
+		touchRight.ontouchmove = absorbEvent;
+		touchRight.ontouchcancel = touchRight.ontouchend;
 		var touchUp = document.getElementById("touchUp");
-		touchUp.addEventListener("mousedown", function(ev){g_game.KeyDown({keyCode : 38})});
-		touchUp.addEventListener("mouseup", function(ev){g_game.KeyUp({keyCode : 38})});
-		
+		touchUp.ontouchstart = function (e) {absorbEvent(e); g_game.KeyDown({keyCode:38});};
+		touchUp.ontouchend = function (e) {absorbEvent(e); g_game.KeyUp({keyCode:38});};
+		touchUp.ontouchmove = absorbEvent;
+		touchUp.ontouchcancel = touchUp.ontouchend;
 		var touchDown = document.getElementById("touchDown");
-		touchDown.addEventListener("mousedown", function(ev){g_game.KeyDown({keyCode : 40})});
-		touchDown.addEventListener("mouseup", function(ev){g_game.KeyUp({keyCode : 40})});
-		*/
+		touchDown.ontouchstart = function(e) {absorbEvent(e); g_game.KeyDown({keyCode:40});};	
+		touchDown.ontouchend = function(e) {absorbEvent(e); g_game.KeyUp({keyCode:40});};
+		touchDown.ontouchmove = absorbEvent;
+		touchDown.ontouchcancel = touchDown.ontouchend;
+	
+		
 	}
 	
 	var middlePanel = document.getElementById("middlePanel");
@@ -40,7 +49,14 @@ function InitPage()
 	var canvas = document.getElementById("glcanvas");
 	canvas.width = width;
 	canvas.height = height;
-	
+
+	if (typeof(g_game) !== "undefined" && typeof(g_game.canvas) != "undefined")
+	{
+		g_game.canvas.width = width;
+		g_game.canvas.height = height;
+	}
+
+
 	// The external advertisement
 	var banner = document.getElementById("banner");
 	if (banner)

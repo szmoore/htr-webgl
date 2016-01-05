@@ -225,11 +225,11 @@ Game.prototype.SetLevel = function(level)
 	if (this.audio)
 	{
 		if (this.romanticMode === true)
-			this.audio.src = "data/romanticmode.ogg";
+			this.audio.src = "data/romanticmode.mp3";
 		else if (this.xmasMode === true && this.level === 1)
-			this.audio.src = "data/xmasmode.ogg";
+			this.audio.src = "data/xmasmode.mp3";
 		else
-			this.audio.src = "data/theme"+this.level+".ogg";
+			this.audio.src = "data/theme"+this.level+".mp3";
 		this.audio.load();
 		this.audio.pause();
 		//this.audio.play();
@@ -699,20 +699,20 @@ Game.prototype.TouchDown = function(event)
 	var dely = (1-2*(event.clientY/this.canvas.height)) - this.player.position[1];
 	// note y coordinate positive direction is reversed in GL (game) coords vs canvas coords
 	//this.Message("TouchDown "+String(delx)+","+String(dely));
-	if (delx >= 2*this.player.Width() || event.clientX > 0.8*this.canvas.width)
+	if (delx >= this.player.Width())// || event.clientX > 0.8*this.canvas.width)
 	{
 		this.KeyDown({keyCode : 39});
 	}
-	else if (delx <= -1.5*this.player.Width() || event.clientX < 0.2*this.canvas.width)
+	else if (delx <= -0*this.player.Width())// || event.clientX < 0.2*this.canvas.width)
 	{
 		this.KeyDown({keyCode : 37});
 	}
 	
-	if (dely >= 3*this.player.Height() || event.clientY < 0.2*this.canvas.height)
+	if (dely >= 3*this.player.Height())// || event.clientY < 0.2*this.canvas.height)
 	{
 		this.KeyDown({keyCode : 38});
 	}
-	else if (dely <= -3*this.player.Height() || event.clientY > 0.8*this.canvas.height)
+	else if (dely <= -3*this.player.Height())// || event.clientY > 0.8*this.canvas.height)
 	{
 		this.KeyDown({keyCode : 40});
 	}

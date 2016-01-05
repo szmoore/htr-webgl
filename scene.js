@@ -107,7 +107,7 @@ function Handshake()
  */
 function main() 
 {
-	//Handshake();
+	Handshake();
 	var audio = document.getElementById("theme");
 	// Deal with browsers that can't play audio
 	if (typeof(audio.pause) !== "function" || typeof(audio.play) !== "function")
@@ -151,6 +151,34 @@ function main()
 	
 	document.onkeydown = function(event) {g_game.KeyDown(event)};
 	document.onkeyup = function(event) {g_game.KeyUp(event)};
+
+	document.ontouchmove = function(event) {event.preventDefault();};
+	document.ontouchstart = function(event) {
+		//alert("Document ontouchstart");
+		var audio = document.getElementById("theme");
+		// Deal with browsers that can't play audio
+		if (typeof(audio.pause) !== "function" || typeof(audio.play) !== "function")
+		{
+			audio = undefined;
+		}	
+		if (audio && g_game.running)
+			audio.play();
+
+
+		
+		if (!g_touchBarCookie || g_touchBarCookie != "yes")
+		{
+			g_touchBarCookie = "yes"; 
+			SetCookie("touchBar", g_touchBarCookie);
+			var touchBar = document.getElementById("touchBar");
+			if (typeof(touchBar) !== "undefined")
+			{
+				touchBar.style.display = "block";
+				InitPage();
+			}
+		}
+	}
+	
 	
 	
 	canvas.addEventListener("touchstart", function(event) {g_game.TouchDown(event.changedTouches[0])});
