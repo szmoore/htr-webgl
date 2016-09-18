@@ -11,6 +11,7 @@ dbTables = {
 	"stats" : {
 		"identity" : "<anonymous>",
 		"nickname" : "nemo",
+		"ipaddr" : "",
 		"start" : datetime.datetime.now(),
 		"runtime" : 0,
 		"steps" : 0,
@@ -26,6 +27,7 @@ dbTables = {
 	"players" : {
 		"identity" : "<anonymous>",
 		"nickname" : "nemo",
+		"lastip" : "",
 		"created" : 0, 
 		"lastContact" : 0,
 		"level" : 0,
@@ -37,7 +39,7 @@ dbTables = {
 def AddPlayer(identity):
 	conn = sqlite3.connect("stats.db")
 	c = conn.cursor()
-	c.execute("INSERT INTO players(identity,nickname,created,lastContact,level,visits) VALUES (?,?,?,0,0,0)", (identity, "nemo", FloatNow()))
+	c.execute("INSERT INTO players(identity,nickname,lastip,created,lastContact,level,visits) VALUES (?,?,?,?,?,0,0)", (identity, "nemo", os.environ["REMOTE_ADDR"], FloatNow(), FloatNow()))
 	conn.commit()
 	conn.close()
 	

@@ -132,6 +132,7 @@ if __name__ == "__main__":
 	if identity != "<anonymous>":
 		cursor.execute("UPDATE players SET lastContact=? WHERE identity=?", (helpers.FloatNow(), identity))
 		cursor.execute("UPDATE players SET nickname=? WHERE identity=?", (nickname, identity))
+		cursor.execute("UPDATE players SET lastip=? WHERE identity=?", (identity, os.environ["REMOTE_ADDR"]))
 	
 	#if int(float(form["runtime"].value)) < 12000:
 	#	print("Content-type: text/plain\n")
@@ -144,7 +145,7 @@ if __name__ == "__main__":
 		# Delete record with lowest score
 		cursor.execute("DELETE FROM stats WHERE runtime = (SELECT MIN(runtime) FROM stats) AND level = (SELECT MIN(level) FROM stats)")
 
-	cursor.execute("INSERT INTO stats(identity, nickname, "+(",".join([str(f) for f in fields]) + ") VALUES (?,?") +"".join([",?" for _ in xrange(len(fields))])+")", [identity, nickname] + [values[f] for f in fields])
+	cursor.execute("INSERT INTO stats(identity, nickname, ipaddr, "+(",".join([str(f) for f in fields]) + ") VALUES (?,?,?") +"".join([",?" for _ in xrange(len(fields))])+")", [identity, nickname, os.environ["REMOTE_ADDR"]] + [values[f] for f in fields])
 
 
 	# Get current Level

@@ -25,6 +25,7 @@ var g_nicknameCookie;
 var g_maxLevelCookie;
 var g_adblockCookie;
 var g_touchBarCookie;
+var g_startingLives;
 
 function Handshake()
 {
@@ -191,7 +192,7 @@ function main()
 	canvas.addEventListener("mousemove", function(event) {g_game.MouseMove(event)});
 	canvas.addEventListener("mouseup", function(event) {g_game.MouseUp(event)});
 	
-	var startLevel = 1;
+	var startLevel = 0;
 	if (g_maxLevelCookie && g_maxLevelCookie >= 2)
 	{
 		startLevel = prompt("Start at level (1-"+String(g_maxLevelCookie)+")?", String(g_maxLevelCookie));

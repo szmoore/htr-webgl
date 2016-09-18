@@ -262,6 +262,7 @@ Game.prototype.SetLevel = function(level)
 	// Add the player
 	this.player = new Player([0,0],[0,0],this.gravity, this.canvas, "data/rabbit");
 	this.AddEntity(this.player);
+	this.player.lives += g_startingLives;
 	
 	if (this.multiplayer && this.playerCount && this.playerCount > 1)
 	{

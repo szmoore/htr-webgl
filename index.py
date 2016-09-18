@@ -71,6 +71,11 @@ def main(argv):
 
 		if "touchBar" in form:
 			print("g_touchBarCookie = \"%s\";" % form["touchBar"].value)
+
+		if "moarlives" in form:
+			print("g_startingLives = %s;" % str(form["moarlives"].value))	
+		else:
+			print("g_startingLives = 0;")
 	
 	except Exception as e:
 		print("console.log(\"Server database error: %s\")" % str(e))

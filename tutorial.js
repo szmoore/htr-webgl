@@ -5,6 +5,7 @@ Game.prototype.tutorial = {
 		this.message = "Move around";
 		this.tutorialState = "move1";
 		this.tutorialTimeout = 4000;
+		this.player.lives = 0;
 	},
 	
 	"move1" : function() {
