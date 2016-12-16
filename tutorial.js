@@ -339,7 +339,7 @@ Game.prototype.tutorial = {
 					this.message = "The killing will never stop.";
 					break;
 				default:
-					this.message = "Only one may leave.";
+					this.message = "76561198002357979";
 					break;
 			}
 		}
