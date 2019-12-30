@@ -2,10 +2,12 @@
  * @file game.js
  * @brief Represents the game world and all Entities within it
  */
- 
+
 /**
  * Wrapper class for pausable timeouts associated with a Game
  */
+
+const FINAL_LEVEL = 5;
 function Timeout(name, onTimeout, wait, game)
 {
 	if (game.timeouts[name])
@@ -13,11 +15,11 @@ function Timeout(name, onTimeout, wait, game)
 		game.timeouts[name].Pause();
 		delete game.timeouts[name];
 	}
-	
+
 	this.name = name;
 	this.onTimeout = onTimeout;
 	this.id = setTimeout(function(game) {
-		this.onTimeout(); 
+		this.onTimeout();
 		delete game.timeouts[this.name]}.bind(this,game), wait);
 	game.timeouts[this.name] = this;
 
@@ -36,10 +38,10 @@ Timeout.prototype.Pause = function()
 	this.running = false;
 	this.wait -= (new Date()).getTime() - this.start;
 	clearTimeout(this.id);
-	
-	//console.log("Pause <" + this.name + "> timeout with " + String(this.wait) + "ms left");
+
+	//console.debug("Pause <" + this.name + "> timeout with " + String(this.wait) + "ms left");
 	this.wait = Math.max(this.wait, 0);
-	
+
 }
 
 /**
@@ -51,9 +53,9 @@ Timeout.prototype.Resume = function()
 		return;
 
 	this.running = true;
-	//console.log("Timeout <" + this.name + "> resumed with " + String(this.wait) + " ms remaining");
+	//console.debug("Timeout <" + this.name + "> resumed with " + String(this.wait) + " ms remaining");
 	this.id = setTimeout(function(game) {
-		this.onTimeout(); 
+		this.onTimeout();
 		delete game.timeouts[this.name]}.bind(this,this.game), this.wait);
 }
 Timeout.prototype.constructor = Timeout;
@@ -73,46 +75,45 @@ function Game(canvas, audio, document, multiplayer)
 	this.level = -1;
 	// If true, "advertising" spash screens are shown every time a level starts/restarts
 	this.enableAdverts = true; // Will be set to false if necessary in main()
-	this.ChooseAdvert(); // First call will get the list of adverts
-	
+
 	// Hacks to keep track of level durations
 	// Needed because some devices won't play audio so we have to check the time ourselves
 	//  instead of using a "ended" event listener.
 	// Level 0 is the tutorial and doesn't end at a specified time depending on player speed
 	this.levelDurations = [null, 198000,150000,210000,165000,2480000];
-	this.backgrounds = ["data/backgrounds/forest1_cropped.jpg", 
-		"data/backgrounds/flowers2.jpg", 
-		"data/backgrounds/forest1_cropped.jpg", 
-		"data/backgrounds/dark1.png", 
+	this.backgrounds = ["data/backgrounds/forest1_cropped.jpg",
+		"data/backgrounds/flowers2.jpg",
+		"data/backgrounds/forest1_cropped.jpg",
+		"data/backgrounds/dark1.png",
 		"data/backgrounds/forest1_cropped.jpg",
 		"data/backgrounds/forest1_cropped.jpg"]
-	
+
 	this.localTime = new Date();
 	this.canvas = new Canvas(canvas); // Construct Canvas class on the HTML5 canvas
 	if (this.spriteCollisions)
 		this.canvas.prepareSpriteCollisions = true; // unused will probably break things
-		
+
 	this.gravity = [0, -1]; // gravity!
 	this.stepRate = 20; // Time we would ideally have between steps in ms (lol setTimeout)
-	
+
 	this.timeouts = {}; // Timeouts
-	
-	
-	
+
+
+
 	this.running = false;
 	this.runTime = 0;
 	this.entities = [];
 	this.playedTutorial = false;
-	
+
 	this.webSockets = [];
 	this.multiplayer = multiplayer;
 	if (this.multiplayer)
 	{
 		Debug("Open WebSocket Connection");
 		var con = new WebSocket("ws://localhost:7681", "ws");
-		con.onopen = function() {console.log("Connected to WebSocket")}
-		con.onclose = function(e) {console.log("Closed WebSocket sesame"); console.log(e.reason); delete g_game.multiplayer;}
-		con.onerror = function(e) {console.log("WebSocket Error"); console.log(e); console.log(String(e)); delete g_game.multiplayer;}
+		con.onopen = function() {console.debug("Connected to WebSocket")}
+		con.onclose = function(e) {console.debug("Closed WebSocket sesame"); console.debug(e.reason); delete g_game.multiplayer;}
+		con.onerror = function(e) {console.debug("WebSocket Error"); console.debug(e); console.debug(String(e)); delete g_game.multiplayer;}
 		con.onmessage = function(e) {this.MultiplayerSync(e.data);}.bind(this); // didn't want to use a global here :(
 		this.webSockets.push(con);
 	}
@@ -130,6 +131,7 @@ Game.prototype.AddTimeout = function(name, onTimeout, wait)
 
 Game.prototype.Pause = function(message,image	, colour)
 {
+	// console.debug(`Pause requested document focused: ${window.document.hasFocus()}`);
 	delete this.stepTime;
 	this.running = false;
 	for (var t in this.timeouts)
@@ -138,13 +140,13 @@ Game.prototype.Pause = function(message,image	, colour)
 	}
 	if (this.audio && typeof(this.audio.pause) === "function")
 		this.audio.pause();
-		
+
 	this.Draw();
 	this.UpdateDOM(this.player);
-	
+
 	if (message === null || image === null)
 		return;
-	
+
 	if (typeof(image) === "undefined")
 		image = "data/rabbit/drawing2.svg";
 	if (typeof(colour) === "undefined")
@@ -155,48 +157,49 @@ Game.prototype.Pause = function(message,image	, colour)
 
 Game.prototype.Resume = function()
 {
+	// console.debug(`Resume requested, document focused: ${window.document.hasFocus()}`);
 	if (this.running)
 		return;
-		
+
 	this.canvas.cancelSplash = true;
-		
+
 	this.UpdateDOM(this.player);
-	
+
 
 	this.running = true;
-	
+
 	for (var t in this.timeouts)
 	{
 		this.timeouts[t].Resume();
 	}
-	
+
 	if (this.audio)
 		this.audio.play();
-		
-		
+
+
 	if (typeof(this.timeouts["MainLoop"]) === "undefined")
 		this.MainLoop();
-		
+
 	if (this.level > 0)
 	{
 		if (typeof(this.timeouts["AddEnemy"]) === "undefined")
 			this.AddTimeout("AddEnemy", function() {this.AddEnemy()}.bind(this), this.stepRate*600);
-		
+
 		if (typeof(this.timeouts["AddCloud"]) === "undefined")
 		{
-			this.AddTimeout("AddCloud", function() {this.AddCloud()}.bind(this), this.stepRate*(1000 + Math.random()*2000));	
-			
+			this.AddTimeout("AddCloud", function() {this.AddCloud()}.bind(this), this.stepRate*(1000 + Math.random()*2000));
+
 		}
-		
-		
-		if (!this.running) 
+
+
+		if (!this.running)
 		{
-			this.timeouts["AddCloud"].Pause();	
+			this.timeouts["AddCloud"].Pause();
 			this.timeouts["AddEnemy"].Pause();
 		}
 	}
 	this.canvas.Clear(this.GetColour());
-	
+
 
 }
 
@@ -210,7 +213,16 @@ Game.prototype.SetLevel = function(level)
 {
 	Debug("Set level " + String(level));
 	this.level = Math.min(level,5);
-	
+	this.victoryBox = null;
+	this.message = ""
+	delete this.tutorial;
+	delete this.tutorialState;
+	for (var t in this.timeouts) {
+		this.timeouts[t].Pause();
+		delete this.timeouts[t];
+	}
+	this.Clear();
+
 	// hooray globals
 	if (typeof(g_maxLevelCookie) != "undefined")
 	{
@@ -220,7 +232,7 @@ Game.prototype.SetLevel = function(level)
 			SetCookie("maxLevel", g_maxLevelCookie);
 		}
 	}
-		
+
 	this.spawnedEnemies = 0;
 	if (this.audio)
 	{
@@ -233,15 +245,15 @@ Game.prototype.SetLevel = function(level)
 		this.audio.load();
 		this.audio.pause();
 		//this.audio.play();
-		
+
 		//this.levelDurations[this.level] = this.audio.duration*1000;
 	}
-	
+
 	delete this.stepTime;
 	this.runTime = 0;
 	this.stepCount = 0;
 	this.keyState = [];
-	
+
 	this.entities = [];
 	for (var t in this.timeouts)
 	{
@@ -256,22 +268,22 @@ Game.prototype.SetLevel = function(level)
 	// Add the walls
 	this.AddEntity(new Wall({min: [-Infinity,-Infinity], max:[Infinity, -1]}, "Floor")); // bottom
 	this.AddEntity(new Wall({min: [-Infinity,0.8], max:[Infinity,Infinity]}, "Roof")); // top
-	this.AddEntity(new Wall({min: [-Infinity,-Infinity], max:[-1, Infinity]})); // left 
+	this.AddEntity(new Wall({min: [-Infinity,-Infinity], max:[-1, Infinity]})); // left
 	this.AddEntity(new Wall({min: [1,-Infinity], max:[Infinity, Infinity]})); // right
-	
+
 	// Add the player
 	this.player = new Player([0,0],[0,0],this.gravity, this.canvas, "data/rabbit");
 	this.AddEntity(this.player);
 	this.player.lives += g_startingLives;
-	
+
 	if (this.multiplayer && this.playerCount && this.playerCount > 1)
 	{
 		this.multiplayer = []
 		this.multiplayer[this.playerID] = this.player;
 		this.player.playerID = this.playerID;
-		
+
 		this.player.position[0] = -(this.player.Width()/2)*this.playerCount + this.player.Width()*this.playerID;
-		
+
 		for (var i = 0; i < this.playerCount; ++i)
 		{
 			if (i == this.playerID) continue;
@@ -281,15 +293,23 @@ Game.prototype.SetLevel = function(level)
 			this.AddEntity(this.multiplayer[i]);
 		}
 	}
-	
+
+	// Add VictoryBox if the player already completed this level
+	console.debug(`Current level: ${this.level}, vs maxLevel: ${g_maxLevelCookie}`)
+	if (this.level < g_maxLevelCookie && this.level < FINAL_LEVEL && this.level > 0) {
+
+		this.AddVictoryBox();
+	}
+
 
 	/**  level specific code goes below here **/
-	
+
 	//TODO: Make NaN and Infinity levels
-	for (var i = 0; i < Math.min(this.level*2,6); ++i)
+	for (var i = 0; i < Math.min(this.level*2,6); ++i) {
 		this.AddHat();
-		
-	
+	}
+
+
 	if (this.level == 2)
 	{
 		this.AddEntity(new Ox([0,1],[0,0],this.gravity,this.canvas));
@@ -305,7 +325,7 @@ Game.prototype.SetLevel = function(level)
 		this.AddEntity(new Wolf([0.8,1],[0,0], this.gravity, this.canvas));
 		this.AddEntity(new Wolf([-0.8,1],[0,0],this.gravity,this.canvas));
 	}
-	
+
 	if (this.level == 5)
 	{
 		this.AddEntity(new Rox([-0.8,0],[0,0],this.canvas));
@@ -314,14 +334,14 @@ Game.prototype.SetLevel = function(level)
 	{
 		this.AddEntity(new Rox([-0.8,0.7],[0,0],this.canvas));
 		this.AddEntity(new Rox([+0.8,-0.3],[0,0],this.canvas));
-		
+
 	}
 
 	if (isNaN(this.level))
 	{
 		this.player.LoadSprites(this.canvas, "data/fox");
 	}
-	
+
 	this.canvas.SetBackground(this.backgrounds[this.level]);
 	Debug("");
 }
@@ -348,7 +368,7 @@ Game.prototype.GetColour = function()
 	return [1,1,1,1];
 }
 
-/** 
+/**
  * Pick an advert to show; on the first call it will HTTP GET the list of adverts
  * @param trial - Used to stop recursion
  */
@@ -381,19 +401,22 @@ Game.prototype.ChooseAdvert = function(trial)
 	}
 	// Go through the adverts in order (order is chosen by the server in adverts.py)
 	return this.advertChoices[this.advertChoiceIndex++ % this.advertChoices.length];
-	
+
 }
 
 /**
  * Progress to the Next Level
  * @param skipAd - Used to prevent recursion
  */
-Game.prototype.NextLevel = function(skipAd)
+Game.prototype.NextLevel = function(skipAd, from)
 {
 	this.Pause("Loading...");
-	
 
-	
+
+	if (from) {
+		this.level = from;
+	}
+
 	if (this.enableAdverts && !skipAd)
 	{
 		// Make the splash screen then call NextLevel (with the skipAd flag
@@ -404,7 +427,7 @@ Game.prototype.NextLevel = function(skipAd)
 		return;
 	}
 	this.SetLevel(this.level+1);
-	
+
 	this.Clear();
 	this.Draw();
 
@@ -414,11 +437,11 @@ Game.prototype.NextLevel = function(skipAd)
 	var message;
 
 	// The tutorial is optional
-	if (this.level == 0 && !confirm("Play the tutorial?\nIf you haven't before you really want to.\n\nTrust me."))
+	if (false) //if (this.level == 0 && !confirm("Play the tutorial?\nIf you haven't before you really want to.\n\nTrust me."))
 	{
 		return this.NextLevel(true); // Skip to level 1
 	}
-	
+
 	switch (this.level)
 	{
 		case 0:
@@ -426,7 +449,7 @@ Game.prototype.NextLevel = function(skipAd)
 			taunt = "Tutorial Time!";
 			message = "Prepare to be amazed by the physics engine.";
 			colour = [0.5,0.5,0.9,1];
-			
+
 			break;
 		case 1:
 			//this.Resume();
@@ -448,7 +471,7 @@ Game.prototype.NextLevel = function(skipAd)
 			message = "Bad Wolf";
 			colour = [0.9,0.5,0.5,1];
 			break;
-			
+
 		case 4:
 			boss = "data/wolf/drawing1.svg";
 			taunt = "More wol";
@@ -479,8 +502,8 @@ Game.prototype.NextLevel = function(skipAd)
 				taunt += ". Because lazy developer.";
 			}
 			message = "Wolfs are pack animals FYI.";
-					
-			
+
+
 			colour = [0.9,0.5,0.5,1];
 			break;
 		case 5:
@@ -489,7 +512,7 @@ Game.prototype.NextLevel = function(skipAd)
 			message = "(With sincere apologies to Ronny James Dio)";
 			colour = [0.9,0.5,0.5,1];
 			break;
-		
+
 		default:
 			if (isNaN(this.level))
 			{
@@ -505,8 +528,8 @@ Game.prototype.NextLevel = function(skipAd)
 			}
 			break;
 	}
-	
-	// Show splash screen, then start level 
+
+	// Show splash screen, then start level
 	this.canvas.SplashScreen(boss, taunt, colour, function() {
 		this.AddTimeout("Level"+String(this.level),
 			function() {
@@ -516,11 +539,11 @@ Game.prototype.NextLevel = function(skipAd)
 					this.Tutorial("start");
 			}.bind(this) ,2000);
 		this.Message(message, 2000);
-		
-	}.bind(this));
-	
 
-	
+	}.bind(this));
+
+
+
 }
 
 /**
@@ -529,16 +552,16 @@ Game.prototype.NextLevel = function(skipAd)
  */
 Game.prototype.AddEnemy = function()
 {
-	
+
 	var enemy;
 	var targetPlayer = this.GetTargetPlayer();
 	this.spawnedEnemies += 1;
 	if (this.level > 0 && this.level < 5 &&
-		(this.spawnedEnemies % (6-Math.min(4,this.level))) == 0 && 
+		(this.spawnedEnemies % (6-Math.min(4,this.level))) == 0 &&
 		(!this.entityCount["Fox"] || this.entityCount["Fox"] < 2+this.level))
 	{
 		enemy = new Fox([targetPlayer.position[0], 1],[0,0], this.gravity, this.canvas)
-		
+
 	}
 	else
 	{
@@ -554,14 +577,14 @@ Game.prototype.AddEnemy = function()
 			enemy.frame = this.canvas.LoadTexture("data/box/box_valentine.gif");
 			enemy.damagedFrame = enemy.frame; // you can't hurt the lovely
 		}
-			
+
 	}
-	
+
 	if (this.spawnedEnemies % 10 == 0)
 	{
 		this.AddHat();
 	}
-		
+	console.debug(`Created enemy type ${enemy.GetName()}`)
 	this.AddEntity(enemy);
 	this.AddTimeout("AddEnemy", function() {this.AddEnemy()}.bind(this), this.stepRate*300/Math.min(Math.pow(this.level,0.5),1));
 	if (!this.running)
@@ -577,7 +600,7 @@ Game.prototype.AddCloud = function()
 	var y = 0.8*Math.random();
 	this.AddEntity(new Cloud([x, y],this.canvas));
 	this.AddTimeout("AddCloud", function() {this.AddCloud()}.bind(this), this.stepRate*(4000 + Math.random()*6000)/Math.min(Math.pow(this.level,0.5),1));
-	
+
 	if (!this.running)
 		this.timeouts["AddCloud"].Pause();
 }
@@ -590,7 +613,7 @@ Game.prototype.AddHat = function()
 {
 	var targetPlayer = this.GetTargetPlayer();
 	var hat = new Hat([targetPlayer.position[0], 1], [0,0], [0.8*this.gravity[0], 0.8*this.gravity[1]], this.canvas);
-	this.AddEntity(hat); 
+	this.AddEntity(hat);
 
 }
 
@@ -625,12 +648,19 @@ Game.prototype.AddEntity = function(entity)
  */
 Game.prototype.KeyDown = function(event)
 {
+
 	if (!this.keyState)
 		this.keyState = [];
-		
-	if (this.keyState[event.keyCode] === true) 
+
+	if ([32,37,38,39,40].indexOf(event.keyCode) > -1 && event.preventDefault) {
+		event.preventDefault();
+	}
+
+
+	if (this.keyState[event.keyCode] === true)
 		return;
-	this.keyState[event.keyCode] = true; 
+	this.keyState[event.keyCode] = true;
+
 
 	if (event.keyCode == 32) // space
 	{
@@ -651,12 +681,17 @@ Game.prototype.KeyDown = function(event)
 	}
 	if (event.keyCode >= 48 && event.keyCode <= 53)
 	{
+		this.Pause();
 		this.SetLevel(event.keyCode-48);
+		if (this.level == 0) {
+			this.Tutorial("start");
+		}
+		this.Resume();
 	}
-	
+
 	if (!this.webSockets)
 		return;
-	
+
 	for (var i = 0; i < this.webSockets.length; ++i)
 	{
 		this.webSockets[i].send("+"+event.keyCode+"\n");
@@ -670,22 +705,26 @@ Game.prototype.KeyUp = function(event)
 {
 	if (!this.keyState)
 		this.keyState = [];
-	
+
+
 	if (this.keyState[event.keyCode] !== true)
 		return;
-		
+
 	this.keyState[event.keyCode] = false;
 	if (!this.webSockets)
 		return;
 	for (var i = 0; i < this.webSockets.length; ++i)
 	{
 		this.webSockets[i].send("-"+event.keyCode+"\n");
-	}	
+	}
 }
 
 
 Game.prototype.TouchDown = function(event)
 {
+	if (event.preventDefault) {
+		event.preventDefault()
+	}
 	if (!this.running && this.player && this.player.alive
 		&& (!this.multiplayer || this.multiplayer.length <= 1))
 	{
@@ -707,7 +746,7 @@ Game.prototype.TouchDown = function(event)
 	{
 		this.KeyDown({keyCode : 37});
 	}
-	
+
 	if (dely >= 3*this.player.Height())// || event.clientY < 0.2*this.canvas.height)
 	{
 		this.KeyDown({keyCode : 38});
@@ -724,7 +763,9 @@ Game.prototype.TouchDown = function(event)
 Game.prototype.TouchUp = function(event)
 {
 	//this.Message("TouchUp at "+String([event.clientX, event.clientY]));
-	
+	if (event.preventDefault) {
+		event.preventDefault();
+	}
 	for (var k in this.keyState)
 	{
 		this.KeyUp({keyCode : k});
@@ -747,6 +788,9 @@ Game.prototype.MouseDown = function(event)
  */
 Game.prototype.MouseUp = function(event)
 {
+	if (event.preventDefault) {
+		event.preventDefault()
+	}
 	if (this.mouseDown)
 	{
 		this.mouseDown = false;
@@ -759,6 +803,9 @@ Game.prototype.MouseUp = function(event)
  */
 Game.prototype.MouseMove = function(event)
 {
+	if (event.preventDefault) {
+		event.preventDefault()
+	}
 	if (this.mouseDown)
 		this.TouchDown(event);
 }
@@ -787,39 +834,39 @@ Game.prototype.ClearStepAndDraw = function()
 	//  to give a performance increase
 	this.canvas.Clear(this.GetColour());
 	this.canvas.DrawBackground();
-		
+
 	if (this.message)
 	{
-		this.canvas.Text(this.message);	
+		this.canvas.Text(this.message);
 	}
 
-	
+
 	for (var i = this.entities.length; i >= 0; --i)
 	{
 		if (this.entities[i])
 		{
-			 // noticably faster on smartphone, but obviously causes issues with overlapping objects :(
-			//this.entities[i].Clear(this.canvas);
-			
+			// noticably faster on smartphone, but obviously causes issues with overlapping objects :(
+			// this.entities[i].Clear(this.canvas);
+
 			// Hacky - use different key states when in multiplayer
 			if (this.entities[i].name == "Humphrey" && this.multiplayerKeyState)
 			{
-				//console.log("Multiplayer; load key state for "+String(this.playerID));
+				//console.debug("Multiplayer; load key state for "+String(this.playerID));
 				this.oldKeyState = this.keyState;
-				this.keyState = this.multiplayerKeyState[this.entities[i].playerID];	
+				this.keyState = this.multiplayerKeyState[this.entities[i].playerID];
 				this.entities[i].Step(this);
-				this.keyState = this.oldKeyState;		
+				this.keyState = this.oldKeyState;
 			}
 			else
 			{
 				this.entities[i].Step(this);
 				if (this.entities[i].angle != 0)
-					console.log("Angle is " + String(this.entities[i].angle));
+					console.debug("Angle is " + String(this.entities[i].angle));
 			}
-			this.entities[i].Draw(this.canvas);
+
 			if (!this.entities[i].alive)
 			{
-				this.entities[i].Clear(this.canvas);
+				// this.entities[i].Clear(this.canvas);
 				this.entityCount[this.entities[i].GetName()] -= 1;
 				if (!this.deathCount[this.entities[i].GetName()])
 				{
@@ -831,10 +878,12 @@ Game.prototype.ClearStepAndDraw = function()
 				}
 				if (this.entities[i] !== this.player)
 					delete this.entities[i];
+			} else {
+				this.entities[i].Draw(this.canvas);
 			}
 		}
 	}
-	
+
 	this.stepCount += 1;
 	//Debug(String(this.player.angle));
 }
@@ -844,7 +893,7 @@ Game.prototype.Clear = function(canvas)
 {
 	if (!canvas)
 		canvas = this.canvas;
-	
+
 	//if (canvas.gl)
 	{
 		canvas.Clear()
@@ -860,14 +909,14 @@ Game.prototype.Clear = function(canvas)
 /** Draw **/
 Game.prototype.Draw = function()
 {
-	
+
 	if (this.message)
 	{
 		this.canvas.Clear(this.GetColour());
 		this.canvas.Text(this.message);
 		//this.canvas.SplashScreen(this.overlay.image, this.overlay.splashText, [0,0,0,0.1]);
 	}
-		
+
 	/*
 	for (var i = 0; i < this.entities.length; ++i)
 	{
@@ -877,36 +926,36 @@ Game.prototype.Draw = function()
 		}
 	}
 	*/
-	
+
 }
 
 Game.prototype.MainLoop = function()
-{	
-	
+{
+
 	if (!this.running)
 		return;
-		
+
 	if (this.document && (!this.document.hasFocus() && (!this.multiplayer || this.multiplayer.length <= 1)))
 	{
 		this.Pause("Paused");
 		this.Message("Focus tab and press space");
 		return;
 	}
-	
-	
-	if (this.levelDurations[this.level] && 
-		this.runTime > this.levelDurations[this.level])
-	{
-		if (this.player)
-			this.player.PostStats("Next Level",this)
-		this.NextLevel();
-		return;
+
+
+	if (this.levelDurations[this.level] &&
+		this.runTime > this.levelDurations[this.level]
+		&& !this.victoryBox) {
+		this.AddVictoryBox();
+		// if (this.player)
+		//	this.player.PostStats("Next Level",this)
+		// this.NextLevel();
 	}
-	
-		
-			
+
+
+
 	this.ClearStepAndDraw();
-	
+
 	if (this.player && !this.player.alive && !this.player.alreadyDying)
 	{
 		this.player.alreadyDying = true;
@@ -915,15 +964,15 @@ Game.prototype.MainLoop = function()
 		this.Clear();
 		this.Draw();
 		this.player.Draw(this.canvas);
-		
+
 		this.running = false;
-		
+
 		for (var t in this.timeouts)
 		{
 			this.timeouts[t].Pause();
 			delete this.timeouts[t];
 		}
-		
+
 		var deathCall;
 		// horrible callback code follows
 		// (seriously why isn't there a sleep() function
@@ -941,7 +990,7 @@ Game.prototype.MainLoop = function()
 		{
 			deathCall = function() {
 				this.AddTimeout("Advert", function() {
-					this.canvas.SplashScreen(this.ChooseAdvert(), "",[1,1,1,1], 
+					this.canvas.SplashScreen(this.ChooseAdvert(), "",[1,1,1,1],
 					function() {
 							this.AddTimeout("Restart", function() {
 							this.SetLevel(this.level);
@@ -951,19 +1000,19 @@ Game.prototype.MainLoop = function()
 				}.bind(this), 1000);
 			}
 		}
-		
+
 		//if (this.level == 1 && !this.playedTutorial && (!this.spawnCount || this.spawnCount <= 10))
 		//{
 		//	this.level = -1;
 		//	this.NextLevel();
 		//	return;
 		//}
-		
+
 		this.player.DeathScene(this, deathCall.bind(this));
 		this.player.alreadyDying = false;
 		return;
 	}
-	
+
 	if (this.document)
 	{
 		if (!this.document.runtime)
@@ -982,7 +1031,7 @@ Game.prototype.MainLoop = function()
 			this.document.runtime.innerHTML = (""+totalTime/1000).toHHMMSS();
 		}
 	}
-	
+
 	var actualTime = 0;
 	var thisLoop = (new Date()).getTime();
 	if (this.lastLoop)
@@ -990,12 +1039,12 @@ Game.prototype.MainLoop = function()
 		actualTime = thisLoop - this.lastLoop;
 	}
 	this.lastLoop = thisLoop;
-	
-	
+
+
 	var nextTime = Math.max(0, this.stepRate - actualTime);
 	this.AddTimeout("MainLoop", function() {
 		this.MainLoop()
-	}.bind(this), nextTime, this);	
+	}.bind(this), nextTime, this);
 }
 
 Game.prototype.GetNearestPlayer = function(position)
@@ -1029,12 +1078,12 @@ Game.prototype.UpdateDOM = function(player)
 {
 	if (!this.document || !player)
 		return;
-		
+
 	if (!this.document.lives)
 		this.document.lives = this.document.getElementById("lives");
 	if (!this.document.lives)
 		return;
-		
+
 	this.document.lives.innerHTML = player.lives;
 	if (player.lives <= 0)
 	{
@@ -1063,11 +1112,11 @@ Game.prototype.MultiplayerWait = function(id)
 	if (!this.multiplayer || this.multiplayer.length <= 1)
 		return;
 	Debug("Multiplayer Wait");
-	console.log("Multiplayer wait " + String(id));
+	console.debug("Multiplayer wait " + String(id));
 	for (var i = 0; i < this.webSockets.length; ++i)
 	{
 		this.webSockets[i].send("WAIT "+String(id)+"\n");
-	}		
+	}
 	for (var i = 0; i < this.multiplayer.length; ++i)
 	{
 		this.multiplayer[i].multiplayerWait = id;
@@ -1083,14 +1132,14 @@ Game.prototype.MultiplayerWait = function(id)
  */
 Game.prototype.MultiplayerSync = function(message)
 {
-	
+
 		Debug("WS: " + String(message));
 		tokens = message.split(" ");
 		if (!this.messageCount)
 		{
 			this.messageCount = 0;
 		}
-		
+
 		if (tokens[0] === "MULTIPLAYER")
 		{
 			this.multiplayer = [];
@@ -1098,13 +1147,13 @@ Game.prototype.MultiplayerSync = function(message)
 			this.playerCount = parseInt(tokens[2]);
 			//this.multiplayer[this.playerID] = this.player;
 			//this.player.playerID = this.playerID;
-			
+
 			this.multiplayerKeyState = [];
 			for (var i = 0; i < this.playerCount+1; ++i)
 			{
 				this.multiplayerKeyState[i] = [];
 			}
-			console.log("Multiplayer Init with " + String(this.playerCount) + " players");
+			console.debug("Multiplayer Init with " + String(this.playerCount) + " players");
 			//this.SetLevel(this.level);
 		}
 		else if (tokens[1] == "LIFE")
@@ -1154,8 +1203,8 @@ Game.prototype.MultiplayerSync = function(message)
 				}
 			}
 		}
-		
-		
+
+
 		++this.messageCount;
 }
 
@@ -1164,7 +1213,7 @@ Game.prototype.GainLife = function()
 	for (var i = 0; i < this.webSockets.length; ++i)
 	{
 		this.webSockets[i].send("LIFE\n");
-	}	
+	}
 }
 
 Game.prototype.LoseLife = function()
@@ -1172,5 +1221,46 @@ Game.prototype.LoseLife = function()
 	for (var i = 0; i < this.webSockets.length; ++i)
 	{
 		this.webSockets[i].send("DEATH\n");
-	}	
+	}
+}
+
+
+Game.prototype.AddVictoryBox = function() {
+	if (this.victoryBox || !this.player) {
+		return;
+	}
+
+	console.debug('Adding victory box')
+	const targetPlayer = this.GetTargetPlayer();
+	const targetPosition = [targetPlayer.position[0],0.5]
+	const targetVelocity = [0,0]
+	const targetGravity = this.gravity
+	this.victoryBox = new VictoryBox(
+		targetPosition,
+		targetVelocity,
+		targetGravity,
+		this.canvas
+	)
+	this.AddEntity(this.victoryBox);
+	// FIXME: Handle the timeout in the tutorial level properly
+	if (this.level != 0) {
+		this.AddTimeout("TooSlow", () => {
+			if (!this.victoryBox) {
+				console.debug("Victory Box died before timeout");
+				return;
+			}
+			this.victoryBox.description = "QUICKLY!\n↓↓↓"
+			const portal = new SFXEntity(this.victoryBox, 3000/this.stepRate, ["data/sfx/portal1.png"], this.canvas,[0,0]);
+			portal.onDeath(() => {
+				console.debug(this.victoryBox)
+				this.victoryBox.Die("TooSlow", this.victoryBox, this);
+				this.victoryBox = null;
+			});
+			this.AddEntity(portal)
+		}, 10000);
+	}
+}
+
+Game.prototype.debug = function(message) {
+	console.debug(message)
 }

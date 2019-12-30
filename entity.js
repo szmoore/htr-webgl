@@ -16,29 +16,29 @@ function Entity(position, velocity, acceleration, canvas, spritePath)
 	this.velocity = velocity;
 	this.acceleration = acceleration;
 	this.lastPosition = position;
-	this.ignoreCollisions = {}; 
+	this.ignoreCollisions = {};
 	for (var i = 0; i < this.position.length; ++i)
 		this.lastPosition[i] = this.position[i];
 	this.alive = true;
-	
+
 	this.canJump = true;
 	this.speed = 0.7;
 	this.stomp = 0.2;
 	this.jumpSpeed = 1.2;
-	
+
 	this.frameRate = 3; // magic frame rate number
 	this.frameNumber = 0;
 	this.angle = 0;
 	this.solid = true;
-	
+
 	this.distanceMoved = 0;
-		
+
 	if (canvas)
 	{
 		this.bounds = {min: [-32/canvas.width, -32/canvas.height], max: [32/canvas.width, 32/canvas.height]};
 		if (spritePath)
 			this.LoadSprites(canvas, spritePath);
-		
+
 	}
 
 }
@@ -63,7 +63,7 @@ Entity.prototype.UpdateFrames = function()
 {
 	if (!this.frameBase)
 		return;
-	
+
 	if (typeof(this.sleep) !== "undefined" && this.sleep > 0)
 	{
 		this.sleep -= 0.01;
@@ -73,7 +73,7 @@ Entity.prototype.UpdateFrames = function()
 	else if (this.velocity[1] == 0)
 	{
 		if (this.velocity[0] == 0)
-			this.frames = this.frameBase.rest; 
+			this.frames = this.frameBase.rest;
 		else
 			this.frames = (this.velocity[0] > 0) ? this.frameBase.right : this.frameBase.left;
 	}
@@ -118,7 +118,7 @@ Entity.prototype.Step = function(game)
 {
 	if (!this.alive)
 		return;
-	
+
 	this.holdFrame = false;
 	this.angle = 0;
 	var currentTime = (new Date()).getTime();
@@ -126,7 +126,7 @@ Entity.prototype.Step = function(game)
 	{
 		this.lastUpdateTime = currentTime;
 	}
-	
+
 	// Try to make the physics more accurate taking into account lag
 	var latency = (currentTime - this.lastUpdateTime)/game.stepRate;
 	// But not too much or wierd shit happens.
@@ -158,15 +158,15 @@ Entity.prototype.Step = function(game)
 		// Check for collisions
 		collide = this.Collision(game);
 		if (collide)
-		{	
+		{
 				// Soo... this is terribly inefficient and lazy
 				// But slightly better than what I had before
 				// Binary search to location of collision
 				var upper = this.position[i];
-				var lower = this.lastPosition[i]; 
+				var lower = this.lastPosition[i];
 				while (Math.abs(upper-lower) > 1e-3)
 				{
-					this.position[i] = (upper + lower)/2; 
+					this.position[i] = (upper + lower)/2;
 					if (this.Collides(collide))
 						upper = this.position[i];
 					else
@@ -192,7 +192,7 @@ Entity.prototype.Step = function(game)
 	if (!this.holdFrame)
 		this.UpdateFrames();
 	this.distanceMoved += Math.sqrt(Math.pow(this.position[0]-this.lastPosition[0],2)+Math.pow(this.position[1]-this.lastPosition[1],2))
-	
+
 	this.UpdateFrameNumber();
 
 	// Error check
@@ -223,11 +223,11 @@ Entity.prototype.Step = function(game)
 	{
 		for (var i =0; i < this.position.length; ++i) this.lastPosition[i] = this.position[i];
 	}
-	
+
 }
 
 Entity.prototype.Top = function() {return this.position[1] + this.bounds.max[1];}
-Entity.prototype.Bottom = function() 
+Entity.prototype.Bottom = function()
 {
 	if (!this.position)
 		alert("foey");
@@ -267,14 +267,14 @@ Entity.prototype.Collision = function(game)
 	for (var i = 0; i < game.entities.length; ++i)
 	{
 		var other = game.entities[i];
-		
-		if (!other || other === this 
-			|| (this.ignoreCollisions && 
+
+		if (!other || other === this
+			|| (this.ignoreCollisions &&
 				this.ignoreCollisions[other.GetName()]))
-		{ 
+		{
 			continue;
 		}
-		if (this.Collides(other)) 
+		if (this.Collides(other))
 			return other;
 	}
 }
@@ -286,7 +286,7 @@ Entity.prototype.Collides = function(other)
 {
 	if (!other.bounds || !this.bounds) return;
 	if (!other.solid || !this.solid) return;
-	
+
 	var A = this.GetBoundBox();
 	var B = other.GetBoundBox();
 
@@ -295,7 +295,7 @@ Entity.prototype.Collides = function(other)
 	{
 		collides &= (A.min[i] <= B.max[i] && A.max[i] >= B.min[i]);
 	}
-	if (collides && this.spriteCollisions 
+	if (collides && this.spriteCollisions
 		&& this.sprite && other.sprite && this.sprite.data && other.sprite.data)
 	{
 		tl1 = LocationGLToPix(this.Left(), this.Top());
@@ -320,9 +320,9 @@ Entity.prototype.HandleCollision = function(other, instigator,game)
 		if (typeof(result) !== "undefined")
 			return result;
 	}
-	
-	if (this.ignoreCollisions && this.ignoreCollisions[other.GetName()]) 
-		return false;	
+
+	if (this.ignoreCollisions && this.ignoreCollisions[other.GetName()])
+		return false;
 	if (instigator)
 		other.HandleCollision(this, false, game);
 	this.CanJump(other);
@@ -331,13 +331,13 @@ Entity.prototype.HandleCollision = function(other, instigator,game)
 
 Entity.prototype.CanJump = function(other)
 {
-	if (typeof(this.canJump) !== "undefined") 
+	if (typeof(this.canJump) !== "undefined")
 	{
 		if (!other.canJump)
 			this.canJump = (other.Bottom() <= this.Top());
 		else
 			this.canJump = (this.Top() > other.Top());
-	}	
+	}
 }
 
 
@@ -346,13 +346,13 @@ Entity.prototype.CanJump = function(other)
 /**
  * Bounce off a surface with normal vector n
  */
-Entity.prototype.Bounce = function(n, reflect)	
+Entity.prototype.Bounce = function(n, reflect)
 {
 	if (this.lastPosition)
 	{
 		for (var i = 0; i < this.lastPosition.length; ++i) this.position[i] = this.lastPosition[i];
 	}
-    
+
 	var dot = 0;
 	for (var j = 0; j < this.velocity.length; ++j)
 	{
@@ -392,28 +392,37 @@ Entity.prototype.Clear = function(canvas)
 		w = this.scale[0] * canvas.width;
 		h = this.scale[1] * canvas.height;
 	}
-	canvas.ctx.beginPath()	
+	canvas.ctx.beginPath()
 	canvas.ctx.rect(tl[0], tl[1], w, h);
 	canvas.ctx.fillStyle = canvas.fillStyle;
 	canvas.ctx.fill();
+	if (typeof(this.previousText) === 'string') {
+		this.DrawText(canvas, this.previousText, canvas.fillStyle);
+		this.previousText = null;
+	}
 }
 
-Entity.prototype.DrawText = function(canvas, text)
+Entity.prototype.DrawText = function(canvas, text, fillStyle)
 {
 	if (!canvas.ctx) return;
+	var lines = text.split("\n")
 	var tl = canvas.LocationGLToPix(this.Left(), this.Top());
 	var w = this.frame.img.width;
 	var h = this.frame.img.height;
 	if (this.scale)
 	{
-		w = this.scale[0] * width;
-		h = this.scale[1] * height;
+		w = this.scale[0] * canvas.width;
+		h = this.scale[1] * canvas.height;
 	}
+	var hh = h/lines.length;
 	var old = canvas.ctx.textAlign;
 	canvas.ctx.textAlign = "center";
-	canvas.ctx.fillStyle = "black";
-	canvas.ctx.fillText(text, tl[0]+w/2, tl[1]-h, w);	
+	canvas.ctx.fillStyle = fillStyle || "black";
+	lines.map((line, index) => {
+		canvas.ctx.fillText(line, tl[0]+w/2, tl[1]-h + hh*(index), w);
+	})
 	canvas.ctx.textAlign = old;
+	this.previousText = text
 }
 
 /**
@@ -422,17 +431,25 @@ Entity.prototype.DrawText = function(canvas, text)
  */
 Entity.prototype.Draw = function(canvas)
 {
-	if (!this.frame)
+	if (!this.frame) {
 		return;
-		
+	}
 
-		
+	if (this.hidden) {
+		return;
+	}
+
+
 	with (canvas)
 	{
+		if (typeof(this.description) === 'string') {
+			this.DrawText(canvas, this.description);
+		}
+
 		if (!this.gl)
 		{
 			if (!ctx) return;
-		
+
 			var tl = LocationGLToPix(this.Left(), this.Top());
 			var w = this.frame.img.width;
 			var h = this.frame.img.height;
@@ -502,7 +519,7 @@ Entity.prototype.MovingTowards = function(other)
 	return (((this.velocity[0] > 0 && other.position[0] >= this.position[0])
 		|| (this.velocity[0] < 0 && other.position[0] <= this.position[0]))
 		|| ((this.velocity[1] > 0 && other.position[1] >= this.position[1])
-		|| (this.velocity[1] < 0 && other.position[1] <= this.position[1]))); 
+		|| (this.velocity[1] < 0 && other.position[1] <= this.position[1])));
 }
 
 Entity.prototype.Above = function(other)
@@ -542,6 +559,13 @@ Entity.prototype.TryToPush = function(other)
 	return false;
 }
 
+Entity.prototype.Hide = function() {
+	this.hidden = true;
+}
+Entity.prototype.Show = function() {
+	this.hidden = false;
+}
+
 
 function Wall(bounds, name)
 {
@@ -557,7 +581,7 @@ function Wall(bounds, name)
 	else
 		this.name = name;
 	this.bounds = bounds;
-	
+
 	// I guess the Right (TM) way is to have a Mobile() entity type
 	//	So I don't have to delete random things. But hey it's Javascript.
 	delete this.canJump; // walls can't jump!
@@ -588,19 +612,27 @@ function SFXEntity(parent, life, images, canvas, offset)
 	this.solid = false;
 	this.life = life;
 	this.name = "SFX";
+	this.deathCallbacks = []
 }
 SFXEntity.prototype = Object.create(Entity.prototype);
 SFXEntity.prototype.constructor = SFXEntity;
 SFXEntity.prototype.Step = function(game) {
 	if (this.life-- <= 0)
 	{
+		this.deathCallbacks.map(fn => fn())
+		this.deathCallbacks = []
 		this.Die(this.GetName(),this,game);
 		return;
 	}
-	
-	for (var i = 0; i < this.position.length; ++i)
+
+	for (var i = 0; i < this.position.length; ++i) {
 		this.position[i] = this.parent.position[i]+this.offset[i];
-		
+	}
+
 	Entity.prototype.Step.call(this,game);
-	
+
+}
+
+SFXEntity.prototype.onDeath = function(callback) {
+	this.deathCallbacks.push(callback)
 }

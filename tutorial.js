@@ -7,28 +7,29 @@ Game.prototype.tutorial = {
 		this.tutorialTimeout = 4000;
 		this.player.lives = 0;
 	},
-	
+
 	"move1" : function() {
-		if (g_touchBarCookie === "yes")
-			this.message = "Crappy Touch: Press buttons. Wait...";
-		else
-			this.message = "Touch: Humphrey moves towards finger. NO SWIPING."
+		if (g_touchBarCookie === "yes") {
+			this.message = "Use buttons";
+		} else {
+			this.message = "Touch: Guide with finger."
+		}
 		this.tutorialState = "move2";
-		this.tutorialTimeout = 8000;
+		this.tutorialTimeout = (g_isMobile) ? 8000 : 1;
 	},
-	
+
 	"move2" : function() {
 		this.message = "Keyboard: W,S,A,D or Arrow keys"
 		this.tutorialState = "climb";
-		this.tutorialTimeout = 5000;
+		this.tutorialTimeout = (g_isMobile) ? 1 : 8000;
 	},
-	
+
 	"move3" : function() {
 		this.message = "Mouse: Hold down and move";
 		this.tutorialState = "climb";
 		this.tutorialTimeout = 5000;
 	},
-	
+
 	"climb" : function () {
 		this.message = "Try climbing the walls";
 		this.tutorialState = "hat1";
@@ -41,9 +42,9 @@ Game.prototype.tutorial = {
 		this.tutorial.hat = new Hat([0,0.25],[0,0],[0,0],this.canvas);
 		this.AddEntity(this.tutorial.hat);
 	},
-	
+
 	"hat2" : function() {
-		
+
 		if (this.player.lives > 0)
 		{
 			this.message = "Quick thinking!";
@@ -56,7 +57,7 @@ Game.prototype.tutorial = {
 		this.message = "Get the Hat!";
 		this.tutorialState = "hat3";
 	},
-	
+
 	"hat3" : function() {
 		if (this.player.lives <= 0)
 		{
@@ -71,20 +72,20 @@ Game.prototype.tutorial = {
 			this.message = "Well done!";
 		}
 	},
-	
+
 	"box1" : function() {
 		this.tutorial.box = new Box([0,0.25],[0,0],[0,0],this.canvas);
 		this.AddEntity(this.tutorial.box);
 		this.message = "Dodge the Boxes";
 		this.tutorialState = "box2";
 	},
-	
+
 	"box2" : function() {
 		this.tutorial.box.acceleration = this.gravity;
 		this.message = "Watch out!";
 		this.tutorialState = "box3";
 	},
-	
+
 	"box3" : function() {
 		if (this.player.lives > 0)
 		{
@@ -99,7 +100,7 @@ Game.prototype.tutorial = {
 		this.player.lives = 999;
 		this.tutorialState = "cloud1";
 	},
-	
+
 	"cloud1" : function() {
 		this.message = "Clouds are safe";
 		this.tutorial.cloud = new Cloud([-1.1,0.3],this.canvas);
@@ -108,18 +109,18 @@ Game.prototype.tutorial = {
 		this.tutorialTimeout = 2000;
 		this.tutorialState = "cloud2";
 	},
-	
+
 	"cloud2" : function() {
 		this.message = "Behold the glory of the cloud";
 		this.tutorialState = "cloud3";
 		this.tutorial.cloud.velocity = [0.0001,0];
 	},
-	
+
 	"cloud3" : function() {
 		this.message = "You can move through it"
 		this.tutorialState = "cloud4";
 	},
-	
+
 	"cloud4" : function() {
 		if (this.player.position[1] < this.tutorial.cloud.position[1]-this.player.Height()/2)
 		{
@@ -132,9 +133,9 @@ Game.prototype.tutorial = {
 			this.message = "2.4KB of Big Data";
 			this.tutorialState = "fox1";
 		}
-		
+
 	},
-	
+
 	"fox1" : function() {
 		this.message = "Fox => Danger!";
 		this.tutorial.fox = new Fox([0,-0.5],[0,0], this.gravity, this.canvas);
@@ -142,7 +143,7 @@ Game.prototype.tutorial = {
 		this.AddEntity(this.tutorial.fox);
 		this.tutorialState = "fox2";
 	},
-	
+
 	"fox2" : function() {
 		if (!this.tutorial.fox || !this.tutorial.fox.alive || this.tutorial.fox.sleep)
 		{
@@ -153,7 +154,7 @@ Game.prototype.tutorial = {
 		this.message = "Beware the Fox";
 		this.tutorialState = "fox3";
 	},
-	
+
 	"fox3" : function() {
 		if (!this.tutorial.fox || !this.tutorial.fox.alive || this.tutorial.fox.sleep)
 		{
@@ -163,8 +164,8 @@ Game.prototype.tutorial = {
 		this.message = "Stomp (down) on the Fox";
 		this.tutorialState = "fox4";
 	},
-	
-	
+
+
 	"fox4" : function() {
 		if (!this.tutorial.fox || !this.tutorial.fox.alive || this.tutorial.fox.sleep)
 		{
@@ -174,7 +175,7 @@ Game.prototype.tutorial = {
 		this.message = "Hit her as she is falling";
 		this.tutorialState = "fox4.5";
 	},
-	
+
 	"fox4.5" : function() {
 		if (!this.tutorial.fox || !this.tutorial.fox.alive || this.tutorial.fox.sleep)
 		{
@@ -182,9 +183,9 @@ Game.prototype.tutorial = {
 			return;
 		}
 		this.message = "Try gaining some height";
-		this.tutorialState = "fox4.5";		
+		this.tutorialState = "fox4.5";
 	},
-	
+
 	"fox5" : function() {
 		if (!this.tutorial.fox || !this.tutorial.fox.alive)
 		{
@@ -195,7 +196,7 @@ Game.prototype.tutorial = {
 		this.tutorial.fox.sleep = Infinity;
 		this.tutorialState = "fox6";
 	},
-	
+
 	"fox6" : function() {
 
 		if (!this.tutorial.fox || !this.tutorial.fox.alive)
@@ -203,11 +204,11 @@ Game.prototype.tutorial = {
 			this.tutorial["done"].call(this);
 			return;
 		}
-		this.message = "Sleeping Foxes will wake up...";		
+		this.message = "Sleeping Foxes will wake up...";
 		this.tutorial.fox.sleep = Infinity;
 		this.tutorialState = "fox7";
 	},
-	
+
 	"fox7" : function() {
 
 		if (!this.tutorial.fox || !this.tutorial.fox.alive)
@@ -215,17 +216,17 @@ Game.prototype.tutorial = {
 			this.tutorial["done"].call(this);
 			return;
 		}
-		this.message = "WATCH OUT!";		
+		this.message = "WATCH OUT!";
 		this.tutorial.fox.sleep = 0;
 		this.tutorialState = "fox8";
 	},
-	
+
 	"fox8" : function() {
 		if (!this.tutorial.fox || !this.tutorial.fox.alive)
 		{
 			this.tutorial["done"].call(this);
 			return;
-		}		
+		}
 		this.message = "We don't have all day...";
 		this.tutorial.fox.Step = Entity.prototype.Step;
 		this.tutorial.fox.velocity = [0,0];
@@ -246,33 +247,33 @@ Game.prototype.tutorial = {
 		this.AddEntity(this.tutorial.foxPrison);
 		this.tutorialState = "squish1";
 	},
-	
+
 	"squish1" : function() {
 		if (!this.tutorial.fox || !this.tutorial.fox.alive)
 		{
 			this.tutorial["done"].call(this);
 			return;
-		}				
+		}
 		this.message = "Foxes can be squished";
 		var xx = this.tutorial.fox.position[0];
 		if (xx > 0)
 			xx -= this.tutorial.fox.Width();
 		else
 			xx += this.tutorial.fox.Width();
-			
-		
+
+
 		this.tutorial.box = new Box([xx,1],[0,0],this.gravity,this.canvas);
 		this.AddEntity(this.tutorial.box);
 		this.tutorial.cloud.position[0] = xx;
 		this.tutorialState = "squish2";
 	},
-	
+
 	"squish2" : function() {
 		if (!this.tutorial.fox || !this.tutorial.fox.alive)
 		{
 			this.tutorial["done"].call(this);
 			return;
-		}				
+		}
 		if (Math.abs(this.tutorial.fox.position[0]) > 0.4)
 			this.tutorial.fox.position[0] = 0.4*(this.tutorial.fox.position[0])/Math.abs(this.tutorial.fox.position[0]);
 
@@ -281,8 +282,8 @@ Game.prototype.tutorial = {
 			xx -= this.tutorial.fox.Width();
 		else
 			xx += this.tutorial.fox.Width();
-			
-			
+
+
 		this.tutorial.cloud.position[0] = xx;
 		this.tutorialTimeout = 10000;
 		if (this.tutorial.box.position[1] <= -0.5)
@@ -345,29 +346,29 @@ Game.prototype.tutorial = {
 		}
 		this.tutorialState = "squish2";
 	},
-	
+
 	"done" : function() {
 		this.message = "CONGRATULATIONS!";
 		this.tutorialState = "done2";
 	},
-	
+
 	"done2" : function() {
 		this.message = "Warning: Stomping / Squishing will not work on all enemies.";
 		this.tutorialState = "realworld1";
 	},
-	
+
 	"realworld1" : function() {
 		this.message = "Get Ready for the Real World (TM)!";
 		this.tutorialState = "realworld2";
 	},
-	
+
 	"realworld2" : function() {
 		this.message = "";
 		delete this.tutorial;
 		delete this.tutorialState;
 		this.player.lives = 0;
 		this.playedTutorial = true;
-		this.NextLevel();
+		this.AddVictoryBox();
 	},
 };
 
@@ -376,24 +377,25 @@ Game.prototype.tutorial = {
  */
 Game.prototype.Tutorial = function(state)
 {
-	if (!this.tutorial)
+	if (!this.tutorial || this.level != 0) {
 		return;
-		
+	}
+
 	// hack since theme0.ogg's duration is incorrectly set to 178 instead of 37
-	if (this.audio && this.audio.currentTime >= 37) 
+	if (this.audio && this.audio.currentTime >= 37)
 	{
 		this.audio.currentTime = 0;
 		this.audio.play();
 	}
-	
-	
+
+
 	var fn = this.tutorial[state];
 	if (!fn)
 		return;
-		
+
 	this.tutorialTimeout = 0;
 	fn.call(this);
-	
+
 	if (this.tutorialState)
 	{
 		var timeout = this.tutorialTimeout ? this.tutorialTimeout : 6000;

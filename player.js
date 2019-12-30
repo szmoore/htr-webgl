@@ -20,22 +20,22 @@ Player.prototype.CollisionActions = {}; // this is slightly whack
 Player.prototype.HandleKeys = function(keys)
 {
 	this.velocity[0] = 0;
-	if (keys[37] || keys[65]) 
+	if (keys[37] || keys[65])
 	{
 		this.velocity[0] -= this.speed; // left or A
-		//console.log("Left");
+		//console.debug("Left");
 	}
-	if (keys[39] || keys[68]) 
+	if (keys[39] || keys[68])
 	{
 		this.velocity[0] += this.speed; // right or D
-		//console.log("Right");
+		//console.debug("Right");
 	}
 
 	if (this.canJump && (keys[38] || keys[87])) // up or W
 	{
 		this.velocity[1] = this.jumpSpeed;
 		this.canJump = false;
-		//console.log("Jump");
+		//console.debug("Jump");
 	}
 	if ((keys[40] || keys[83]) && this.velocity[1] > -5) // down or S
 		this.velocity[1] -= this.stomp;
@@ -60,7 +60,7 @@ Player.prototype.Die = function(deathType, other, game)
 		//	other.Die(this.GetName());
 		return;
 	}
-	
+
 	if (--this.lives < 0)
 	{
 		this.deathType = deathType;
@@ -68,12 +68,12 @@ Player.prototype.Die = function(deathType, other, game)
 	}
 	else
 	{
-		
+
 		for (var i = 0; i < this.position.length; ++i)
 			this.position[i] = this.spawn[i];
 		this.AddShield(game);
 		game.UpdateDOM(this);
-		
+
 		//if (g_identityCookie)
 		//	this.PostStats("Lose life "+deathType,game)
 	}
@@ -88,21 +88,21 @@ Player.prototype.CollisionActions["Box"] = function(other, instigator, game)
 {
 	if (!instigator)
 	{
-		if (other.MovingTowards(this) && other.Above(this) 
+		if (other.MovingTowards(this) && other.Above(this)
 		&& Math.abs(other.velocity[1] - this.velocity[1]) > 0.2 && other.velocity[1] < -0.4)
 		{
 			this.Die(other.GetName(), other, game);
 		}
 		return true;
 	}
-	
+
 	if (this.IsStomping(other))
 	{
 		other.health -= 1;
 		return true;
 	}
-	
-	
+
+
 	if (this.Bottom() < other.Top())
 	{
 		other.velocity[0] = this.velocity[0]/2;
@@ -115,7 +115,7 @@ Player.prototype.CollisionActions["Box"] = function(other, instigator, game)
 
 Player.prototype.WallRun = function(other, instigator, game)
 {
-	if (other.position[0] > this.position[0] && this.keys && 
+	if (other.position[0] > this.position[0] && this.keys &&
 		(this.keys[37] || this.keys[65]) && (this.keys[38] || this.keys[87]))
 	{
 		this.angle = Math.PI/2;
@@ -129,7 +129,7 @@ Player.prototype.WallRun = function(other, instigator, game)
 		this.frames = this.frameBase.right;
 		this.holdFrame = true;
 	}
-	else if (other.position[0] > this.position[0] && this.keys && 
+	else if (other.position[0] > this.position[0] && this.keys &&
 		(this.keys[37] || this.keys[65]) && (this.keys[40] || this.keys[83]))
 	{
 		this.angle = Math.PI/2;
@@ -143,15 +143,15 @@ Player.prototype.WallRun = function(other, instigator, game)
 		this.frames = this.frameBase.left;
 		this.holdFrame = true;
 	}
-	
-	this.CanJump(other);	
+
+	this.CanJump(other);
 }
 
 Player.prototype.CollisionActions["Wall"] = function(other, instigator, game)
 {
 	this.WallRun(other, instigator, game);
 	return true;
-} 
+}
 
 
 
@@ -174,7 +174,7 @@ Player.prototype.CollisionActions["Fox"] = function(other, instigator, game)
 	}
 	else if (instigator && other.sleep)
 	{
-		Player.prototype.CollisionActions["Box"].call(this,other,instigator,game);
+		return Player.prototype.CollisionActions["Box"].call(this,other,instigator,game);
 	}
 }
 
@@ -192,7 +192,14 @@ Player.prototype.CollisionActions["Wolf"] = function(other, instigator, game)
 	}
 	else if (instigator && other.sleep)
 	{
-		Player.prototype.CollisionActions["Box"].call(this,other,instigator,game);
+		return Player.prototype.CollisionActions["Box"].call(this,other,instigator,game);
+	}
+}
+
+Player.prototype.CollisionActions["Portal"] = function(other, instigator, game) {
+	if (instigator) {
+		other.HandleCollision(this, !instigator, game);
+		return Player.prototype.CollisionActions["Box"].call(this, other, instigator, game);
 	}
 }
 
@@ -201,7 +208,7 @@ Player.prototype.DeathScene = function(game, onload)
 	var image = "data/rabbit/drawing3.svg";
 	var text = "You died of mysterious causes.";
 	var colour = [1,1,1,1];
-	console.log(this.deathType);
+	console.debug(this.deathType);
 	switch (this.deathType)
 	{
 		case "Box":
@@ -237,7 +244,7 @@ Player.prototype.DeathScene = function(game, onload)
 	}
 //	if (g_identityCookie)
 	this.PostStats("Killed "+this.deathType,game)
-		
+
 	game.canvas.SplashScreen(image, text, colour, onload);
 }
 
@@ -247,13 +254,13 @@ Player.prototype.PostStats = function(type, game, callback)
 	var foxesSquished = game.deathCount["Fox"];
 	if (!foxesSquished)
 		foxesSquished = 0;
-		
+
 	var bossesSquished = 0;
 	if (game.deathCount["Wolf"])
 		bossesSquished += game.deathCount["Wolf"];
 	if (game.deathCount["Ox"])
 		bossesSquished += game.deathCount["Ox"];
-		
+
 	fields = {
 		"start" : game.startTime,
 		"runtime" : game.runTime,
@@ -272,14 +279,18 @@ Player.prototype.PostStats = function(type, game, callback)
 
 Player.prototype.Draw = function(canvas)
 {
+	if (this.hidden) {
+		return;
+	}
+
 	Entity.prototype.Draw.call(this, canvas);
-	
+
 	// hack to get shield to always appear on top of player
 	if (this.shield)
 	{
 		this.shield.Draw(canvas);
 	}
-	
+
 	if (typeof(this.playerID) !== "undefined")
 	{
 		Entity.prototype.DrawText.call(this, canvas, String(this.playerID));
@@ -296,7 +307,7 @@ Player.prototype.AddShield = function(game)
 		this.shield.Die();
 	if (this.hat && this.hat.alive)
 		this.hat.Die();
-		
+
 	this.shield = new SFXEntity(this, 1000/game.stepRate, ["data/sfx/shield1.png"], game.canvas, [0,0]);
 	this.hat = new SFXEntity(this, 1000/game.stepRate, ["data/hats/hat1_big.gif"], game.canvas, [0,this.Height()]);
 	game.AddEntity(this.shield);
@@ -342,7 +353,7 @@ Hat.prototype.CollisionActions["Hat"] = function(other,instigator, game)
 {
 	if (instigator)
 	{
-		this.position[0] = other.position[0] - 1.2*this.Width();
+		this.position[1] = other.position[1] + 1.2*this.Height();
 	}
 }
 

@@ -1,20 +1,20 @@
 /**
  * Humphrey The Rabbit - In glorious WebGL Form
  *
- * tl;dr A game where you play as a Rabbit who must avoid Foxes and Boxes. 
+ * tl;dr A game where you play as a Rabbit who must avoid Foxes and Boxes.
  *
  * History that is only of significance to the author:
  * Humphrey The Rabbit was originally written using pygame (Python 2.7) in 2012 whilst attempting to improve my Python after years of trying to ignore its existance.
  * Now I am attempting to improve my JavaScript after years of trying to ignore its existance, so its time to reinvent some wheels and rewrite Humphrey The Rabbit.
  * One day it'll probably get rewritten in C++ where it belongs.
- * 
+ *
  * Credits:
  * Sprites are from Biots.
  * Jeremy Hughes sang to the theme3 music
  * David Gow came up with some of the advertisments
  *
  * Sam Moore, 2014
- * 
+ *
  * Update: July 14th - Well this project seems to keep escalating...
  */
 
@@ -26,12 +26,12 @@ var g_maxLevelCookie;
 var g_adblockCookie;
 var g_touchBarCookie;
 var g_startingLives;
-
-function Handshake()
+g_startingLives = 3;
+function Handshake(nospam)
 {
 
-	var storedIdentity = GetCookie("identity");
-	if (g_identityCookie && storedIdentity != g_identityCookie)
+	var storedIdentity = g_identityCookie//GetCookie("identity");
+	if (g_identityCookie && storedIdentity != g_identityCookie && !nospam)
 	{
 		var cookieWarn = "COOKIE WARNING\n";
 		cookieWarn += "Enter a nickname to have your scores and level tracked by rabbitgame.net\n";
@@ -41,9 +41,9 @@ function Handshake()
 			cookieWarn += "Go to http://rabbitgame.net/cookies.html for more info.\n";
 			cookieWarn += "Go to http://rabbitgame.net/view.py to see statistics.\n";
 		}
-		
+
 		g_nicknameCookie = prompt(cookieWarn);
-		
+
 		if (g_nicknameCookie)
 		{
 			SetCookie("identity", g_identityCookie);
@@ -63,9 +63,9 @@ function Handshake()
 		g_maxLevelCookie = GetCookie("maxLevel");
 		if (g_adblockCookie)
 			SetCookie("adblock", g_adblockCookie);
-		
+
 		// For our legacy users who won't have the nickname yet (hahaha I said legacy)
-		if (!g_nicknameCookie || g_nicknameCookie == "")
+		if ((!g_nicknameCookie || g_nicknameCookie == "") && (!nospam))
 		{
 			var cookieWarn = "COOKIE WARNING\n";
 			cookieWarn += "You ALREADY have an identity cookie\n";
@@ -87,29 +87,29 @@ function Handshake()
 
 	if (g_touchBarCookie === "yes")
 	{
-		console.log("Enable touch bar");
+		console.debug("Enable touch bar");
 		var touchBar = document.getElementById("touchBar");
-		if (typeof(touchBar) !== "undefined")
-		{
+		if (typeof(touchBar) !== "undefined") {
 			touchBar.style.display = "block";
 			InitPage();
 		}
-		else
-			console.log("Failed to enable button controls");
+		else {
+			console.debug("Failed to enable button controls");
+		}
 	}
-	
-	console.log("You are: "+String(g_identityCookie));
-	console.log("Your nickname is: "+String(g_nicknameCookie));
-	console.log("Your maximum starting level is: "+String(g_maxLevelCookie));
+
+	console.debug("You are: "+String(g_identityCookie));
+	console.debug("Your nickname is: "+String(g_nicknameCookie));
+	console.debug("Your maximum starting level is: "+String(g_maxLevelCookie));
 }
 
 /**
  * The main function
  */
-function main() 
+function main(nospam)
 {
 	//window.onerror = function(e) {alert(e);}
-	Handshake();
+	Handshake(nospam);
 	var audio = document.getElementById("theme");
 	// Deal with browsers that can't play audio
 	if (typeof(audio.pause) !== "function" || typeof(audio.play) !== "function")
@@ -120,9 +120,9 @@ function main()
 	var canvas = document.getElementById("glcanvas");
 	g_game = new Game(canvas, audio, document, false);
 
-	
+
 	var welcome_message = "Humphrey The Rabbit";
-	
+
 	//christmas mode and romantic mode setting
 	var today = new Date();
 	// Javascript's Date class' months are zero indexed. But the days are one indexed.
@@ -138,19 +138,19 @@ function main()
 		welcome_message += "\nLove: The Battlefield";
 	}
 
-	
-	var adblock = GetCookie("adblock");
+
+	var adblock = GetCookie("adblock") || "yes";
 	if (adblock === "yes")
 	{
 		g_game.enableAdverts = false;
-		console.log("Ads are disabled.");
+		console.debug("Ads are disabled.");
 	}
 	else
 	{
 		g_game.enableAdverts = true;
-		console.log("Ads are enabled.");
+		console.debug("Ads are enabled.");
 	}
-	
+
 	document.onkeydown = function(event) {g_game.KeyDown(event)};
 	document.onkeyup = function(event) {g_game.KeyUp(event)};
 
@@ -162,15 +162,15 @@ function main()
 		if (typeof(audio.pause) !== "function" || typeof(audio.play) !== "function")
 		{
 			audio = undefined;
-		}	
+		}
 		if (audio && g_game.running)
 			audio.play();
 
 
-		
+
 		if (!g_touchBarCookie || g_touchBarCookie != "yes")
 		{
-			g_touchBarCookie = "yes"; 
+			g_touchBarCookie = "yes";
 			SetCookie("touchBar", g_touchBarCookie);
 			var touchBar = document.getElementById("touchBar");
 			if (typeof(touchBar) !== "undefined")
@@ -180,9 +180,9 @@ function main()
 			}
 		}
 	}
-	
-	
-	
+
+
+
 	canvas.addEventListener("touchstart", function(event) {g_game.TouchDown(event.changedTouches[0])});
 	canvas.addEventListener("touchmove", function(event) {g_game.TouchDown(event.changedTouches[0])});
 	canvas.addEventListener("touchenter", function(event) {g_game.TouchDown(event.changedTouches[0])});
@@ -191,18 +191,23 @@ function main()
 	canvas.addEventListener("mousedown", function(event) {g_game.MouseDown(event)});
 	canvas.addEventListener("mousemove", function(event) {g_game.MouseMove(event)});
 	canvas.addEventListener("mouseup", function(event) {g_game.MouseUp(event)});
-	
-	var startLevel = 0;
-	if (g_maxLevelCookie && g_maxLevelCookie >= 2)
+
+	var startLevel = Math.min(1,g_maxLevelCookie || 0);
+
+	// Old prompt based level skipping
+	/*
+	if (startLevel && startLevel >= 2)
 	{
 		startLevel = prompt("Start at level (1-"+String(g_maxLevelCookie)+")?", String(g_maxLevelCookie));
 		if (isNaN(startLevel))
 			startLevel = 0;
 		startLevel = Math.max(startLevel,0);
 		startLevel = Math.min(startLevel, g_maxLevelCookie);
-		// It's not like they'll edit their cookies or anything. 
+		// It's not like they'll edit their cookies or anything.
 		//   Right?
-	}	
+	}
+	*/
+
 	g_game.splashPerformance = (new Date()).getTime();
 	var s = function(startLevel) {
 		this.AddTimeout("Start", this.Start.bind(this, startLevel),2000)

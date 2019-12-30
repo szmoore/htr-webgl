@@ -1,12 +1,14 @@
+var g_isMobile = isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+
 function InitPage()
-{	
+{
 	// Browsers on phones do *wierd* things with screen.width, innerWidth, screen.availWidth etc
 	var screenWidth = Math.min(window.innerWidth, window.screen.width);
 	var screenHeight = Math.min(window.innerHeight, window.screen.height);
 	var width = Math.min(0.9*screenWidth, 640);
 	var height = Math.min(screenHeight-64, 800);
 
-		
+
 	var touchBar = document.getElementById("touchBar");
 	if (typeof(touchBar) !== "undefined" && touchBar.style.display === "block")
 	{
@@ -17,15 +19,15 @@ function InitPage()
 			e.cancelBubble = true;
 			e.returnValue = false;
 		}
-	
+
 		height -= 1*48;
-		var touchLeft = document.getElementById("touchLeft");	
+		var touchLeft = document.getElementById("touchLeft");
 		touchLeft.ontouchstart = function (e) {absorbEvent(e); g_game.KeyDown({keyCode:37});};
 		touchLeft.ontouchend = function (e) {absorbEvent(e); g_game.KeyUp({keyCode:37});}
 		touchLeft.ontouchmove = absorbEvent;
 		touchLeft.ontouchcancel = touchLeft.ontouchend;;
 		var touchRight = document.getElementById("touchRight");
-		touchRight.ontouchstart = function (e) {absorbEvent(e); g_game.KeyDown({keyCode:39});};	
+		touchRight.ontouchstart = function (e) {absorbEvent(e); g_game.KeyDown({keyCode:39});};
 		touchRight.ontouchend = function (e) {absorbEvent(e); g_game.KeyUp({keyCode:39});};
 		touchRight.ontouchmove = absorbEvent;
 		touchRight.ontouchcancel = touchRight.ontouchend;
@@ -35,17 +37,17 @@ function InitPage()
 		touchUp.ontouchmove = absorbEvent;
 		touchUp.ontouchcancel = touchUp.ontouchend;
 		var touchDown = document.getElementById("touchDown");
-		touchDown.ontouchstart = function(e) {absorbEvent(e); g_game.KeyDown({keyCode:40});};	
+		touchDown.ontouchstart = function(e) {absorbEvent(e); g_game.KeyDown({keyCode:40});};
 		touchDown.ontouchend = function(e) {absorbEvent(e); g_game.KeyUp({keyCode:40});};
 		touchDown.ontouchmove = absorbEvent;
 		touchDown.ontouchcancel = touchDown.ontouchend;
-	
-		
+
+
 	}
-	
+
 	var middlePanel = document.getElementById("middlePanel");
 	middlePanel.style.width = width;
-	
+
 	var canvas = document.getElementById("glcanvas");
 	canvas.width = width;
 	canvas.height = height;

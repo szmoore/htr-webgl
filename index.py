@@ -78,7 +78,7 @@ def main(argv):
 			print("g_startingLives = 0;")
 	
 	except Exception as e:
-		print("console.log(\"Server database error: %s\")" % str(e))
+		print("console.debug(\"Server database error: %s\")" % str(e))
 	print("</script>")
 
 	for l in lines[-2:]:

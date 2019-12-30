@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="HandheldFriendly" content="true">
     <link rel="stylesheet" href="webgl.css" type="text/css">
-    <!-- for remote debugging -->  <!--<script src="http://jsconsole.com/remote.js?[insert thing here]"></script>-->
+	<!-- for remote debugging -->  <!--<script src="http://jsconsole.com/remote.js?[insert thing here]"></script>-->
     <script src="random.js"></script>
     <script src="utils.js"></script>
     <script src="graphics.js"></script>
@@ -22,37 +22,36 @@
 
     <script id="shader-fs" type="x-shader/x-fragment">
       varying highp vec2 vTextureCoord;
-      
+
       uniform sampler2D uSampler;
 	  uniform highp vec4 uColour;
-      
+
       void main(void) {
         gl_FragColor = texture2D(uSampler, vec2(vTextureCoord.s, vTextureCoord.t)) * uColour;
       }
     </script>
-    
+
     <!-- Vertex shader program -->
-    
+
     <script id="shader-vs" type="x-shader/x-vertex">
 	attribute vec2 aVertexPosition;
 	attribute vec2 aTextureCoord;
-	uniform vec2 uPosition;   
+	uniform vec2 uPosition;
 	uniform vec2 uScale;
-	uniform float uAspectRatio; 
+	uniform float uAspectRatio;
       //uniform mat4 uMVMatrix;
       //uniform mat4 uPMatrix;
-      
+
       varying highp vec2 vTextureCoord;
-    
+
       void main(void) {
         gl_Position = vec4(aVertexPosition.x*uScale.x + uPosition.x, aVertexPosition.y * uAspectRatio * uScale.y + uPosition.y, 0, 1);
         vTextureCoord = aTextureCoord;
       }
     </script>
   </head>
-  
 
-  <body id="body" onload="InitPage(); main();" onresize="InitPage();" style="-webkit-touch-callout: none !important; -webkit-user-select: none !important;">
+  <body id="body" onload="InitPage(); main(true);" onresize="InitPage();" style="-webkit-touch-callout: none !important; -webkit-user-select: none !important;">
 	  <!-- Noscript page -->
     <noscript>
 	    <h2>Humphrey The Rabbit</h2>
@@ -89,34 +88,34 @@
 	</div>
 	<div id="statusBar" style="font-size: x-small; position:relative; width:auto; height:auto; border:0px solid red; margin:0 auto;">
 		<div id="score" style="margin:0 auto; width:100%; text-align:center;">
-			Lvl <span id="level">0</span> | 
+			Lvl <span id="level">0</span> |
 			<span id="runtime">00:00:00</span>|<img src="data/hats/hat1.gif"> x <span id="lives">0</span>
-			<a href="help">help</a>
+			<a href="javascript:g_game.NextLevel(true,-1)">help</a>
 		</div>
 		<div id="debug" style="margin:0 auto; width:34%; text-align:center;"></div>
 	</div>
-	
-	
+
+
 
 	<!--<div id="spacer" style="position:relative; width:auto; height:50px; margin:0 auto; display: block;"></div>-->
 
-	<!-- For touch screen devices that don't support touch events -->	
-	
+	<!-- For touch screen devices that don't support touch events -->
+
 	<div id="touchBar" style="margin:0 auto; border:0px solid black; text-align:center;display: none; background-color: #eeffee">
 		<table align="center">
-			<tr> 
+			<tr>
 			<td>
-				<button  
-					 style="border:none;"><img id="touchLeft" src="data/rabbit/left1.gif" style="height:48px"> </button> </td> 
+				<button
+					 style="border:none;"><img id="touchLeft" src="data/rabbit/left1.gif" style="height:48px"> </button> </td>
 			<td>
-				<button style="height:48px; border:none;"><img id="touchUp" src="data/rabbit/up.gif" style="height:48px"></button> </td> 
+				<button style="height:48px; border:none;"><img id="touchUp" src="data/rabbit/up.gif" style="height:48px"></button> </td>
 			<td>
-				<button style="border:none;"><img id="touchDown" src="data/rabbit/down.gif" style="height:48px"></button></td> 
+				<button style="border:none;"><img id="touchDown" src="data/rabbit/down.gif" style="height:48px"></button></td>
 			<td>
 				<button style="border:none;"><img id="touchRight" src="data/rabbit/right1.gif" style="height:48px"></button></td></tr>
 		</table>
-	</div> 
+	</div>
 
-	
+
 	</body>
 </html>

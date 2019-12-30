@@ -34,14 +34,14 @@ function HttpGet(theUrl, callback)
 	var xmlHttp = null;
 
 	xmlHttp = new XMLHttpRequest();
-	console.log("GET " + theUrl);
+	console.debug("GET " + theUrl);
 	try
 	{
 		xmlHttp.open( "GET", theUrl, true);
 	}
 	catch (err)
 	{
-		console.log("Error getting url " + theUrl + " : " + err.message);
+		console.debug("Error getting url " + theUrl + " : " + err.message);
 	}
 	xmlHttp.send( null );
 	if (typeof(callback) === "function")
