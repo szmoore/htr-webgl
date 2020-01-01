@@ -192,7 +192,7 @@ function main(nospam)
 	canvas.addEventListener("mousemove", function(event) {g_game.MouseMove(event)});
 	canvas.addEventListener("mouseup", function(event) {g_game.MouseUp(event)});
 
-	var startLevel = Math.min(1,g_maxLevelCookie || 0);
+	var startLevel = Math.min(1,g_maxLevelCookie || 1);
 
 	// Old prompt based level skipping
 	/*

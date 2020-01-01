@@ -12,6 +12,8 @@ function Player(position, velocity, acceleration, canvas, spritePath)
 	this.spawn = [];
 	for (var i = 0; i < position.length; ++i)
 		this.spawn[i] = position[i];
+
+	this.wings = new SFXEntity(this, Infinity, ["data/sfx/wings1.png"], canvas, [0,0]);
 }
 Player.prototype = Object.create(Entity.prototype);
 Player.prototype.constructor = Player;
@@ -44,12 +46,16 @@ Player.prototype.HandleKeys = function(keys)
 
 Player.prototype.Step = function(game)
 {
+	this.angle = 0;
 	Entity.prototype.Step.call(this,game);
 	if (this.shield && !this.shield.alive)
 	{
 		delete this.shield;
 		delete this.hat;
 	}
+	// Hide the player's wings if they can't jump, or if they are wall running
+	this.wings.hidden = (this.canJump !== true || this.angle != 0);
+	this.wings.angle = this.angle;
 }
 
 Player.prototype.Die = function(deathType, other, game)
@@ -61,7 +67,7 @@ Player.prototype.Die = function(deathType, other, game)
 		return;
 	}
 
-	if (--this.lives < 0)
+	if (--this.lives < 0 && game.settings.difficulty !== "baby")
 	{
 		this.deathType = deathType;
 		return Entity.prototype.Die.call(this, deathType);
@@ -241,6 +247,10 @@ Player.prototype.DeathScene = function(game, onload)
 			game.Message("You got Swooped!");
 			colour = [1,0,0,0.8];
 			break;
+		case "MurderedSomeone":
+			text = "You killed an innocent animal.";
+			colour = [1,0,0,0.8];
+			break;
 	}
 //	if (g_identityCookie)
 	this.PostStats("Killed "+this.deathType,game)
@@ -277,23 +287,24 @@ Player.prototype.PostStats = function(type, game, callback)
 	HttpPost("stats.py", fields,callback);
 }
 
-Player.prototype.Draw = function(canvas)
+Player.prototype.Draw = function(canvas, simplified)
 {
+	// Don't draw when hidden
 	if (this.hidden) {
 		return;
 	}
 
 	Entity.prototype.Draw.call(this, canvas);
 
-	// hack to get shield to always appear on top of player
-	if (this.shield)
-	{
+	// Hack; forces shield to render above the player
+	if (this.shield && simplified !== true) {
 		this.shield.Draw(canvas);
 	}
 
-	if (typeof(this.playerID) !== "undefined")
-	{
-		Entity.prototype.DrawText.call(this, canvas, String(this.playerID));
+
+	// Debug text for multiplayer (shows player ID in text)
+	if (typeof(this.playerID) !== "undefined") {
+		this.DrawText(canvas, String(this.playerID));
 	}
 
 }

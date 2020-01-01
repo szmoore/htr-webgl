@@ -8,6 +8,14 @@
  */
 
 const FINAL_LEVEL = 5;
+
+const DIFFICULTY_LEVEL = {
+	baby: 0,
+	normal: 1,
+	hard: 2,
+	expert: 3,
+	rage: 4
+};
 function Timeout(name, onTimeout, wait, game)
 {
 	if (game.timeouts[name])
@@ -98,6 +106,24 @@ function Game(canvas, audio, document, multiplayer)
 
 	this.timeouts = {}; // Timeouts
 
+	this.settingsElement = document.getElementById("settings");
+	this.statusBar = document.getElementById("statusBar");
+	this.canvasElement = canvas;
+
+	this.settings = {};
+	try {
+		this.settings = JSON.parse(window.localStorage.getItem("settings"));
+		if (Object.keys(this.settings).length > 0) {
+			console.debug("Loaded settings", this.settings);
+		} else {
+			console.debug("Applying default settings");
+			this.ApplySettings();
+		}
+	} catch(err) {
+		console.debug("Error loading settings", err);
+		this.settings = {};
+		this.ApplySettings();
+	}
 
 
 	this.running = false;
@@ -161,6 +187,11 @@ Game.prototype.Resume = function()
 	if (this.running)
 		return;
 
+	// Don't resume when settings are open
+	if (!this.settingsElement.hidden) {
+		return;
+	}
+
 	this.canvas.cancelSplash = true;
 
 	this.UpdateDOM(this.player);
@@ -173,7 +204,7 @@ Game.prototype.Resume = function()
 		this.timeouts[t].Resume();
 	}
 
-	if (this.audio)
+	if (this.audio && this.settings.playMusic)
 		this.audio.play();
 
 
@@ -244,7 +275,6 @@ Game.prototype.SetLevel = function(level)
 			this.audio.src = "data/theme"+this.level+".mp3";
 		this.audio.load();
 		this.audio.pause();
-		//this.audio.play();
 
 		//this.levelDurations[this.level] = this.audio.duration*1000;
 	}
@@ -274,6 +304,7 @@ Game.prototype.SetLevel = function(level)
 	// Add the player
 	this.player = new Player([0,0],[0,0],this.gravity, this.canvas, "data/rabbit");
 	this.AddEntity(this.player);
+	this.AddEntity(this.player.wings);
 	this.player.lives += g_startingLives;
 
 	if (this.multiplayer && this.playerCount && this.playerCount > 1)
@@ -295,10 +326,13 @@ Game.prototype.SetLevel = function(level)
 	}
 
 	// Add VictoryBox if the player already completed this level
-	console.debug(`Current level: ${this.level}, vs maxLevel: ${g_maxLevelCookie}`)
+	// console.debug(`Current level: ${this.level}, vs maxLevel: ${g_maxLevelCookie}`)
 	if (this.level < g_maxLevelCookie && this.level < FINAL_LEVEL && this.level > 0) {
-
-		this.AddVictoryBox();
+		if (DIFFICULTY_LEVEL[this.settings.difficulty] != DIFFICULTY_LEVEL.normal) {
+			console.debug("Victory Box canceled by difficulty != normal", this.settings.difficulty);
+		} else {
+			this.AddVictoryBox();
+		}
 	}
 
 
@@ -648,6 +682,7 @@ Game.prototype.AddEntity = function(entity)
  */
 Game.prototype.KeyDown = function(event)
 {
+	this.userInteracted = true;
 
 	if (!this.keyState)
 		this.keyState = [];
@@ -661,8 +696,12 @@ Game.prototype.KeyDown = function(event)
 		return;
 	this.keyState[event.keyCode] = true;
 
+	if (event.keyCode == 192) {
+		this.ToggleSettings();
+		return;
+	}
 
-	if (event.keyCode == 32) // space
+	if (event.keyCode == 32 || event.keyCode == 27) // space or escape
 	{
 		if (this.running)
 		{
@@ -832,10 +871,12 @@ Game.prototype.ClearStepAndDraw = function()
 
 	// If using Entity.Clear in the loop this should be commented out
 	//  to give a performance increase
-	this.canvas.Clear(this.GetColour());
-	this.canvas.DrawBackground();
+	if (this.settings.simplifiedRendering !== true) {
+		this.canvas.Clear(this.GetColour());
+		this.canvas.DrawBackground();
+	}
 
-	if (this.message)
+	if (this.message && this.settings.simplifiedRendering !== true)
 	{
 		this.canvas.Text(this.message);
 	}
@@ -846,7 +887,9 @@ Game.prototype.ClearStepAndDraw = function()
 		if (this.entities[i])
 		{
 			// noticably faster on smartphone, but obviously causes issues with overlapping objects :(
-			// this.entities[i].Clear(this.canvas);
+			if (this.settings.simplifiedRendering === true) {
+				this.entities[i].Clear(this.canvas);
+			}
 
 			// Hacky - use different key states when in multiplayer
 			if (this.entities[i].name == "Humphrey" && this.multiplayerKeyState)
@@ -879,7 +922,7 @@ Game.prototype.ClearStepAndDraw = function()
 				if (this.entities[i] !== this.player)
 					delete this.entities[i];
 			} else {
-				this.entities[i].Draw(this.canvas);
+				this.entities[i].Draw(this.canvas, this.settings.simplifiedRendering);
 			}
 		}
 	}
@@ -931,22 +974,37 @@ Game.prototype.Draw = function()
 
 Game.prototype.MainLoop = function()
 {
-
+	// Skip if paused
 	if (!this.running)
 		return;
 
+	// Try to start music if it isn't playing
+	if (this.audio && this.audio.paused && this.settings.playMusic) {
+		// Ignore errors.
+		this.audio.play().catch(err => {
+			this.Pause("Click To Start");
+		});
+	}
+
+
 	if (this.document && (!this.document.hasFocus() && (!this.multiplayer || this.multiplayer.length <= 1)))
 	{
-		this.Pause("Paused");
-		this.Message("Focus tab and press space");
-		return;
+		if (this.settings.autoPause) {
+			this.Pause("Paused");
+			this.Message("Focus tab and press space");
+			return;
+		}
 	}
 
 
 	if (this.levelDurations[this.level] &&
 		this.runTime > this.levelDurations[this.level]
 		&& !this.victoryBox) {
-		this.AddVictoryBox();
+		if (DIFFICULTY_LEVEL[this.settings.difficulty] == DIFFICULTY_LEVEL.baby) {
+			console.debug("Baby finished level 1");
+		} else {
+			this.AddVictoryBox();
+		}
 		// if (this.player)
 		//	this.player.PostStats("Next Level",this)
 		// this.NextLevel();
@@ -1229,7 +1287,6 @@ Game.prototype.AddVictoryBox = function() {
 	if (this.victoryBox || !this.player) {
 		return;
 	}
-
 	console.debug('Adding victory box')
 	const targetPlayer = this.GetTargetPlayer();
 	const targetPosition = [targetPlayer.position[0],0.5]
@@ -1252,7 +1309,7 @@ Game.prototype.AddVictoryBox = function() {
 			this.victoryBox.description = "QUICKLY!\n↓↓↓"
 			const portal = new SFXEntity(this.victoryBox, 3000/this.stepRate, ["data/sfx/portal1.png"], this.canvas,[0,0]);
 			portal.onDeath(() => {
-				console.debug(this.victoryBox)
+				// console.debug(this.victoryBox)
 				this.victoryBox.Die("TooSlow", this.victoryBox, this);
 				this.victoryBox = null;
 			});
@@ -1263,4 +1320,146 @@ Game.prototype.AddVictoryBox = function() {
 
 Game.prototype.debug = function(message) {
 	console.debug(message)
+}
+
+Game.prototype.SettingsChanged = function(diff) {
+	console.debug(diff);
+	if (diff.displayStatusBar) {
+		if (!diff.displayStatusBar.new) {
+			const confirmation = confirm("Hiding the status bar prevents opening settings, unless you press `\nHide status bar?");
+			if (!confirmation) {
+				this.settings.displayStatusBar = diff.displayStatusBar.old;
+				delete diff.displayStatusBar;
+			}
+		}
+	}
+	if (diff.difficulty) {
+		// Restart level
+		console.debug("Restart level due to difficulty");
+		if (DIFFICULTY_LEVEL[diff.difficulty.new] === DIFFICULTY_LEVEL.baby) {
+			this.level = Math.min(this.level, 1);
+		}
+		if (DIFFICULTY_LEVEL[diff.difficulty.new] > DIFFICULTY_LEVEL[diff.difficulty.old]) {
+			this.level = 1;
+		}
+		this.Start(this.level);
+	}
+}
+
+Game.prototype.ToggleSettings = function() {
+	this.settingsElement.hidden = !this.settingsElement.hidden;
+	if (!this.settingsElement.hidden) {
+		this.Pause("Settings");
+		this.canvasElement.style.display = "none";
+		this.statusBar.hidden = true;
+		this.PopulateSettings();
+	} else if (this.document.hasFocus) {
+		var oldSettings = {...this.settings};
+		console.debug('old settings', oldSettings);
+		this.ApplySettings();
+		var changedSettings = Object.keys(this.settings).reduce((diff, key) => {
+			if (oldSettings[key] !== this.settings[key]) {
+				diff[key] = {
+					old: oldSettings[key],
+					new: this.settings[key]
+				}
+			}
+			return diff;
+		}, {})
+		this.SettingsChanged(changedSettings);
+		this.Resume();
+		this.canvasElement.style.display = "";
+		this.statusBar.hidden = (this.settings.displayStatusBar === false);
+
+	}
+}
+
+Game.prototype.PopulateSettings = function() {
+	let nodes = [...this.settingsElement.childNodes];
+	while (nodes.length > 0) {
+		let child = nodes.pop()
+		if (!child.tagName) {
+			continue;
+		}
+
+		if (child.tagName.toUpperCase() === "INPUT") {
+			switch (child.type) {
+				case "radio": {
+					if (this.settings[child.name] === child.id) {
+						child.checked = true;
+					} else if (typeof(this.settings[child.name]) !== 'undefined') {
+						child.checked = false;
+					}
+					break;
+				}
+				case "checkbox": {
+					if (typeof(this.settings[child.id]) !== 'undefined') {
+						child.checked = (this.settings[child.id] == true);
+					}
+					break;
+				}
+				default: {
+					if (typeof(this.settings[child.id]) !== 'undefined') {
+						child.value = this.settings[child.id];
+					}
+					break;
+				}
+			}
+		}
+		if (child.childNodes) {
+			nodes = [...nodes, ...child.childNodes];
+			continue;
+		}
+	}
+}
+
+Game.prototype.DefaultSettings = function() {
+	this.settings = {};
+	try {
+		window.localStorage.removeItem("settings");
+		location.reload();
+	} catch(err) {
+		console.debug("Failed to remove settings from localStorage");
+	}
+}
+
+Game.prototype.ApplySettings = function() {
+
+	let nodes = [...this.settingsElement.childNodes];
+	while (nodes.length > 0) {
+		let child = nodes.pop()
+		if (!child.tagName) {
+			continue;
+		}
+
+		if (child.tagName.toUpperCase() === "INPUT") {
+			switch (child.type) {
+				case "radio": {
+					if (child.checked) {
+						this.settings[child.name] = child.id;
+					}
+					break;
+				}
+				case "checkbox": {
+					this.settings[child.id] = child.checked;
+					break;
+				}
+				default: {
+					this.settings[child.id] = child.value;
+					break;
+				}
+			}
+		}
+		if (child.childNodes) {
+			nodes = [...nodes, ...child.childNodes];
+			continue;
+		}
+	}
+
+	try {
+		window.localStorage.setItem("settings", JSON.stringify(this.settings))
+		console.debug("Saved settings", this.settings);
+	} catch (err) {
+		console.debug("Error saving settings", err);
+	}
 }

@@ -198,7 +198,3 @@ VictoryBox.prototype.HandleCollision = function(other, instigator, game) {
 	}
 	return Box.prototype.HandleCollision.call(this, other, instigator, game);
 }
-
-VictoryBox.prototype.Draw = function(canvas) {
-	Box.prototype.Draw.call(this, canvas);
-}

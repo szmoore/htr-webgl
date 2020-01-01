@@ -8,7 +8,6 @@ function InitPage()
 	var width = Math.min(0.9*screenWidth, 640);
 	var height = Math.min(screenHeight-64, 800);
 
-
 	var touchBar = document.getElementById("touchBar");
 	if (typeof(touchBar) !== "undefined" && touchBar.style.display === "block")
 	{

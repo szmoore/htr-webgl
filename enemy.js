@@ -114,7 +114,10 @@ Enemy.prototype.CollisionActions["Humphrey"] = function(other, instigator, game)
 Enemy.prototype.Die = function(reason, other, game)
 {
 	Entity.prototype.Die.call(this,reason,other,game);
-	if (game && game.AddHat) {
+	if (game && game.settings.pacifistMode) {
+		game.player.lives = 0;
+		game.player.Die("MurderedSomeone",this, game);
+	} else if (game && game.AddHat) {
 		game.AddHat();
 	}
 }
@@ -319,14 +322,14 @@ Rox.prototype.Clear = function(canvas) {
 
 	canvas.ctx.rotate(-angle);
 	canvas.ctx.beginPath()
-	canvas.ctx.rect(-w/2, -h/2, h);
+	canvas.ctx.rect(-w/2, -h/2, w, h);
 	canvas.ctx.fillStyle = canvas.fillStyle;
 	canvas.ctx.fill();
 	canvas.ctx.rotate(+angle);
 	canvas.ctx.translate(-tl[0]-w/2,-tl[1]-h/2);
 }
 
-Rox.prototype.Draw = function(canvas)
+Rox.prototype.Draw = function(canvas, simplified)
 {
 
 	if (!canvas.ctx)
@@ -350,6 +353,9 @@ Rox.prototype.Draw = function(canvas)
 	if (this.velocity[0] < 0)
 		angle = -angle;
 
+	//if (simplified === true) {
+	//	angle = 0;
+	//}
 	canvas.ctx.rotate(-angle);
 	canvas.ctx.drawImage(this.frame.img, -w/2,-h/2, w, h);
 	canvas.ctx.rotate(+angle);

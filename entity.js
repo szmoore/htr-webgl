@@ -120,7 +120,6 @@ Entity.prototype.Step = function(game)
 		return;
 
 	this.holdFrame = false;
-	this.angle = 0;
 	var currentTime = (new Date()).getTime();
 	if (!this.lastUpdateTime)
 	{
@@ -429,7 +428,7 @@ Entity.prototype.DrawText = function(canvas, text, fillStyle)
  * Draw
  * Draws the Entity at its curnrent position.
  */
-Entity.prototype.Draw = function(canvas)
+Entity.prototype.Draw = function(canvas, simplified)
 {
 	if (!this.frame) {
 		return;
@@ -442,7 +441,7 @@ Entity.prototype.Draw = function(canvas)
 
 	with (canvas)
 	{
-		if (typeof(this.description) === 'string') {
+		if (typeof(this.description) === 'string' && !simplified) {
 			this.DrawText(canvas, this.description);
 		}
 
@@ -545,6 +544,17 @@ Entity.prototype.RelativeSpeed = function(other)
 	for (var i = 0; i < this.velocity.length; ++i)
 		s += Math.pow(this.velocity[i] - other.velocity[i], 2)
 	return Math.pow(s, 0.5);
+}
+
+Entity.prototype.Speed = function(other) {
+	if (other) {
+		return this.RelativeSpeed(other);
+	}
+	return this.velocity.reduce((sum, component) => sum + component*component);
+}
+
+Entity.prototype.AccelMagnitude = function() {
+	return this.acceleration.reduce((sum, component) => sum + component*component);
 }
 
 Entity.prototype.TryToPush = function(other)

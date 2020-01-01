@@ -4,7 +4,7 @@ Game.prototype.tutorial = {
 	"start" : function () {
 		this.message = "Move around";
 		this.tutorialState = "move1";
-		this.tutorialTimeout = 4000;
+		this.tutorialTimeout = 2000;
 		this.player.lives = 0;
 	},
 
@@ -33,7 +33,7 @@ Game.prototype.tutorial = {
 	"climb" : function () {
 		this.message = "Try climbing the walls";
 		this.tutorialState = "hat1";
-		this.tutorialTimeout = 8000;
+		this.tutorialTimeout = 4000;
 	},
 	
 	"hat1" : function () {
@@ -117,7 +117,7 @@ Game.prototype.tutorial = {
 	},
 
 	"cloud3" : function() {
-		this.message = "You can move through it"
+		this.message = "You can move through it (from below)"
 		this.tutorialState = "cloud4";
 	},
 
@@ -255,6 +255,7 @@ Game.prototype.tutorial = {
 			return;
 		}
 		this.message = "Foxes can be squished";
+		this.tutorial.squishRepeat = 0;
 		var xx = this.tutorial.fox.position[0];
 		if (xx > 0)
 			xx -= this.tutorial.fox.Width();
@@ -285,10 +286,12 @@ Game.prototype.tutorial = {
 
 
 		this.tutorial.cloud.position[0] = xx;
-		this.tutorialTimeout = 10000;
+		this.tutorialTimeout = 3000;
 		if (this.tutorial.box.position[1] <= -0.5)
 		{
-			this.message = "(-_-) Try again.";
+			if (this.squishRepeats < 11) {
+				this.message = "(-_-) Try again.";
+			}
 			this.tutorial.box.Die();
 			this.tutorial.box = new Box([xx,1],[0,0],this.gravity,this.canvas)
 			this.AddEntity(this.tutorial.box);
@@ -325,6 +328,7 @@ Game.prototype.tutorial = {
 					break;
 				case 9:
 					this.message = "I hope this is what you wanted.";
+					this.player.lives = 1;
 					this.tutorial.foxPrison.Die();
 					this.tutorial.fox.Step = Fox.prototype.Step;
 					this.tutorial.fox.Die = Fox.prototype.Die;
@@ -337,8 +341,23 @@ Game.prototype.tutorial = {
 					this.message = "This is only the beginning";
 					break;
 				case 12:
+				case 13:
+				case 14:
+				case 15:
+				case 16:
+				case 17:
+				case 18:
+				case 19:
+				case 20:
 					this.message = "The killing will never stop.";
 					break;
+				case 21:
+					this.message = "Alright. Be that way.";
+					this.AddVictoryBox();
+					this.settings.pacifistMode = true;
+					this.ApplySettings();
+					break;
+
 				default:
 					this.message = "76561198002357979";
 					break;

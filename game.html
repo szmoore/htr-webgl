@@ -83,14 +83,75 @@
 			<canvas id="glcanvas" width="0" height="0">
 				The <code>canvas</code> tag isn't supported, <b>or</b> you have disabled scripts.
 			</canvas>
+
+			<div id="settings" hidden style="float:left; text-align: left;">
+				<h1>Settings</h1>
+				<details open=true>
+					<form autocomplete="off">
+					<summary><b>All Settings</b></summary>
+					<details open=true>
+						<summary>Browser</summary>
+						<table>
+							<tr><td><input type="checkbox" id="playMusic" checked></td><td>Play Music</td></tr>
+							<tr><td><input type="checkbox" id="showAdverts" checked></td><td><span title="Show the memes.">Show Advertisements</span></td></tr>
+							<tr><td><input type="checkbox" id="autoPause" checked></td><td><span title="Game pauses when tab loses focus.">Auto pause</span></td></tr>
+						</table>
+						<details open=false>
+							<summary>Display</summary>
+							<table>
+								<tr><td><input type="checkbox" id="displayStatusBar" checked></td><td><span title="This will hide the status bar, including the ⚙. You must use the tilde (`) key to open settings again.">Display Status Bar</span></td></tr>
+								<tr><td><input type="checkbox" id="simplifiedRendering"></td><td><span title="This will attempt to improve performance by reducing the area on the screen that is redrawn. You may see some visual artifacts.">Faster Rendering</span></td></tr>
+							</table>
+						</details>
+
+					</details>
+					<details open=true>
+						<summary>Gameplay Modes</summary>
+						<details open=true>
+							<summary>Base Difficulty</summary>
+							<table>
+								<tr><td><input type="radio" id="baby" name="difficulty"></td><td><span title="Literally nothing can hurt you, but you can only play Level 1.">Baby Mode</span></td></tr>
+								<tr><td><input type="radio" id="normal" name="difficulty" checked></td><td><span title="The default difficulty. You may gain lives and preserve them between levels.">Normal Mode</span></td></tr>
+								<tr><td><input type="radio" id="hard" name="difficulty"></td><td><span title="Harder difficulty; lives will never spawn.">Hard Mode</span></td></tr>
+								<tr><td><input type="radio" id="expert" name="difficulty"></td><td><span title="The classic difficulty; dying takes you to Level 1">Expert Mode</span></td></tr>
+								<tr><td><input type="radio" id="rage" name="difficulty"></td><td><span title="Hardest difficulty imaginable">Rage Mode</span></td></tr>
+							</table>
+						</details>
+						<details open=false>
+							<summary>Gameplay Modifiers</summary>
+							<table>
+								<tr><td><input type="checkbox" id="pacifistMode"></td><td><span title="Does what it says.">Enforce Moral Absolutism</span></td></tr>
+
+							</table>
+						</details>
+
+						<!--details open=false>
+							<summary>Legacy Modes</summary>
+							<table>
+								<tr><td><a href="nostalgia/">"The game is basically finished"</a></td></tr>
+							</table>
+						</details-->
+
+					</details>
+					</form>
+					<button onclick="g_game.ApplySettings();">✔ Apply</button>
+					<button onclick="g_game.PopulateSettings();">🚫 Revert</button>
+					<button onclick="g_game.DefaultSettings();">🔄 Defaults</button>
+				</details->
+				<button onclick="g_game.ToggleSettings();">▶️ Done</button>
+
+			</div>
+
 		</div>
 
 	</div>
 	<div id="statusBar" style="font-size: x-small; position:relative; width:auto; height:auto; border:0px solid red; margin:0 auto;">
 		<div id="score" style="margin:0 auto; width:100%; text-align:center;">
 			Lvl <span id="level">0</span> |
-			<span id="runtime">00:00:00</span>|<img src="data/hats/hat1.gif"> x <span id="lives">0</span>
-			<a href="javascript:g_game.NextLevel(true,-1)">help</a>
+			<span id="runtime">00:00:00</span>|<img src="data/hats/hat1.gif"> x <span id="lives">0</span> |
+			<a href="javascript:g_game.Start(0)">?</a> |
+			<a href="javascript:g_game.ToggleSettings()">⚙</a>
+
 		</div>
 		<div id="debug" style="margin:0 auto; width:34%; text-align:center;"></div>
 	</div>
