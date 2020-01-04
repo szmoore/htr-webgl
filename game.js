@@ -82,7 +82,6 @@ function Game(canvas, audio, document, multiplayer)
 	this.audio = audio;
 	this.level = -1;
 	// If true, "advertising" spash screens are shown every time a level starts/restarts
-	this.enableAdverts = true; // Will be set to false if necessary in main()
 
 	// Hacks to keep track of level durations
 	// Needed because some devices won't play audio so we have to check the time ourselves
@@ -144,6 +143,7 @@ function Game(canvas, audio, document, multiplayer)
 		this.webSockets.push(con);
 	}
 	this.playerCount = 1;
+	this.GetAdvertChoices();
 	Debug("Constructed Game");
 }
 
@@ -177,6 +177,7 @@ Game.prototype.Pause = function(message,image	, colour)
 		image = "data/rabbit/drawing2.svg";
 	if (typeof(colour) === "undefined")
 		colour = [1,1,1,1];
+	console.debug("Show pause screen", message);
 	this.canvas.SplashScreen(image, message, colour);
 }
 
@@ -403,38 +404,55 @@ Game.prototype.GetColour = function()
 }
 
 /**
- * Pick an advert to show; on the first call it will HTTP GET the list of adverts
- * @param trial - Used to stop recursion
+ * Populate list of advertisements
  */
-Game.prototype.ChooseAdvert = function(trial)
-{
-	if (!this.advertChoices)
-	{
-		if (trial)
-			return;
+Game.prototype.GetAdvertChoices = async function() {
+	return HttpGet("data/adverts/index.json").then(response => {
+		console.debug('Retrieved advertisements list');
 		try
 		{
-			HttpGet("adverts.py", function(response) {
-				try
-				{
-					this.advertChoices = JSON.parse(response);
-					this.advertChoiceIndex = -1;
-					this.ChooseAdvert(true);
-				}
-				catch (err)
-				{
-					this.ChooseAdvert(true);
-				}
-			}.bind(this));
+			sortedChoices = JSON.parse(response);
+			this.advertChoices = [];
+			while (sortedChoices.length > 0) {
+				const priorLength = sortedChoices.length;
+				var index = Math.floor(Math.slowRandom()*sortedChoices.length);
+				this.advertChoices.push(sortedChoices[index]);
+				var lhs = sortedChoices.slice(0,index);
+				var rhs = sortedChoices.slice(index+1);
+				sortedChoices = [...lhs,...rhs];
+			}
+
+
+
+			console.debug('advertChoices', this.advertChoices);
+			this.advertChoiceIndex = 0;
 		}
 		catch (err)
 		{
-			this.ChooseAdvert(true);
+			console.error('Error getting advertisment that was listed in the index.json:', err);
+			Promise.reject(err);
 		}
-		return;
+	});
+}
+
+/**
+ * Pick an advert to show; on the first call it will HTTP GET the list of adverts
+ * @param trial - Used to stop recursion
+ */
+Game.prototype.ChooseAdvert = function()
+{
+	if (g_usingAdblocker) {
+		return "br0whyuh8ad.svg";
 	}
-	// Go through the adverts in order (order is chosen by the server in adverts.py)
-	return this.advertChoices[this.advertChoiceIndex++ % this.advertChoices.length];
+	if (!this.advertChoices) {
+		this.GetAdvertChoices();
+	}
+
+	if (this.advertChoices) {
+		console.debug('Choice index', this.advertChoiceIndex, ' of ', this.advertChoices.length);
+		// Go through the adverts in order
+		return "data/adverts/" + this.advertChoices[this.advertChoiceIndex++ % this.advertChoices.length];
+	}
 
 }
 
@@ -451,14 +469,23 @@ Game.prototype.NextLevel = function(skipAd, from)
 		this.level = from;
 	}
 
-	if (this.enableAdverts && !skipAd)
+	if (this.settings.showAdverts && !skipAd)
 	{
 		// Make the splash screen then call NextLevel (with the skipAd flag
 		//	to prevent recursing infinitely)
-		this.canvas.SplashScreen(this.ChooseAdvert(), "",[1,1,1,1], function() {
-			this.AddTimeout("Advert", this.NextLevel.bind(this,true), 4000);
-		}.bind(this));
-		return;
+		const advertChoice = this.ChooseAdvert();
+
+		if (advertChoice) {
+			console.debug("Loading advert", advertChoice);
+			this.canvas.SplashScreen(advertChoice, "",[1,1,1,1], function() {
+				console.debug("Rendered advert", advertChoice);
+				this.AddTimeout("Advert", this.NextLevel.bind(this,true), 4000);
+			}.bind(this));
+			return;
+		} else {
+			console.debug('Curses you foiled my adblock detector');
+			g_usingAdblocker = true;
+		}
 	}
 	this.SetLevel(this.level+1);
 
@@ -718,7 +745,7 @@ Game.prototype.KeyDown = function(event)
 			}
 		}
 	}
-	if (event.keyCode >= 48 && event.keyCode <= 53)
+	if (event.keyCode >= 48 && event.keyCode <= 53 && devtools.open)
 	{
 		this.Pause();
 		this.SetLevel(event.keyCode-48);
@@ -1035,7 +1062,9 @@ Game.prototype.MainLoop = function()
 		// horrible callback code follows
 		// (seriously why isn't there a sleep() function
 		//	 don't give me that crap about callbacks being more elegant)
-		if (!this.enableAdverts)
+
+		// ^ Leaving that comment from 2014 because in 2020 Javascript PROMISES to be better
+		if (!this.settings.showAdverts)
 		{
 			deathCall = function() {
 				this.AddTimeout("Restart", function() {

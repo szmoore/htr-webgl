@@ -5,8 +5,8 @@
 
 // Deal with lack of Function.prototype.bind
 Function.prototype.bind=Function.prototype.bind||function(b){if(typeof this!=="function"){throw new TypeError("Function.prototype.bind - what is trying to be bound is not callable");}var a=Array.prototype.slice,f=a.call(arguments,1),e=this,c=function(){},d=function(){return e.apply(this instanceof c?this:b||window,f.concat(a.call(arguments)));};c.prototype=this.prototype;d.prototype=new c();return d;};
- 
- 
+
+
 function SetCookie(cname,cvalue,exdays)
 {
 	if (!exdays)
@@ -27,9 +27,10 @@ function GetCookie(cname)
 		if (c.indexOf(name)==0) return c.substring(name.length,c.length);
 	}
 	return "";
-}  
+}
 
-function HttpGet(theUrl, callback)
+// 2014: Javascript is a Pyramid Scheme
+function HttpGet_Unpromised(theUrl, callback, errorCallback)
 {
 	var xmlHttp = null;
 
@@ -42,6 +43,9 @@ function HttpGet(theUrl, callback)
 	catch (err)
 	{
 		console.debug("Error getting url " + theUrl + " : " + err.message);
+		if (errorCallback) {
+			errorCallback(err);
+		}
 	}
 	xmlHttp.send( null );
 	if (typeof(callback) === "function")
@@ -55,11 +59,20 @@ function HttpGet(theUrl, callback)
 	}
 }
 
+// 2020: Let's use these PROMISING new features
+async function HttpGet(theUrl, callback) {
+	// Legacy fallback
+	if (typeof(callback) !== 'undefined') {
+		return HttpGet_Unpromised(theUrl, callback);
+	}
+	return new Promise((resolve, reject) => HttpGet_Unpromised(theUrl, resolve, reject))
+}
+
 function HttpPost(theUrl, post, callback)
 {
 	// Send results to the stat collecting script
 	var xmlHttp = new XMLHttpRequest(); // IE<7 won't WebGL anyway, screw compatibility
-		
+
 	if (typeof(callback) === "function")
 	{
 		xmlHttp.onreadystatechange = function() {
@@ -73,7 +86,7 @@ function HttpPost(theUrl, post, callback)
 	{
 		xmlHttp.onreadystatechange = function() {}
 	}
-	
+
 	var request = "";
 	for (var p in post)
 	{
@@ -84,7 +97,7 @@ function HttpPost(theUrl, post, callback)
 	xmlHttp.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
 	xmlHttp.setRequestHeader("Content-length", request.length);
 	xmlHttp.setRequestHeader("Connection", "close");
-	xmlHttp.send(request);		
+	xmlHttp.send(request);
 }
 
 
@@ -101,7 +114,7 @@ function absorbEvent_(event)
 }
 
  // Le sigh date formatting
-String.prototype.toHHMMSS = function () 
+String.prototype.toHHMMSS = function ()
 {
 	var sec_num = parseInt(this, 10); // don't forget the second param
 	var hours   = Math.floor(sec_num / 3600);

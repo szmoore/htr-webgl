@@ -139,11 +139,13 @@ Canvas.prototype.SplashScreen = function(imagePath, text, backColour, onload)
 	screen.scale = [0.6, 0.6];
 	screen.bounds = {min:[-this.width/2, -this.height/2], max:[this.width/2, this.height/2]};
 
-	var f = function(onload, screen, imagePath) {
-		//console.debug("Splash for "+String(imagePath) + " loaded, onload is "+String(onload));
+	var f = () => {
+		console.debug("Splash for", imagePath, onload);
 
-		if (this.cancelSplash)
+		if (this.cancelSplash) {
+			console.debug("Canceled splash screen");
 			return;
+		}
 		if (this.gl)
 		{
 			this.gl.clearColor(background[0], background[1], background[2], background[3]);
@@ -185,17 +187,18 @@ Canvas.prototype.SplashScreen = function(imagePath, text, backColour, onload)
 
 		if (typeof(onload) === "function")
 		{
-			//console.debug("  Callback for splash " + String(imagePath) + " calling");
+			console.debug("  Callback for splash ", imagePath);
 			onload();
 		}
 		//if (text)
 		//	Debug("<b><i>"+text+"</i></b>", true);
 	};
 
+	console.debug("Running spash screen", imagePath);;
 	if (imagePath)
-		screen.frame = this.LoadTexture(imagePath, f.bind(this, onload, screen, imagePath));
+		screen.frame = this.LoadTexture(imagePath, f);
 	else
-		f.bind(this, onload, screen)();
+		f();
 }
 
 
@@ -206,6 +209,7 @@ Canvas.prototype.LoadTexture = function(imagePath, onload)
 {
 	if (imagePath in this.textures)
 	{
+		console.debug("texture", imagePath," already loaded");
 		if (onload) {setTimeout(onload, 0)}
 		return this.textures[imagePath];
 	}
@@ -213,6 +217,9 @@ Canvas.prototype.LoadTexture = function(imagePath, onload)
 	var texture = (this.gl) ? this.gl.createTexture() : null;
 	var image = new Image();
 	this.textures[imagePath] = {tex: texture, img: image, data : null};
+	if (imagePath == "cookies.svg") {
+		debugger;
+	}
 	if (onload)
 	{
 		var c = this;

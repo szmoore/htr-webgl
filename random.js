@@ -24,4 +24,7 @@ rand = function ()
 	return ((g_seed[2] ^ g_seed[3]) << 16) + ((g_seed[0] ^ g_seed[1]) & 0xFFFF);
 }
 
+// Preserve old random
+Math.slowRandom = Math.random;
 Math.random = function() {return 0.5+(rand()%1e8)/2e8;}
+

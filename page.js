@@ -1,7 +1,17 @@
 var g_isMobile = isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
 
+var g_usingAdblocker = false;
+
 function InitPage()
 {
+
+	// Look how smart I am, detecting (some) adblockers
+	g_usingAdblocker = document.getElementById("br0whyuh8ad$$$s") ? false : true;
+	if (g_usingAdblocker) {
+		console.debug("External adblocker detected");
+		console.debug("That's cool, it's not like anyone pays me for them anyway");
+	}
+
 	// Browsers on phones do *wierd* things with screen.width, innerWidth, screen.availWidth etc
 	var screenWidth = Math.min(window.innerWidth, window.screen.width);
 	var screenHeight = Math.min(window.innerHeight, window.screen.height);
@@ -64,10 +74,11 @@ function InitPage()
 	{
 		banner.style.height = height;
 		banner.style.width = Math.max((0.9*screenWidth - width)/2, 0);
-		if (banner.style.width < 50 || GetCookie("adblock"))
+		// Disabled since adblock cookie is removed and we don't have third party ads anymore now
+		// if (banner.style.width < 50 || GetCookie("adblock"))
 			banner.style.display = "none";
-		else
-			banner.style.display = "block";
+		// else
+		//	banner.style.display = "block";
 	}
 
 	var loading = document.getElementById("loading");

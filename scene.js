@@ -23,7 +23,6 @@ var g_game;
 var g_identityCookie;
 var g_nicknameCookie;
 var g_maxLevelCookie;
-var g_adblockCookie;
 var g_touchBarCookie;
 var g_startingLives;
 g_startingLives = 3;
@@ -50,9 +49,6 @@ function Handshake(nospam)
 			SetCookie("nickname", g_nicknameCookie);
 			SetCookie("maxLevel", 0);
 			g_maxLevelCookie = 0;
-			if (g_adblockCookie)
-				SetCookie("adblock", g_adblockCookie);
-
 			HttpGet("handshake.py")
 		}
 	}
@@ -61,8 +57,6 @@ function Handshake(nospam)
 		g_identityCookie = GetCookie("identity");
 		g_nicknameCookie = GetCookie("nickname");
 		g_maxLevelCookie = GetCookie("maxLevel");
-		if (g_adblockCookie)
-			SetCookie("adblock", g_adblockCookie);
 
 		// For our legacy users who won't have the nickname yet (hahaha I said legacy)
 		if ((!g_nicknameCookie || g_nicknameCookie == "") && (!nospam))
@@ -138,18 +132,6 @@ function main(nospam)
 		welcome_message += "\nLove: The Battlefield";
 	}
 
-
-	var adblock = GetCookie("adblock") || "yes";
-	if (adblock === "yes")
-	{
-		g_game.enableAdverts = false;
-		console.debug("Ads are disabled.");
-	}
-	else
-	{
-		g_game.enableAdverts = true;
-		console.debug("Ads are enabled.");
-	}
 
 	document.onkeydown = function(event) {g_game.KeyDown(event)};
 	document.onkeyup = function(event) {g_game.KeyUp(event)};
