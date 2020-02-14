@@ -169,8 +169,11 @@ Game.prototype.Pause = function(message,image	, colour)
 	{
 		this.timeouts[t].Pause();
 	}
-	if (this.audio && typeof(this.audio.pause) === "function")
-		this.audio.pause();
+	if (this.audio && typeof(this.audio.pause) === "function") {
+		if (!this.romanticMode) {
+			this.audio.pause();
+		}
+	}
 
 	this.Draw();
 	this.UpdateDOM(this.player);
@@ -182,8 +185,13 @@ Game.prototype.Pause = function(message,image	, colour)
 		image = "data/rabbit/drawing2.svg";
 	if (typeof(colour) === "undefined")
 		colour = [1,1,1,1];
-	console.debug("Show pause screen", message);
-	this.canvas.SplashScreen(image, message, colour);
+
+	if (!this.romanticMode) {
+		console.debug("Show pause screen", message);
+		this.canvas.SplashScreen(image, message, colour);
+	} else {
+		this.canvas.Clear([1,0,0,1])
+	}
 }
 
 
@@ -310,7 +318,9 @@ Game.prototype.SetLevel = function(level)
 	// Add the player
 	this.player = new Player([0,0],[0,0],this.gravity, this.canvas, "data/rabbit/"+this.settings.rabbitSprites);
 	this.AddEntity(this.player);
-	this.AddEntity(this.player.wings);
+	if (!this.romanticMode) {
+		this.AddEntity(this.player.wings);
+	}
 	this.player.lives += this.settings.startingLives;
 
 	if (this.multiplayer && this.playerCount && this.playerCount > 1)
@@ -467,7 +477,9 @@ Game.prototype.ChooseAdvert = function()
  */
 Game.prototype.NextLevel = function(skipAd, from)
 {
-	this.Pause("Loading...");
+	if (!this.romanticMode) {
+		this.Pause("Loading...");
+	}
 
 
 	if (from) {
@@ -477,7 +489,8 @@ Game.prototype.NextLevel = function(skipAd, from)
 
 	if (this.settings.showAdverts && !skipAd
 		// Always bypass ad when going to tutorial, since it could be confusing
-		&& targetLevel > 0)
+		&& targetLevel > 0
+		&& !this.romanticMode)
 	{
 		// Make the splash screen then call NextLevel (with the skipAd flag
 		//	to prevent recursing infinitely)
@@ -598,21 +611,28 @@ Game.prototype.NextLevel = function(skipAd, from)
 			break;
 	}
 
-	// Show splash screen, then start level
-	this.canvas.SplashScreen(boss, taunt, colour, function() {
+	if (!this.romanticMode) {
+		// Show splash screen, then start level
+		this.canvas.SplashScreen(boss, taunt, colour, function() {
+			this.AddTimeout("Level"+String(this.level),
+				function() {
+					this.Resume();
+					//this.MultiplayerWait("level");
+					if (this.level == 0) // Hacky but more concise
+						this.Tutorial("start");
+				}.bind(this) ,2000);
+			this.Message(message, 2000);
+
+		}.bind(this));
+	} else {
+		this.canvas.Clear([0.8,0,0]);
 		this.AddTimeout("Level"+String(this.level),
-			function() {
-				this.Resume();
-				//this.MultiplayerWait("level");
-				if (this.level == 0) // Hacky but more concise
-					this.Tutorial("start");
-			}.bind(this) ,2000);
-		this.Message(message, 2000);
+				function() {
+					this.Resume();
+				}.bind(this),
+		2000);
 
-	}.bind(this));
-
-
-
+	}
 }
 
 /**
@@ -635,6 +655,7 @@ Game.prototype.AddEnemy = function()
 	else
 	{
 		enemy = new Box([targetPlayer.position[0], 1],[0,0], this.gravity, this.canvas)
+		enemy.angle = [0, Math.PI/2, Math.PI, 3*Math.PI/2][rand() % 4]
 		// hack for Christmas and Romantic Mode)
 		if (this.xmasMode === true)
 		{
@@ -645,7 +666,9 @@ Game.prototype.AddEnemy = function()
 		{
 			enemy.frame = this.canvas.LoadTexture("data/box/box_valentine.gif");
 			enemy.damagedFrame = enemy.frame; // you can't hurt the lovely
+			enemy.angle = [0, Math.PI/4, Math.PI/2, 3*Math.PI/4, Math.PI, 5*Math.PI/4, 3*Math.PI/2,7*Math.PI/4][rand() % 4]
 		}
+
 
 	}
 
@@ -653,9 +676,17 @@ Game.prototype.AddEnemy = function()
 	{
 		this.AddHat();
 	}
+
+	var enemyTimeout = this.stepRate*300/Math.min(Math.pow(this.level,0.5),1);
+	if (this.romanticMode) {
+		enemyTimeout -= (this.runTime / 100);
+	}
+
 	console.debug(`Created enemy type ${enemy.GetName()}`)
 	this.AddEntity(enemy);
-	this.AddTimeout("AddEnemy", function() {this.AddEnemy()}.bind(this), this.stepRate*300/Math.min(Math.pow(this.level,0.5),1));
+	this.AddTimeout("AddEnemy", function() {
+		this.AddEnemy()
+	}.bind(this), enemyTimeout);
 	if (!this.running)
 		this.timeouts["AddEnemy"].Pause();
 }
@@ -680,6 +711,9 @@ Game.prototype.AddCloud = function()
  */
 Game.prototype.AddHat = function()
 {
+	if (this.romanticMode) {
+		return this.AddEnemy(); // why would anyone want this
+	}
 	var targetPlayer = this.GetTargetPlayer();
 	var hat = new Hat([targetPlayer.position[0], 1], [0,0], [0.8*this.gravity[0], 0.8*this.gravity[1]], this.canvas);
 	this.AddEntity(hat);
@@ -906,7 +940,9 @@ Game.prototype.ClearStepAndDraw = function()
 
 	// If using Entity.Clear in the loop this should be commented out
 	//  to give a performance increase
-	if (this.settings.simplifiedRendering !== true) {
+	if (this.romanticMode === true) {
+		this.canvas.Clear([0.1,0.0,0.0]);
+	} else if (this.settings.simplifiedRendering !== true) {
 		this.canvas.Clear(this.GetColour());
 		this.canvas.DrawBackground();
 	}
@@ -1025,8 +1061,12 @@ Game.prototype.MainLoop = function()
 	if (this.document && (!this.document.hasFocus() && (!this.multiplayer || this.multiplayer.length <= 1)))
 	{
 		if (this.settings.autoPause) {
-			this.Pause("Paused");
-			this.Message("Focus tab and press space");
+			if (!this.romanticMode) {
+				this.Pause("Paused");
+				this.Message("Focus tab and press space");
+			} else {
+				console.log("There is no escape.");
+			}
 			return;
 		}
 	}
@@ -1150,8 +1190,12 @@ Game.prototype.GetNearestPlayer = function(position)
 
 Game.prototype.Message = function(text, timeout)
 {
-	if (!this.document)
+	if (!this.document) {
 		return;
+	}
+	if (this.romanticMode) {
+		return;
+	}
 	if (!this.document.message)
 		this.document.message = this.document.getElementById("message");
 	if (!this.document.message)
@@ -1321,6 +1365,10 @@ Game.prototype.LoseLife = function()
 
 
 Game.prototype.AddVictoryBox = function() {
+	if (this.romanticMode === true) {
+		console.log('There is no way to progress');
+		return;
+	}
 	if (this.victoryBox || !this.player) {
 		return;
 	}

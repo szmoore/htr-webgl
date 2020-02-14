@@ -60,10 +60,11 @@ function main(game)
 		game.xmasMode = true;
 		welcome_message = "HTR: Xmas edition!";
 	}
-	else if (today.getMonth() == 1 && today.getDate() == 14)
-	{
+	if ((today.getMonth() == 1 && today.getDate() == 14) || anyoneActuallyGivesAShit) {
 		game.romanticMode = true;
-		welcome_message += "\nLove: The Battlefield";
+		welcome_message = "";
+		document.getElementById("statusBar").hidden = true;
+		console.debug = () => {};
 	}
 
 

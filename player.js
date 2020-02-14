@@ -67,7 +67,7 @@ Player.prototype.Die = function(deathType, other, game)
 		return;
 	}
 
-	if (--this.lives < 0 && game.settings.difficulty !== "baby")
+	if (--this.lives < 0 && game.settings.difficulty !== "baby" && !this.romanticMode)
 	{
 		this.deathType = deathType;
 		return Entity.prototype.Die.call(this, deathType);

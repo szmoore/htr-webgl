@@ -179,9 +179,9 @@ Canvas.prototype.SplashScreen = function(imagePath, text, backColour, onload)
 
 			var fontSize = 10;// / (1 +Math.round(text.length/40));
 			this.ctx.font = String(fontSize)+"px Comic Sans";
-			this.ctx.fillStyle = "rgba(1,0,0,0.5)";
+			this.ctx.fillStyle = "rgba(1,0,0,0.1)";
 			this.ctx.beginPath();
-			this.ctx.fillText("If this Splash Screen takes more than 30s to disappear reload the page",this.width/16, 31*this.height/32	, 14*this.width/16);
+			this.ctx.fillText("don't you have anything better to do?",this.width/16, 31*this.height/32	, 14*this.width/16);
 		}
 
 
