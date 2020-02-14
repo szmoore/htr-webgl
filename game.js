@@ -108,21 +108,27 @@ function Game(canvas, audio, document, multiplayer)
 	this.settingsElement = document.getElementById("settings");
 	this.statusBar = document.getElementById("statusBar");
 	this.canvasElement = canvas;
+	this.touchBarElement = document.getElementById("touchBar");
 
 	this.settings = {};
+	// Reference cookies from utils.js
+	this.cookies = cookies;
+
 	try {
 		this.settings = JSON.parse(window.localStorage.getItem("settings"));
 		if (Object.keys(this.settings).length > 0) {
 			console.debug("Loaded settings", this.settings);
 		} else {
 			console.debug("Applying default settings");
-			this.ApplySettings();
+			this.ApplySettingsForm();
 		}
 	} catch(err) {
 		console.debug("Error loading settings", err);
 		this.settings = {};
-		this.ApplySettings();
+		this.ApplySettingsForm();
 	}
+	this.SaveSettings();
+	statusBar.hidden = (this.settings.displayStatusBar === false);
 
 
 	this.running = false;
@@ -144,7 +150,6 @@ function Game(canvas, audio, document, multiplayer)
 	}
 	this.playerCount = 1;
 	this.GetAdvertChoices();
-	Debug("Constructed Game");
 }
 
 
@@ -205,8 +210,9 @@ Game.prototype.Resume = function()
 		this.timeouts[t].Resume();
 	}
 
-	if (this.audio && this.settings.playMusic)
-		this.audio.play();
+	if (this.audio && this.settings.playMusic) {
+		this.audio.play().catch(err => {});
+	}
 
 
 	if (typeof(this.timeouts["MainLoop"]) === "undefined")
@@ -256,12 +262,11 @@ Game.prototype.SetLevel = function(level)
 	this.Clear();
 
 	// hooray globals
-	if (typeof(g_maxLevelCookie) != "undefined")
-	{
-		if (g_maxLevelCookie < this.level)
+	if (typeof(this.settings.maxLevel) != "undefined") {
+		if (this.settings.maxLevel < this.level)
 		{
-			g_maxLevelCookie = this.level;
-			SetCookie("maxLevel", g_maxLevelCookie);
+			this.settings.maxLevel = this.level;
+			this.SaveSettings();
 		}
 	}
 
@@ -303,10 +308,10 @@ Game.prototype.SetLevel = function(level)
 	this.AddEntity(new Wall({min: [1,-Infinity], max:[Infinity, Infinity]})); // right
 
 	// Add the player
-	this.player = new Player([0,0],[0,0],this.gravity, this.canvas, "data/rabbit");
+	this.player = new Player([0,0],[0,0],this.gravity, this.canvas, "data/rabbit/"+this.settings.rabbitSprites);
 	this.AddEntity(this.player);
 	this.AddEntity(this.player.wings);
-	this.player.lives += g_startingLives;
+	this.player.lives += this.settings.startingLives;
 
 	if (this.multiplayer && this.playerCount && this.playerCount > 1)
 	{
@@ -327,9 +332,9 @@ Game.prototype.SetLevel = function(level)
 	}
 
 	// Add VictoryBox if the player already completed this level
-	// console.debug(`Current level: ${this.level}, vs maxLevel: ${g_maxLevelCookie}`)
-	if (this.level < g_maxLevelCookie && this.level < FINAL_LEVEL && this.level > 0) {
-		if (DIFFICULTY_LEVEL[this.settings.difficulty] != DIFFICULTY_LEVEL.normal) {
+	// console.debug(`Current level: ${this.level}, vs maxLevel: ${this.settings.maxLevel}`)
+	if (this.level < this.settings.maxLevel && this.level < FINAL_LEVEL && this.level > 0) {
+		if (DIFFICULTY_LEVEL[this.settings.difficulty] > DIFFICULTY_LEVEL.hard) {
 			console.debug("Victory Box canceled by difficulty != normal", this.settings.difficulty);
 		} else {
 			this.AddVictoryBox();
@@ -468,8 +473,11 @@ Game.prototype.NextLevel = function(skipAd, from)
 	if (from) {
 		this.level = from;
 	}
+	const targetLevel = this.level + 1;
 
-	if (this.settings.showAdverts && !skipAd)
+	if (this.settings.showAdverts && !skipAd
+		// Always bypass ad when going to tutorial, since it could be confusing
+		&& targetLevel > 0)
 	{
 		// Make the splash screen then call NextLevel (with the skipAd flag
 		//	to prevent recursing infinitely)
@@ -487,7 +495,7 @@ Game.prototype.NextLevel = function(skipAd, from)
 			g_usingAdblocker = true;
 		}
 	}
-	this.SetLevel(this.level+1);
+	this.SetLevel(targetLevel);
 
 	this.Clear();
 	this.Draw();
@@ -1355,11 +1363,30 @@ Game.prototype.SettingsChanged = function(diff) {
 	console.debug(diff);
 	if (diff.displayStatusBar) {
 		if (!diff.displayStatusBar.new) {
-			const confirmation = confirm("Hiding the status bar prevents opening settings, unless you press `\nHide status bar?");
+			var msg = "Hiding the status bar prevents opening settings";
+			if (g_isMobile) {
+				msg += "\nThe status bar will re-appear if you restart the game";
+			} else {
+				msg += "\nPressing backtick (`) will open the settings";
+			}
+			const confirmation = confirm(msg+"\nAre you sure?");
 			if (!confirmation) {
 				this.settings.displayStatusBar = diff.displayStatusBar.old;
 				delete diff.displayStatusBar;
+				this.SaveSettings();
 			}
+		}
+	}
+	const artstyleReload = "Changing the art style requires reloading the game.";
+	if (diff.rabbitSprites) {
+		const confirmation = confirm(artstyleReload + "\nAre you sure?");
+		if (!confirmation) {
+			this.settings.rabbitSprites = diff.rabbitSprites.old;
+			delete diff.rabbitSprites;
+		}
+		this.SaveSettings();
+		if (confirmation) {
+			location.reload();
 		}
 	}
 	if (diff.difficulty) {
@@ -1369,23 +1396,38 @@ Game.prototype.SettingsChanged = function(diff) {
 			this.level = Math.min(this.level, 1);
 		}
 		if (DIFFICULTY_LEVEL[diff.difficulty.new] > DIFFICULTY_LEVEL[diff.difficulty.old]) {
-			this.level = 1;
+			const confirmation = (this.level <= 1) || confirm("Increasing the difficulty ["+diff.difficulty.old+" to "+diff.difficulty.new+"]\nmeans you lose ALL progress!\nAre you sure?");
+			if (confirmation) {
+				this.level = 1;
+				this.settings.maxLevel = 1;
+			} else {
+				this.settings.difficulty = diff.difficulty.old;
+				delete diff.difficulty;
+			}
+			this.SaveSettings();
 		}
 		this.Start(this.level);
+	}
+
+	if (diff.enableTouchBar) {
+		InitPage(this);
 	}
 }
 
 Game.prototype.ToggleSettings = function() {
 	this.settingsElement.hidden = !this.settingsElement.hidden;
+	this.settings.openSettings = !this.settingsElement.hidden;
+	this.SaveSettings();
 	if (!this.settingsElement.hidden) {
 		this.Pause("Settings");
 		this.canvasElement.style.display = "none";
 		this.statusBar.hidden = true;
-		this.PopulateSettings();
+		this.PopulateSettingsForm();
+		this.touchBarElement.style.display = "none";
 	} else if (this.document.hasFocus) {
 		var oldSettings = {...this.settings};
 		console.debug('old settings', oldSettings);
-		this.ApplySettings();
+		this.ApplySettingsForm();
 		var changedSettings = Object.keys(this.settings).reduce((diff, key) => {
 			if (oldSettings[key] !== this.settings[key]) {
 				diff[key] = {
@@ -1399,11 +1441,11 @@ Game.prototype.ToggleSettings = function() {
 		this.Resume();
 		this.canvasElement.style.display = "";
 		this.statusBar.hidden = (this.settings.displayStatusBar === false);
-
+		this.touchBarElement.style.display = (this.settings.enableTouchBar) ? "block" : "none";
 	}
 }
 
-Game.prototype.PopulateSettings = function() {
+Game.prototype.PopulateSettingsForm = function() {
 	let nodes = [...this.settingsElement.childNodes];
 	while (nodes.length > 0) {
 		let child = nodes.pop()
@@ -1440,6 +1482,7 @@ Game.prototype.PopulateSettings = function() {
 			continue;
 		}
 	}
+
 }
 
 Game.prototype.DefaultSettings = function() {
@@ -1452,7 +1495,20 @@ Game.prototype.DefaultSettings = function() {
 	}
 }
 
-Game.prototype.ApplySettings = function() {
+Game.prototype.SaveSettings = function() {
+	try {
+		window.localStorage.setItem("settings", JSON.stringify(this.settings))
+		console.debug("Saved settings", this.settings);
+	} catch (err) {
+		console.debug("Error saving settings", err);
+	}
+
+	if (this.settings.saveCookies === false) {
+		ClearAllCookies();
+	}
+}
+
+Game.prototype.ApplySettingsForm = function() {
 
 	let nodes = [...this.settingsElement.childNodes];
 	while (nodes.length > 0) {
@@ -1485,10 +1541,9 @@ Game.prototype.ApplySettings = function() {
 		}
 	}
 
-	try {
-		window.localStorage.setItem("settings", JSON.stringify(this.settings))
-		console.debug("Saved settings", this.settings);
-	} catch (err) {
-		console.debug("Error saving settings", err);
-	}
+	this.SaveSettings();
+}
+
+Game.prototype.Handshake = function() {
+	// no op
 }

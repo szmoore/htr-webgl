@@ -3,15 +3,17 @@
 	<head>
 		<title>Cookie Information</title>
 	</head>
+	<p><b>NOTE:</b>Information in this section is no longer accurate, and the backend API and database is no longer active. However, some cookies are still saved.</p>
+	<a href="privacy/rabbitgame.net">privacy</a> gives a better summary of what you actually care about.
+	
 	<h1> Cookies </h1>
 	<p> <b>Cookies</b> are a way for websites to store information on your computer. Whenever your browser sends a request to a website, all cookies for that website are included as well. </p>
 	<p> Humphrey The Rabbit supports the use of cookies to track player scores and levels. The first time you visit the main page at <a href="http://rabbitgame.net">http://rabbitgame.net</a> you will see a message asking if you want to allow us to use cookies. You will see this for each different browser you use; if you play on one computer and move to another you will see the warning again. You may also see this message again if we <del>totally break</del> upgrade our database.</p>
 	<p>If you refuse, then you may still play the game normally, but we will not keep track of your level (which means you will have to restart each time you play)</p>
 	<p>We use cookies instead of IP addresses, so there is no information that can be used to personally identify you in our database (although your IP address will still be logged by our web server (as it is by every single web server on the planet by the way) it will not be associated with your cookie (nor is the cookie determined by using a hash of the IP address) and very few people <del>can be bothered reading</del> have access to those logs).</p>
 	<p>If you always want to avoid cookies without seeing the warning, go to  <a href="game.html">http://rabbitgame.net/game.html</a>. Make sure you use your browser to clear any cookies that we have set, as they will still be active.</p>
-	
+
 	<h1> What cookies will be set? </h1>
-	
 	<p> Whilst playing the game you can open a web developer console and use our <code>GetCookie</code> function to check individual cookies. Or you can use your browser's cookie viewing features. The cookies are: </p>
 	<p>	</p>
 	<ul>
@@ -20,10 +22,18 @@
 		<li><code>maxLevel</code> - The maximum level you have reached; if this is above the first level you will get asked what level you wish to start at.</li>
 	</ul>
 	<p> Cookies are also used to disable advertisements (ie: You need to allow the cookies if you don't want to see ads). If you can work out how to do that feel free.</p>
-	
+
 	<p>All cookies have an expiry date of 10 years (for all intents and purposes this means ``forever'') but you may clear them at any time using your web browser.</p>
-	
+
 	<h1> What information do you share with third parties? </h1>
 	<p> The <code>nickname</code> cookie as well as any statistics about your performance in the game may be made publically available through our <a href="view.py">statistics pages</a>. This information does not allow any third party to identify you, unless you set the <code>nickname</code> cookie to something <del> mind blowingly stupid</del> like your full name and address.</p>
-	
+
+	<h1> Local Storage </h1>
+	<p>Local storage is a newer and far more efficient way to store player information locally.
+	Whilst we may still use cookies for information gathering, your personal player preferences
+	and settings are using local storage.
+	Local storage is generally better for privacy.
+	We may provide an option in future whether to use cookies or local storage for various information.</p>
+
+
 </html>

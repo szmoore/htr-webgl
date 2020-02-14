@@ -20,90 +20,14 @@
 
 var g_game;
 
-var g_identityCookie;
-var g_nicknameCookie;
-var g_maxLevelCookie;
-var g_touchBarCookie;
-var g_startingLives;
-g_startingLives = 3;
-function Handshake(nospam)
-{
-
-	var storedIdentity = g_identityCookie//GetCookie("identity");
-	if (g_identityCookie && storedIdentity != g_identityCookie && !nospam)
-	{
-		var cookieWarn = "COOKIE WARNING\n";
-		cookieWarn += "Enter a nickname to have your scores and level tracked by rabbitgame.net\n";
-		cookieWarn += "Leave blank to stay anonymous.\n";
-		if (window.screen.height > 600)
-		{
-			cookieWarn += "Go to http://rabbitgame.net/cookies.html for more info.\n";
-			cookieWarn += "Go to http://rabbitgame.net/view.py to see statistics.\n";
-		}
-
-		g_nicknameCookie = prompt(cookieWarn);
-
-		if (g_nicknameCookie)
-		{
-			SetCookie("identity", g_identityCookie);
-			SetCookie("nickname", g_nicknameCookie);
-			SetCookie("maxLevel", 0);
-			g_maxLevelCookie = 0;
-			HttpGet("handshake.py")
-		}
-	}
-	else
-	{
-		g_identityCookie = GetCookie("identity");
-		g_nicknameCookie = GetCookie("nickname");
-		g_maxLevelCookie = GetCookie("maxLevel");
-
-		// For our legacy users who won't have the nickname yet (hahaha I said legacy)
-		if ((!g_nicknameCookie || g_nicknameCookie == "") && (!nospam))
-		{
-			var cookieWarn = "COOKIE WARNING\n";
-			cookieWarn += "You ALREADY have an identity cookie\n";
-			cookieWarn += "But no human readable nickname. Enter a nickname please.\n";
-			g_nicknameCookie = prompt(cookieWarn);
-			if (g_nicknameCookie)
-				SetCookie("nickname", g_nicknameCookie);
-		}
-		// Because this could be zero and that is valid
-		if (typeof(g_maxLevelCookie) === "undefined" || g_maxLevelCookie == "")
-		{
-			g_maxLevelCookie = 0;
-			SetCookie("maxLevel", 0);
-		}
-	}
-	if (g_touchBarCookie)
-		SetCookie("touchBar", g_touchBarCookie);
-	g_touchBarCookie = GetCookie("touchBar");
-
-	if (g_touchBarCookie === "yes")
-	{
-		console.debug("Enable touch bar");
-		var touchBar = document.getElementById("touchBar");
-		if (typeof(touchBar) !== "undefined") {
-			touchBar.style.display = "block";
-			InitPage();
-		}
-		else {
-			console.debug("Failed to enable button controls");
-		}
-	}
-
-	console.debug("You are: "+String(g_identityCookie));
-	console.debug("Your nickname is: "+String(g_nicknameCookie));
-	console.debug("Your maximum starting level is: "+String(g_maxLevelCookie));
-}
-
 /**
  * The main function
  */
-function main(nospam)
+function main(game)
 {
+
+
 	//window.onerror = function(e) {alert(e);}
-	Handshake(nospam);
 	var audio = document.getElementById("theme");
 	// Deal with browsers that can't play audio
 	if (typeof(audio.pause) !== "function" || typeof(audio.play) !== "function")
@@ -112,8 +36,18 @@ function main(nospam)
 	}
 
 	var canvas = document.getElementById("glcanvas");
-	g_game = new Game(canvas, audio, document, false);
+	if (typeof(game) === 'undefined') {
+		game = new Game(canvas, audio, document, false);
+	}
+	g_game = game; // hack for legacy code
 
+	if (g_isMobile && g_game.settings.displayStatusBar !== true) {
+		g_game.settings.displayStatusBar = true;
+		g_game.SaveSettings();
+		g_game.statusBar.hidden = false;
+	}
+
+	InitPage(game);
 
 	var welcome_message = "Humphrey The Rabbit";
 
@@ -123,18 +57,18 @@ function main(nospam)
 	// Conshmistancy
 	if (today.getMonth() == 11 && today.getDate() > 23 && today.getDate() < 27)
 	{
-		g_game.xmasMode = true;
+		game.xmasMode = true;
 		welcome_message = "HTR: Xmas edition!";
 	}
 	else if (today.getMonth() == 1 && today.getDate() == 14)
 	{
-		g_game.romanticMode = true;
+		game.romanticMode = true;
 		welcome_message += "\nLove: The Battlefield";
 	}
 
 
-	document.onkeydown = function(event) {g_game.KeyDown(event)};
-	document.onkeyup = function(event) {g_game.KeyUp(event)};
+	document.onkeydown = function(event) {game.KeyDown(event)};
+	document.onkeyup = function(event) {game.KeyUp(event)};
 
 	document.ontouchmove = function(event) {event.preventDefault();};
 	document.ontouchstart = function(event) {
@@ -145,36 +79,36 @@ function main(nospam)
 		{
 			audio = undefined;
 		}
-		if (audio && g_game.running)
-			audio.play();
+		if (audio && game.running) {
+			audio.play().catch(err => {
+				// stupid browsers.
+			});
+		}
 
-
-
-		if (!g_touchBarCookie || g_touchBarCookie != "yes")
-		{
-			g_touchBarCookie = "yes";
-			SetCookie("touchBar", g_touchBarCookie);
-			var touchBar = document.getElementById("touchBar");
-			if (typeof(touchBar) !== "undefined")
-			{
-				touchBar.style.display = "block";
-				InitPage();
-			}
+		if (g_isMobile && document.fullscreenElement === null) {
+			fullScreen();
+			setTimeout(() => {
+				if (document.fullscreenElement) {
+					InitPage(game);
+				}
+			},500)
 		}
 	}
 
 
+	canvas.addEventListener("touchstart", function(event) {game.TouchDown(event.changedTouches[0])});
+	canvas.addEventListener("touchmove", function(event) {game.TouchDown(event.changedTouches[0])});
+	canvas.addEventListener("touchenter", function(event) {game.TouchDown(event.changedTouches[0])});
+	canvas.addEventListener("touchend", function(event) {game.TouchUp(event.changedTouches[0])});
+	canvas.addEventListener("touchleave", function(event) {game.TouchUp(event.changedTouches[0])});
+	canvas.addEventListener("mousedown", function(event) {game.MouseDown(event)});
+	canvas.addEventListener("mousemove", function(event) {game.MouseMove(event)});
+	canvas.addEventListener("mouseup", function(event) {game.MouseUp(event)});
 
-	canvas.addEventListener("touchstart", function(event) {g_game.TouchDown(event.changedTouches[0])});
-	canvas.addEventListener("touchmove", function(event) {g_game.TouchDown(event.changedTouches[0])});
-	canvas.addEventListener("touchenter", function(event) {g_game.TouchDown(event.changedTouches[0])});
-	canvas.addEventListener("touchend", function(event) {g_game.TouchUp(event.changedTouches[0])});
-	canvas.addEventListener("touchleave", function(event) {g_game.TouchUp(event.changedTouches[0])});
-	canvas.addEventListener("mousedown", function(event) {g_game.MouseDown(event)});
-	canvas.addEventListener("mousemove", function(event) {g_game.MouseMove(event)});
-	canvas.addEventListener("mouseup", function(event) {g_game.MouseUp(event)});
 
-	var startLevel = Math.min(1,g_maxLevelCookie || 1);
+	var settings = game.settings;
+
+	var startLevel = Math.min(1,settings.maxLevel || 1);
 
 	// Old prompt based level skipping
 	/*
@@ -190,11 +124,11 @@ function main(nospam)
 	}
 	*/
 
-	g_game.splashPerformance = (new Date()).getTime();
+	game.splashPerformance = (new Date()).getTime();
 	var s = function(startLevel) {
 		this.AddTimeout("Start", this.Start.bind(this, startLevel),2000)
 		this.splashPerformance = (new Date()).getTime() - this.splashPerformance;
 		//alert("splash took " + String(this.splashPerformance)+"ms");
-	}.bind(g_game, startLevel);
-	g_game.canvas.SplashScreen("data/rabbit/drawing2.svg", welcome_message, [0.9,1.0,0.9,1],s);
+	}.bind(game, startLevel);
+	game.canvas.SplashScreen("data/rabbit/drawing2.svg", welcome_message, [0.9,1.0,0.9,1],s);
 }

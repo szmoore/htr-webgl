@@ -1,9 +1,64 @@
 var g_isMobile = isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-
 var g_usingAdblocker = false;
 
-function InitPage()
+
+function fullScreen() {
+	const elem = document.documentElement;
+	const methods = ["request", "mozRequest", "webkitRequest", "msRequest"].filter(prefix => {
+		const functionName = prefix+"FullScreen";
+		return elem[functionName];
+	})
+	return Promise.race(methods.map(prefix => {
+		const functionName = prefix+"FullScreen";
+		console.log(functionName);
+		var p = elem[functionName].call(elem);
+		console.log(p);
+		if (p) {
+			return p.then(res => console.log(res));
+		}
+	}))
+}
+
+function CollapseAllDetails() {
+	// Collapse all settings panels (once only)
+	Object.values(document.getElementsByTagName("details")).forEach(element => {
+		element.open = false;
+	})
+}
+
+function StartGame() {
+	CollapseAllDetails();
+
+
+	if (g_isMobile && document.fullscreenElement == null) {
+		console.debug('Not in fullscreen...');
+		document.getElementById("startOnMobile").style.display = "none";
+		document.getElementById("enableTouchBar").checked = true;
+
+		fullScreen()
+		setTimeout(() => {
+			if (document.fullscreenElement == null) {
+				console.log('Still not in fullscreen');
+				document.getElementById("startOnMobile").style.display = "block";
+			} else {
+				StartGame();
+			}
+		},500);
+	} else {
+		console.log('Initialise');
+		main();
+		if (g_game.settings.openSettings) {
+			g_game.ToggleSettings();
+		}
+	}
+}
+
+function InitPage(game)
 {
+	if (g_isMobile && document.fullscreenElement == null) {
+		console.error("Cannot play the game on a mobile device unless you are in fullscreen");
+		return;
+	}
 
 	// Look how smart I am, detecting (some) adblockers
 	g_usingAdblocker = document.getElementById("br0whyuh8ad$$$s") ? false : true;
@@ -12,6 +67,13 @@ function InitPage()
 		console.debug("That's cool, it's not like anyone pays me for them anyway");
 	}
 
+	document.getElementById("gameAndUI").style.display = "block";
+	document.getElementById("startOnMobile").style.display = "none";
+
+
+
+
+
 	// Browsers on phones do *wierd* things with screen.width, innerWidth, screen.availWidth etc
 	var screenWidth = Math.min(window.innerWidth, window.screen.width);
 	var screenHeight = Math.min(window.innerHeight, window.screen.height);
@@ -19,39 +81,44 @@ function InitPage()
 	var height = Math.min(screenHeight-64, 800);
 
 	var touchBar = document.getElementById("touchBar");
-	if (typeof(touchBar) !== "undefined" && touchBar.style.display === "block")
-	{
+	touchBar.style.display = game.settings.enableTouchBar ? "block" : "none";
+	if (touchBar.style.display == "block") {
+		height -= 48;
+	}
+	touchBar.style.width = width;
 
+	if (touchBar) {
 		absorbEvent = function (e) {
 			e.preventDefault();
 			e.stopPropagation();
 			e.cancelBubble = true;
 			e.returnValue = false;
-		}
-
-		height -= 1*48;
-		var touchLeft = document.getElementById("touchLeft");
-		touchLeft.ontouchstart = function (e) {absorbEvent(e); g_game.KeyDown({keyCode:37});};
-		touchLeft.ontouchend = function (e) {absorbEvent(e); g_game.KeyUp({keyCode:37});}
-		touchLeft.ontouchmove = absorbEvent;
-		touchLeft.ontouchcancel = touchLeft.ontouchend;;
-		var touchRight = document.getElementById("touchRight");
-		touchRight.ontouchstart = function (e) {absorbEvent(e); g_game.KeyDown({keyCode:39});};
-		touchRight.ontouchend = function (e) {absorbEvent(e); g_game.KeyUp({keyCode:39});};
-		touchRight.ontouchmove = absorbEvent;
-		touchRight.ontouchcancel = touchRight.ontouchend;
-		var touchUp = document.getElementById("touchUp");
-		touchUp.ontouchstart = function (e) {absorbEvent(e); g_game.KeyDown({keyCode:38});};
-		touchUp.ontouchend = function (e) {absorbEvent(e); g_game.KeyUp({keyCode:38});};
-		touchUp.ontouchmove = absorbEvent;
-		touchUp.ontouchcancel = touchUp.ontouchend;
-		var touchDown = document.getElementById("touchDown");
-		touchDown.ontouchstart = function(e) {absorbEvent(e); g_game.KeyDown({keyCode:40});};
-		touchDown.ontouchend = function(e) {absorbEvent(e); g_game.KeyUp({keyCode:40});};
-		touchDown.ontouchmove = absorbEvent;
-		touchDown.ontouchcancel = touchDown.ontouchend;
+		};
 
 
+
+		["Left", "Right", "Up", "Down"].forEach(direction => {
+			const id = "touch"+direction;
+			var element = document.getElementById(id);
+			element.ontouchmove = absorbEvent;
+			element.ontouchcancel = element.ontouchend;
+			element.oncontextmenu = absorbEvent;
+
+			element.ontouchstart = event => {
+				console.debug("Pressed", direction);
+				absorbEvent(event);
+				g_game.KeyDown({keyCode: directionToKeyCode[direction]});
+			}
+			element.ontouchend = event => {
+				console.debug("Released", direction);
+				absorbEvent(event);
+				g_game.KeyUp({keyCode: directionToKeyCode[direction]});
+			}
+
+			element.onmousedown = element.ontouchstart;
+			element.onmouseup = element.ontouchend;
+
+		})
 	}
 
 	var middlePanel = document.getElementById("middlePanel");
@@ -60,12 +127,16 @@ function InitPage()
 	var canvas = document.getElementById("glcanvas");
 	canvas.width = width;
 	canvas.height = height;
+	console.log('Set canvas height,width to', canvas.height, canvas.width)
 
-	if (typeof(g_game) !== "undefined" && typeof(g_game.canvas) != "undefined")
+	if (typeof(game) !== "undefined" && typeof(game.canvas) != "undefined")
 	{
-		g_game.canvas.width = width;
-		g_game.canvas.height = height;
+		game.canvas.width = width;
+		game.canvas.height = height;
+		console.log('Set game canvas height,width to', game.canvas.height, game.canvas.width);
 	}
+
+
 
 
 	// The external advertisement
@@ -84,6 +155,5 @@ function InitPage()
 	var loading = document.getElementById("loading");
 	if (loading)
 		loading.parentNode.removeChild(loading);
-
 
 }

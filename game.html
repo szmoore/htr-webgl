@@ -52,7 +52,7 @@
     </script>
   </head>
 
-  <body id="body" onload="InitPage(); main(true);" onresize="InitPage();" style="-webkit-touch-callout: none !important; -webkit-user-select: none !important;">
+  <body id="body" onload="StartGame();" style="-webkit-touch-callout: none !important; -webkit-user-select: none !important;">
 	  <!-- Noscript page -->
     <noscript>
 	    <h2>Humphrey The Rabbit</h2>
@@ -64,11 +64,27 @@
 
 	<script src="ads.js"></script>
 
+	<button type="button" id="startOnMobile" onclick=StartGame()><p>Humphrey The Rabbit: Mobile Edition</p><p>Press to start</p></button>
+
+	<div id="gameAndUI" style="display: none; width: 100%; height: 100%">
+
 	<!-- Introduction -->
 	<audio id="theme">
 		<!--<source src="data/theme.ogg" type="audio/ogg">-->
 		<!--Your browser does not support the <code>audio</code> tag.-->
 	</audio>
+
+	<div id="statusBar" style="font-size: x-small; position:relative; width:auto; height:auto; border:0px solid red; margin:0 auto;">
+		<div id="score" style="margin:0 auto; width:100%; text-align:center;">
+			Lvl <span id="level">0</span> |
+			<span id="runtime">00:00:00</span>|<img src="data/hats/hat1.gif" height=8px> x <span id="lives">0</span> |
+			<span title="Runs the tutorial. Oh boy."><a class="statusBarLink" href="javascript:g_game.Start(0)">?</a></span> |
+			<span title="Modify gameplay and other settings."><a class="statusBarLink" href="javascript:g_game.ToggleSettings()">⚙</a></span>
+			<span title="...">💔</span>
+
+		</div>
+		<div id="debug" style="margin:0 auto; width:34%; text-align:center;"></div>
+	</div>
 
 	<div id="container" style="width:100%; position:relative; overflow:hidden;">
 		<div id="leftPanel" style="float:left; text-align: right; border:0px solid black; overflow:hidden; display:block;">
@@ -80,36 +96,65 @@
 			<object id="banner" style="width:0px; height:0px;" type="text/html" data="data/adverts/external.html"></object>
 		</div>
 
-		<div id="middlePanel" style="margin:0 auto; border:2px solid blue;">
+		<div id="middlePanel" style="margin:0 auto;">
 			<!-- The canvas -->
-			<span id="loading" style="border:1px solid black;">Initialising page. If nothing happens try reloading (Ctrl+R).</span>
+
+
 			<canvas id="glcanvas" width="0" height="0">
 				The <code>canvas</code> tag isn't supported, <b>or</b> you have disabled scripts.
 			</canvas>
 
 			<div id="settings" hidden style="float:left; text-align: left;">
 				<h1>Settings</h1>
+				<details open=false>
+					<summary>What's this?</summary>
+					<p>These settings will be saved in your browser's <a href=https://developer.mozilla.org/en-US/docs/Web/API/Window/localStorage>Local Storage</a>
+						They are not communicated to any server.</p>
+					<p>Some information is still saved in <a href="cookies.html">cookies</a>; you can turn these off below.</p>
+					<p></p>
+					<p>Your game is paused; most settings changes will not require you to restart the game, but some will.</p>
+				</details>
+
+
 				<details open=true>
+					<summary>All Settings</summary>
 					<form autocomplete="off">
-					<summary><b>All Settings</b></summary>
 					<details open=true>
 						<summary>Browser</summary>
 						<table>
 							<tr><td><input type="checkbox" id="playMusic" checked></td><td>Play Music</td></tr>
-							<tr><td><input type="checkbox" id="showAdverts" checked></td><td><span title="Show the memes.">Show Advertisements</span></td></tr>
 							<tr><td><input type="checkbox" id="autoPause" checked></td><td><span title="Game pauses when tab loses focus.">Auto pause</span></td></tr>
+							<tr><td><input type="checkbox" id="saveCookies" checked></td><td><span title="Allow us to save cookies. Note that Local Storage (which includes these settings) is still saved.">Save Cookies</span></td></tr>
 						</table>
-						<details open=false>
-							<summary>Display</summary>
+					</details>
+					<details open=false>
+						<summary>Display</summary>
+						<table>
+							<tr><td><input type="checkbox" id="displayStatusBar" checked></td><td><span title="This will hide the status bar, including the ⚙. You must use the tilde (`) key to open settings again.">Display Status Bar</span></td></tr>
+							<tr><td><input type="checkbox" id="simplifiedRendering"></td><td><span title="This will attempt to improve performance by reducing the area on the screen that is redrawn. You may see some visual artifacts.">Faster Rendering</span></td></tr>
+						</table>
+					</details>
+					<details open=false>
+						<summary>Art Styles</summary>
+						<details>
+							<summary>Humphrey Style</summary>
 							<table>
-								<tr><td><input type="checkbox" id="displayStatusBar" checked></td><td><span title="This will hide the status bar, including the ⚙. You must use the tilde (`) key to open settings again.">Display Status Bar</span></td></tr>
-								<tr><td><input type="checkbox" id="simplifiedRendering"></td><td><span title="This will attempt to improve performance by reducing the area on the screen that is redrawn. You may see some visual artifacts.">Faster Rendering</span></td></tr>
+								<tr><td><input type="radio" id="neko" name="rabbitSprites" checked></td><td><img src="data/rabbit/neko/left1.gif"/><img src="data/rabbit/neko/right2.gif"/></td></tr>
+								<tr><td><input type="radio" id="humphrey" name="rabbitSprites"></td><td><img src="data/rabbit/humphrey/left1.gif"/> <img src="data/rabbit/humphrey/right2.gif"/>[WIP]</td></tr>
 							</table>
 						</details>
-
+					</details>
+					<details open=false>
+						<summary>Advertisements</summary>
+						<table>
+							<tr><td><input type="checkbox" id="showAdverts" checked></td><td><span title="Shows an 'advertisement' whenever you die or restart a level">Show Advertisements</span></td></tr>
+							<tr><td></td><td>Type of adverts shown</td></tr>
+							<tr><td><input type="radio" name="advertsType" id="memeverts"></td><td><span title="The original advertisements; might be funny, probably not helpful.">Memeverts</span></td></tr>
+							<tr><td><input type="radio" name="advertsType" id="helpverts" checked></td><td><span title="Show gameplay hints.">Gameplay Hints</span></td></tr>
+						</table>
 					</details>
 					<details open=true>
-						<summary>Gameplay Modes</summary>
+						<summary>Gameplay</summary>
 						<details open=true>
 							<summary>Base Difficulty</summary>
 							<table>
@@ -123,8 +168,16 @@
 						<details open=false>
 							<summary>Gameplay Modifiers</summary>
 							<table>
+								<tr><td><input type="number", id="maxLevel" value="1" readonly=True></td><td><span title="This is the maximum level you have passed. It will reset if you lower the difficulty!">Max Level</span></td></tr>
+								<tr><td><input type="number", id="startingLives" value="3" readonly=True></td><td><span title="This is the number of lives you start each level with. Dependent on difficulty">Starting Lives</span></td></tr>
 								<tr><td><input type="checkbox" id="pacifistMode"></td><td><span title="Does what it says.">Enforce Moral Absolutism</span></td></tr>
-
+								<tr><td><input type="checkbox" id="autoPlay"></td><td>Play by myself</td></tr>
+							</table>
+						</details>
+						<details open=false>
+							<summary>Extra Controls</summary>
+							<table>
+								<tr><td><input type="checkbox", id="enableTouchBar"></td><td><span title="Renders some buttons you can use on shitty smartphones">Touch Bar</span></td></tr>
 							</table>
 						</details>
 
@@ -134,52 +187,35 @@
 								<tr><td><a href="nostalgia/">"The game is basically finished"</a></td></tr>
 							</table>
 						</details-->
-
-					</details>
 					</form>
-					<button onclick="g_game.ApplySettings();">✔ Apply</button>
-					<button onclick="g_game.PopulateSettings();">🚫 Revert</button>
-					<button onclick="g_game.DefaultSettings();">🔄 Defaults</button>
-				</details->
-				<button onclick="g_game.ToggleSettings();">▶️ Done</button>
+				</details>
+				<div id="settingsButtons" style="width:100%;">
+					<!--<button style="border:none;" type="button" onclick="g_game.ApplySettingsForm();">✔ Apply</button>-->
+					<button type="button" onclick="g_game.PopulateSettingsForm();">🚫 Revert</button>
+					<button type="button" onclick="g_game.DefaultSettings();">🔄 Defaults</button>
+					<button type="button" onclick="g_game.ToggleSettings();">✔ Apply</button>
+					<!--<button style="border:none;" type="button" onclick="location.reload();">🔄 Refresh</button> -->
+				</div>
 
 			</div>
 
 		</div>
 
 	</div>
-	<div id="statusBar" style="font-size: x-small; position:relative; width:auto; height:auto; border:0px solid red; margin:0 auto;">
-		<div id="score" style="margin:0 auto; width:100%; text-align:center;">
-			Lvl <span id="level">0</span> |
-			<span id="runtime">00:00:00</span>|<img src="data/hats/hat1.gif"> x <span id="lives">0</span> |
-			<a href="javascript:g_game.Start(0)">?</a> |
-			<a href="javascript:g_game.ToggleSettings()">⚙</a>
-
-		</div>
-		<div id="debug" style="margin:0 auto; width:34%; text-align:center;"></div>
-	</div>
-
 
 
 	<!--<div id="spacer" style="position:relative; width:auto; height:50px; margin:0 auto; display: block;"></div>-->
 
 	<!-- For touch screen devices that don't support touch events -->
 
-	<div id="touchBar" style="margin:0 auto; border:0px solid black; text-align:center;display: none; background-color: #eeffee">
-		<table align="center">
-			<tr>
-			<td>
-				<button
-					 style="border:none;"><img id="touchLeft" src="data/rabbit/left1.gif" style="height:48px"> </button> </td>
-			<td>
-				<button style="height:48px; border:none;"><img id="touchUp" src="data/rabbit/up.gif" style="height:48px"></button> </td>
-			<td>
-				<button style="border:none;"><img id="touchDown" src="data/rabbit/down.gif" style="height:48px"></button></td>
-			<td>
-				<button style="border:none;"><img id="touchRight" src="data/rabbit/right1.gif" style="height:48px"></button></td></tr>
-		</table>
+	<div id="touchBar" style="height: 48px; width:100%;">
+			<button id="touchLeft" style="height:100%; width:24.5%; border:none;"><img src="data/rabbit/neko/left1.gif" style="height:48px">⇦</button>
+			<button id="touchUp" style="height:100%; width:24.5%; border:none;">⇧<img src="data/rabbit/neko/up.gif" style="height:48px"></button>
+			<button id="touchDown" style="height:100%; width:24.5%; border:none;"><img src="data/rabbit/neko/down.gif" style="height:48px">⇩</button>
+			<button id="touchRight" style="height:100%; width:24%.5; border:none;">⇨<img src="data/rabbit/neko/right1.gif" style="height:48px;"></button>
 	</div>
 
 
+	</div>
 	</body>
 </html>

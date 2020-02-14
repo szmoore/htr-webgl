@@ -9,8 +9,8 @@ Game.prototype.tutorial = {
 	},
 
 	"move1" : function() {
-		if (g_touchBarCookie === "yes") {
-			this.message = "Use buttons";
+		if (this.settings.enableTouchBar === "yes") {
+			this.message = "Use the buttons";
 		} else {
 			this.message = "Touch: Guide with finger."
 		}
@@ -355,7 +355,7 @@ Game.prototype.tutorial = {
 					this.message = "Alright. Be that way.";
 					this.AddVictoryBox();
 					this.settings.pacifistMode = true;
-					this.ApplySettings();
+					this.ApplySettingsForm();
 					break;
 
 				default:

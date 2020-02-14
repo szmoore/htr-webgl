@@ -46,3 +46,25 @@ span {
 	-ms-user-select: none !important;
 	user-select: none !important;
 }
+
+.statusBarLink {
+	text-decoration: none;
+}
+.statusBarLink:hover {
+	text-decoration: underline;
+}
+
+#touchBar {
+	margin: 0 auto;
+	border: 1px solid black;
+	text-align: center;
+	display: none;
+	background-color: #eeffee
+}
+
+#startOnMobile {
+	display: none;
+	width: 100%;
+	height: 100%;
+	background: url("data/rabbit/drawing2.svg") no-repeat;
+}

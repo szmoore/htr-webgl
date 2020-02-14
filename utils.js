@@ -7,26 +7,55 @@
 Function.prototype.bind=Function.prototype.bind||function(b){if(typeof this!=="function"){throw new TypeError("Function.prototype.bind - what is trying to be bound is not callable");}var a=Array.prototype.slice,f=a.call(arguments,1),e=this,c=function(){},d=function(){return e.apply(this instanceof c?this:b||window,f.concat(a.call(arguments)));};c.prototype=this.prototype;d.prototype=new c();return d;};
 
 
+var cookies = {};
+
 function SetCookie(cname,cvalue,exdays)
 {
-	if (!exdays)
-		exdays = 3650;
+	if (!exdays) {
+		if (cvalue === "") {
+			exdays = -1;
+		} else {
+			exdays = 3650;
+		}
+	}
 	var d = new Date();
 	d.setTime(d.getTime()+(exdays*24*60*60*1000));
 	var expires = "expires="+d.toGMTString();
 	document.cookie = cname + "=" + cvalue + "; " + expires;
+	if (exdays > 0) {
+		cookies[cname] = cvalue;
+	} else {
+		delete cookies[cname];
+	}
 }
 
 function GetCookie(cname)
 {
 	var name = cname + "=";
 	var ca = document.cookie.split(';');
+	var cvalue = "";
 	for(var i=0; i<ca.length; i++)
 	{
 		var c = ca[i].trim();
-		if (c.indexOf(name)==0) return c.substring(name.length,c.length);
+		if (c.indexOf(name)==0) {
+			cvalue = c.substring(name.length,c.length);
+		}
 	}
-	return "";
+	if (cvalue !== "") {
+		cookies[cname] = cvalue;
+	}
+	return cvalue;
+}
+
+function ClearCookie(cname) {
+	// By setting expiry to a date in the past, we clear it
+	console.debug("Clear cookie", cname)
+	SetCookie(cname, "",-1); 
+}
+
+function ClearAllCookies() {
+	Object.values(cookies).filter(element => typeof(element) === "string")
+	.forEach(cname => ClearCookie(cname));
 }
 
 // 2014: Javascript is a Pyramid Scheme
@@ -128,8 +157,16 @@ String.prototype.toHHMMSS = function ()
 	return time;
 }
 
+// TODO: Remove?
 Debug = function(message)
 {
-	document.getElementById("debug").innerHTML=message;
+	//document.getElementById("debug").innerHTML=message;
 }
 
+
+const directionToKeyCode = {
+	Left: 37,
+	Right: 39,
+	Up: 38,
+	Down: 40
+};
