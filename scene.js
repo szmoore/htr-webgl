@@ -60,8 +60,7 @@ function main(game)
 		game.xmasMode = true;
 		welcome_message = "HTR: Xmas edition!";
 	}
-	const anyoneActuallyGivesAShit = false;
-	if ((today.getMonth() == 1 && today.getDate() == 14) || !anyoneActuallyGivesAShit) {
+	if ((today.getMonth() == 1 && today.getDate() == 14)) {
 		game.romanticMode = true;
 		welcome_message = "";
 		document.getElementById("statusBar").hidden = true;
