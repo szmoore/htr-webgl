@@ -1,4 +1,5 @@
 var g_isMobile = isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+var g_isWebView = isWebView = navigator.userAgent.includes('wv')
 var g_usingAdblocker = false;
 
 
@@ -10,11 +11,13 @@ function fullScreen() {
 	})
 	return Promise.race(methods.map(prefix => {
 		const functionName = prefix+"FullScreen";
-		console.log(functionName);
+		console.log(`Attempting to use ${functionName} to enter fullscreen...`);
 		var p = elem[functionName].call(elem);
-		console.log(p);
+		console.log(`${functionName}(${elem}) => ${p}`);
 		if (p) {
 			return p.then(res => console.log(res));
+		} else {
+			return Promise.resolve();
 		}
 	}))
 }
@@ -30,22 +33,26 @@ function StartGame() {
 	CollapseAllDetails();
 
 
-	if (g_isMobile && document.fullscreenElement == null) {
-		console.debug('Not in fullscreen...');
-		document.getElementById("startOnMobile").style.display = "none";
-		document.getElementById("enableTouchBar").checked = true;
+	document.getElementById("startOnMobile").style.display = "none";
+	document.getElementById("enableTouchBar").checked = (g_isMobile || g_isWebView);
 
+	if (g_isWebView) {
+		console.debug("Hello, Android!");
+	}
+
+	if (g_isMobile && !g_isWebView && document.fullscreenElement == null) {
+		console.debug('Not in fullscreen...');
 		fullScreen()
 		setTimeout(() => {
 			if (document.fullscreenElement == null) {
-				console.log('Still not in fullscreen');
+				console.log('Still not in fullscreen, try again');
 				document.getElementById("startOnMobile").style.display = "block";
 			} else {
 				StartGame();
 			}
 		},500);
 	} else {
-		console.log('Initialise');
+		console.log('Screen initialised, running main()');
 		main();
 		if (g_game.settings.openSettings) {
 			g_game.ToggleSettings();
@@ -55,7 +62,7 @@ function StartGame() {
 
 function InitPage(game)
 {
-	if (g_isMobile && document.fullscreenElement == null) {
+	if (g_isMobile && !g_isWebView && document.fullscreenElement == null) {
 		console.error("Cannot play the game on a mobile device unless you are in fullscreen");
 		return;
 	}
