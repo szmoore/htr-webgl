@@ -126,7 +126,7 @@ install: $(APK)
 
 launch:
 	$(RECIPE)
-	adb shell am start -n $(PACKAGE)/$((PACKAGE).$(ACTIVITY_NAME)
+	adb shell am start -n $(PACKAGE)/.$(ACTIVITY_NAME)
 
 clean:
 	rm -vf	$(SRC)R.java \
