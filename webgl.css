@@ -27,6 +27,7 @@ body {
 	-webkit-text-size-adjust: none !important;
 	-webkit-appearance: none;
 	text-align: center;
+	overflow: hidden;
 }
 
 div {
@@ -59,7 +60,8 @@ span {
 	border: 1px solid black;
 	text-align: center;
 	display: none;
-	background-color: #eeffee
+	background-color: #eeffee;
+	overflow: hidden;
 }
 
 #startOnMobile {
