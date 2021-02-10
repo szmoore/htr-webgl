@@ -26,6 +26,13 @@ public class MainActivity extends Activity {
                 return true;
             }
         });
+        web.setWebViewClient(new WebViewClient() {
+            @Override
+            public boolean shouldOverrideUrlLoading(WebView view, String url) {
+                view.loadUrl(url);
+                return false;
+            }
+        });
         web.clearCache(true);
         web.loadUrl("https://rabbitgame.net");
 
