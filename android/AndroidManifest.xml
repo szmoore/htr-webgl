@@ -5,8 +5,11 @@
  versionName="omega">
     <uses-sdk android:minSdkVersion="19"/>
     <uses-permission android:name="android.permission.INTERNET"/>
-    <application android:label="Humphrey the Rabbit">
-        <activity android:name=".MainActivity">
+    <application android:label="Humphrey the Rabbit"
+        android:icon="@drawable/icon">
+        <activity android:name=".MainActivity"
+            android:theme="@android:style/Theme.Black.NoTitleBar.Fullscreen"
+        >
              <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.LAUNCHER"/>

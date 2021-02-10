@@ -5,8 +5,11 @@
  versionName="{VERSION_NAME}">
     <uses-sdk android:minSdkVersion="{MINSDK}"/>
     <uses-permission android:name="android.permission.INTERNET"/>
-    <application android:label="{APP_LABEL}">
-        <activity android:name=".{ACTIVITY_NAME}">
+    <application android:label="{APP_LABEL}"
+        android:icon="@drawable/icon">
+        <activity android:name=".{ACTIVITY_NAME}"
+            android:theme="@android:style/Theme.Black.NoTitleBar.Fullscreen"
+        >
              <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.LAUNCHER"/>
