@@ -29,6 +29,13 @@ function CollapseAllDetails() {
 	})
 }
 
+function ExpandAllDetails() {
+	// Collapse all settings panels (once only)
+	Object.values(document.getElementsByTagName("details")).forEach(element => {
+		element.open = true;
+	})
+}
+
 function StartGame() {
 	CollapseAllDetails();
 

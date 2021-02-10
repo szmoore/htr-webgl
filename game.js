@@ -130,6 +130,24 @@ function Game(canvas, audio, document, multiplayer)
 	this.SaveSettings();
 	statusBar.hidden = (this.settings.displayStatusBar === false);
 
+	// Apply the art style to touchbar buttons
+	if (this.settings.enableTouchBar) {
+		// Look it's 2021 and I learned arrow functions
+		["Left", "Right", "Up", "Down"].forEach(direction => {
+			button = document.getElementById("touch"+direction)
+			for (let i = 0; i < button.children.length; ++i) {
+				if (!button.children[i].src) {
+					continue;
+				}
+				newSource = button.children[0].src.replace("/humphrey/", "/"+this.settings.rabbitSprites+"/")
+				if (newSource != button.children[0].src) {
+					console.debug(`Set direction from ${button.children[0].src} to ${newSource}`);
+					button.children[0].src = newSource;
+				}
+				break;
+			}
+		});
+	}
 
 	this.running = false;
 	this.runTime = 0;
@@ -1537,10 +1555,14 @@ Game.prototype.DefaultSettings = function() {
 	this.settings = {};
 	try {
 		window.localStorage.removeItem("settings");
-		location.reload();
+		this.PopulateSettingsForm();
 	} catch(err) {
 		console.debug("Failed to remove settings from localStorage");
 	}
+}
+
+Game.prototype.ExpandSettings = function() {
+
 }
 
 Game.prototype.SaveSettings = function() {
@@ -1590,6 +1612,7 @@ Game.prototype.ApplySettingsForm = function() {
 	}
 
 	this.SaveSettings();
+
 }
 
 Game.prototype.Handshake = function() {
