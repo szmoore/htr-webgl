@@ -6,15 +6,19 @@ import android.widget.TextView;
 import android.webkit.WebView;
 import android.webkit.WebSettings;
 import android.webkit.WebChromeClient;
+import android.webkit.WebViewClient;
 import android.webkit.ConsoleMessage;
 
 public class MainActivity extends Activity {
+
+    protected WebView web;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        WebView web = (WebView)findViewById(R.id.webview);
+        this.web = (WebView)findViewById(R.id.webview);
         WebSettings settings = web.getSettings();
         settings.setJavaScriptEnabled(true);
         settings.setDomStorageEnabled(true);
@@ -35,7 +39,25 @@ public class MainActivity extends Activity {
         });
         web.clearCache(true);
         web.loadUrl("https://rabbitgame.net");
+    }
 
+    protected void evaluateJavascript(String code) {
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.KITKAT) {
+            web.evaluateJavascript(code, null);
+        } else {
+            web.loadUrl("javascript:"+code);
+        }
+    }
 
+    @Override
+    protected void onPause() {
+        evaluateJavascript("g_game.Pause();");
+        super.onPause();
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        evaluateJavascript("g_game.Resume();");
     }
 }
