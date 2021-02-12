@@ -14,6 +14,7 @@ function Player(position, velocity, acceleration, canvas, spritePath)
 		this.spawn[i] = position[i];
 
 	this.wings = new SFXEntity(this, Infinity, ["data/sfx/wings1.png"], canvas, [0,0]);
+	this.fallbackColour = "#32CD32";
 }
 Player.prototype = Object.create(Entity.prototype);
 Player.prototype.constructor = Player;
@@ -374,4 +375,3 @@ Hat.prototype.HandleCollision = function(other, instigator, game)
 	if (other.GetName() === "Floor")
 		this.Die(this.GetName(), this, game);
 }
-

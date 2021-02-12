@@ -459,7 +459,36 @@ Entity.prototype.Draw = function(canvas, simplified)
 			}
 			ctx.translate(tl[0]+w/2, tl[1]+h/2);
 			ctx.rotate(this.angle);
-			ctx.drawImage(this.frame.img, -w/2,-h/2, w, h);
+			// Draw the image if it's complete
+
+			let drewImage = this.frame.img.complete;
+			try {
+				if (drewImage) {
+					ctx.drawImage(this.frame.img, -w/2,-h/2, w, h);
+					drewImage = true;
+				}
+			} catch (err) {
+				console.error(err);
+				drewImage = false;
+			}
+			if (!drewImage && this.GetName() !== "SFX") {
+				// console.debug(`Failed to draw image for ${this.GetName()}`);
+				const oldStyle = ctx.fillStyle;
+				const oldStroke = ctx.strokeStyle;
+				const oldFont = ctx.oldFont;
+				const oldAlign = ctx.textAlign;
+				ctx.fillStyle = this.fallbackColour || "#FF0000";
+				ctx.fillRect(-w/2, -h/2, w, h);
+				ctx.fillStyle = oldStyle;
+				ctx.font = "6pt Mono";
+				ctx.textAlign = "center";
+				ctx.strokeText(this.GetName() || "?", 0, -h/4);
+				ctx.strokeText("<load>", 0, h/4);
+				ctx.strokeStyle = oldStroke;
+				ctx.font = oldFont;
+				ctx.textAlign = oldAlign;
+			}
+
 			ctx.rotate(-this.angle);
 			ctx.translate(-tl[0]-w/2, -tl[1]-h/2);
 			return;

@@ -14,6 +14,7 @@ function Box(position, velocity, acceleration, canvas)
 	this.name = "Box";
 	this.ignoreCollisions["Roof"] = true;
 	this.health = 2+Math.random()*4;
+	this.fallbackColour = "#A52A2AFF";
 
 }
 Box.prototype = Object.create(Entity.prototype);
@@ -86,7 +87,7 @@ function Cloud(position, canvas)
 	this.ignoreCollisions = Cloud.prototype.ignoreCollisions;
 	this.ignoreCollisions["Roof"] = true;
 	this.ignoreCollisions["Wall"] = true;
-
+	this.fallbackColour = "#AAAAAA99";
 
 	this.bounds = {min: [-64/canvas.width, -33/canvas.width], max:[64/canvas.width, -32/canvas.width]};
 	console.debug("Created cloud");

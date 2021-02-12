@@ -16,6 +16,7 @@ function Enemy(position, velocity, acceleration, canvas, spritePath)
 	this.danceWidths = 1.5;
 	this.jumpWidths = 15;
 	this.helpText = "(STOMP)\n↓↓↓"
+	this.fallbackColour = "#FF4500";
 }
 Enemy.prototype = Object.create(Entity.prototype);
 Enemy.prototype.constructor = Enemy;
@@ -470,5 +471,3 @@ Rox.prototype.Die = function(reason, other, game)
 	}.bind(game), 500*game.stepRate);
 	if (!game.running) game.timeouts["RoxTime"].Pause();
 }
-
-
