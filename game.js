@@ -252,19 +252,23 @@ Game.prototype.Resume = function()
 		if (typeof(this.timeouts["AddCloud"]) === "undefined")
 		{
 			this.AddTimeout("AddCloud", function() {this.AddCloud()}.bind(this), this.stepRate*(1000 + Math.random()*2000));
-
 		}
 
-
-		if (!this.running)
-		{
-			this.timeouts["AddCloud"].Pause();
-			this.timeouts["AddEnemy"].Pause();
+		if (!this.running) {
+			this.PauseExceptMainLoop();
 		}
 	}
 	this.canvas.Clear(this.GetColour());
 
 
+}
+
+Game.prototype.PauseExceptMainLoop = function () {
+	Object.keys(this.timeouts).forEach(timeoutName => {
+		if (timeoutName != "MainLoop") {
+			this.timeouts[timeoutName].Pause();
+		}
+	})
 }
 
 Game.prototype.Start = function(level)
@@ -705,8 +709,10 @@ Game.prototype.AddEnemy = function()
 	this.AddTimeout("AddEnemy", function() {
 		this.AddEnemy()
 	}.bind(this), enemyTimeout);
-	if (!this.running)
-		this.timeouts["AddEnemy"].Pause();
+	// Pause all timeouts
+	if (!this.running) {
+		this.PauseExceptMainLoop();
+	}
 }
 /**
  * Add a Cloud and then set a timeout to call AddCloud again
@@ -992,8 +998,11 @@ Game.prototype.ClearStepAndDraw = function()
 			else
 			{
 				this.entities[i].Step(this);
-				if (this.entities[i].angle != 0)
+				/*
+				if (this.entities[i].angle != 0) {
 					console.debug("Angle is " + String(this.entities[i].angle));
+				}
+				*/
 			}
 
 			if (!this.entities[i].alive)
