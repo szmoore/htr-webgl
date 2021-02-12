@@ -152,6 +152,7 @@ function Game(canvas, audio, document, multiplayer)
 	this.running = false;
 	this.runTime = 0;
 	this.entities = [];
+	this.unloadedEntities = [];
 	this.playedTutorial = false;
 
 	this.webSockets = [];
@@ -749,6 +750,14 @@ Game.prototype.AddHat = function()
  */
 Game.prototype.AddEntity = function(entity)
 {
+	if (this.canvas.AreImagesLoaded() !== true && entity.GetName() !== "SFX") {
+		console.debug(`${entity.GetName()} not yet loaded (probably)`);
+		this.PauseExceptMainLoop();
+		this.unloadedEntities.push(entity);
+		return;
+	}
+
+
 	for (var i = 0; i < this.entities.length; ++i)
 	{
 		if (!this.entities[i])
@@ -765,6 +774,7 @@ Game.prototype.AddEntity = function(entity)
 	{
 		this.entityCount[entity.GetName()] += 1;
 	}
+	console.debug(`Adding new ${entity.GetName()}`);
 	this.entities.push(entity);
 	return entity;
 }
@@ -1075,6 +1085,16 @@ Game.prototype.MainLoop = function()
 	// Skip if paused
 	if (!this.running)
 		return;
+
+	// If all entities loaded, then push the unloaded entities
+	if (this.canvas.AreImagesLoaded() && this.unloadedEntities.length > 0) {
+		console.debug(`Finished loading images, add ${this.unloadedEntities.length} entities`)
+		this.entities = this.entities.concat(this.unloadedEntities)
+		this.unloadedEntities = [];
+		Object.values(this.timeouts).forEach(timeout => {
+			timeout.Resume();
+		})
+	}
 
 	// Try to start music if it isn't playing
 	if (this.audio && this.audio.paused && this.settings.playMusic) {

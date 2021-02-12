@@ -209,7 +209,7 @@ Canvas.prototype.LoadTexture = function(imagePath, onload)
 {
 	if (imagePath in this.textures)
 	{
-		console.debug("texture", imagePath," already loaded");
+		// console.debug("texture", imagePath," already loaded");
 		if (onload) {setTimeout(onload, 0)}
 		return this.textures[imagePath];
 	}
@@ -224,6 +224,7 @@ Canvas.prototype.LoadTexture = function(imagePath, onload)
 	{
 		var c = this;
 		image.onload = function() {
+			console.debug(`${imagePath} loaded`)
 			c.HandleTextureLoaded(c.textures[imagePath]);
 			onload();
 		};
@@ -233,6 +234,7 @@ Canvas.prototype.LoadTexture = function(imagePath, onload)
 		var c = this;
 		image.onload = function()
 		{
+			console.debug(`${imagePath} loaded`)
 			c.HandleTextureLoaded(c.textures[imagePath])
 		};
 	}
@@ -413,4 +415,10 @@ Canvas.prototype.Clear = function(colour)
 		this.ctx.fillStyle = this.fillStyle;
 		this.ctx.fillRect(0,0,this.width,this.height);
 	}
+}
+
+Canvas.prototype.AreImagesLoaded = function() {
+	return Object.values(this.textures).reduce((completed, currentTexture) => {
+		return (completed && currentTexture.img.complete)
+	}, true);
 }
