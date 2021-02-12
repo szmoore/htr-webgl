@@ -1,12 +1,14 @@
 htr-webgl
 =========
 
-Humphrey The Rabbit: WebGL Version
+Humphrey The Rabbit: WebGL[^webgl] Version
 
-Currently located at http://rabbitgame.net
+Currently located at https://rabbitgame.net
 
-Except when it isn't because HOW DO I DNS???
+Except when it isn't because DNS is down or the server is down.
 
-In that case it is at http://rabbitgame.ucc.asn.au
+Originally developed for Iceweasel 17.0.10
 
-Best played in Iceweasel 17.0.10
+Tested in Firefox 78.3.0
+
+[^webgl]: Hasn't actually used WebGL for about a century.
