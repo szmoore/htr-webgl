@@ -186,7 +186,8 @@ VictoryBox.prototype.HandleCollision = function(other, instigator, game) {
 			game.AddEntity(this.portalEffect2);
 		}
 		other.Hide();
-		other.position[0] = 100; //hack
+		// Hack to prevent enemies from killing the player
+		other.position[0] = 100;
 		other.position[1] = 100;
 		this.Hide();
 		return true;

@@ -483,7 +483,6 @@ Entity.prototype.Draw = function(canvas, simplified)
 				ctx.font = "6pt Mono";
 				ctx.textAlign = "center";
 				ctx.strokeText(this.GetName() || "?", 0, -h/4);
-				ctx.strokeText("<load>", 0, h/4);
 				ctx.strokeStyle = oldStroke;
 				ctx.font = oldFont;
 				ctx.textAlign = oldAlign;

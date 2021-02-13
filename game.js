@@ -150,6 +150,7 @@ function Game(canvas, audio, document, multiplayer)
 	}
 
 	this.running = false;
+	this.blockResume = false;  // Used to prevent player interactions during level transition
 	this.runTime = 0;
 	this.entities = [];
 	this.unloadedEntities = [];
@@ -181,6 +182,11 @@ Game.prototype.AddTimeout = function(name, onTimeout, wait)
 
 Game.prototype.Pause = function(message,image	, colour)
 {
+	if (!this.running) {
+		console.debug('Pause requested but game not running...');
+		return;
+	}
+
 	// console.debug(`Pause requested document focused: ${window.document.hasFocus()}`);
 	delete this.stepTime;
 	this.running = false;
@@ -214,11 +220,15 @@ Game.prototype.Pause = function(message,image	, colour)
 }
 
 
-Game.prototype.Resume = function()
+Game.prototype.Resume = function(forceUnblock)
 {
+	if (forceUnblock) {
+		this.blockResume = false;
+	}
 	// console.debug(`Resume requested, document focused: ${window.document.hasFocus()}`);
-	if (this.running)
+	if (this.running || this.blockResume) {
 		return;
+	}
 
 	// Don't resume when settings are open
 	if (!this.settingsElement.hidden) {
@@ -238,6 +248,7 @@ Game.prototype.Resume = function()
 	}
 
 	if (this.audio && this.settings.playMusic) {
+		this.audio.muted = false;
 		this.audio.play().catch(err => {});
 	}
 
@@ -500,6 +511,7 @@ Game.prototype.ChooseAdvert = function()
  */
 Game.prototype.NextLevel = function(skipAd, from)
 {
+	this.blockResume = true;
 	if (!this.romanticMode) {
 		this.Pause("Loading...");
 	}
@@ -639,7 +651,7 @@ Game.prototype.NextLevel = function(skipAd, from)
 		this.canvas.SplashScreen(boss, taunt, colour, function() {
 			this.AddTimeout("Level"+String(this.level),
 				function() {
-					this.Resume();
+					this.Resume(true);
 					//this.MultiplayerWait("level");
 					if (this.level == 0) // Hacky but more concise
 						this.Tutorial("start");
@@ -651,7 +663,7 @@ Game.prototype.NextLevel = function(skipAd, from)
 		this.canvas.Clear([0.8,0,0]);
 		this.AddTimeout("Level"+String(this.level),
 				function() {
-					this.Resume();
+					this.Resume(true);
 				}.bind(this),
 		2000);
 
@@ -806,13 +818,13 @@ Game.prototype.KeyDown = function(event)
 
 	if (event.keyCode == 32 || event.keyCode == 27) // space or escape
 	{
-		if (this.running)
+		if (this.running && !this.player.hidden)
 		{
 			this.Pause("Paused");
 			this.playerPaused = this.playerID;
 			this.Message("Focus tab, press any key");
 		}
-		else if (this.player && this.player.alive)
+		else if (this.player && this.player.alive && !this.player.hidden)
 		{
 			if (this.playerPaused == this.playerID)
 			{
@@ -867,7 +879,7 @@ Game.prototype.TouchDown = function(event)
 	if (event.preventDefault) {
 		event.preventDefault()
 	}
-	if (!this.running && this.player && this.player.alive
+	if (!this.running && this.player && this.player.alive && !this.player.hidden
 		&& (!this.multiplayer || this.multiplayer.length <= 1))
 	{
 		this.Resume();
