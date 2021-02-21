@@ -671,6 +671,39 @@ Game.prototype.NextLevel = function(skipAd, from)
 }
 
 /**
+ * Add a Fox
+ */
+Game.prototype.AddFox = function() {
+	var targetPlayer = this.GetTargetPlayer();
+	var enemy = new Fox([targetPlayer.position[0], 1],[0,0], this.gravity, this.canvas)
+	this.AddEntity(enemy);
+	return enemy;
+}
+
+/**
+ * Add a Box
+ */
+Game.prototype.AddBox = function() {
+	var targetPlayer = this.GetTargetPlayer();
+	var enemy = new Box([targetPlayer.position[0], 1],[0,0], this.gravity, this.canvas)
+	enemy.angle = [0, Math.PI/2, Math.PI, 3*Math.PI/2][rand() % 4]
+	// hack for Christmas and Romantic Mode)
+	if (this.xmasMode === true)
+	{
+		enemy.frame = this.canvas.LoadTexture("data/box/box_xmas"+enemy.index+".gif");
+		enemy.damagedFrame = enemy.frame; // you can't hurt the merry
+	}
+	else if (this.romanticMode === true)
+	{
+		enemy.frame = this.canvas.LoadTexture("data/box/box_valentine.gif");
+		enemy.damagedFrame = enemy.frame; // you can't hurt the lovely
+		enemy.angle = [0, Math.PI/4, Math.PI/2, 3*Math.PI/4, Math.PI, 5*Math.PI/4, 3*Math.PI/2,7*Math.PI/4][rand() % 4]
+	}
+	this.AddEntity(enemy);
+	return enemy;
+}
+
+/**
  * Add an Enemy and then set a timeout to call AddEnemy again
  * This should only be called once at the start of a level
  */
@@ -678,33 +711,16 @@ Game.prototype.AddEnemy = function()
 {
 
 	var enemy;
-	var targetPlayer = this.GetTargetPlayer();
 	this.spawnedEnemies += 1;
 	if (this.level > 0 && this.level < 5 &&
 		(this.spawnedEnemies % (6-Math.min(4,this.level))) == 0 &&
 		(!this.entityCount["Fox"] || this.entityCount["Fox"] < 2+this.level))
 	{
-		enemy = new Fox([targetPlayer.position[0], 1],[0,0], this.gravity, this.canvas)
-
+		enemy = this.AddFox();
 	}
 	else
 	{
-		enemy = new Box([targetPlayer.position[0], 1],[0,0], this.gravity, this.canvas)
-		enemy.angle = [0, Math.PI/2, Math.PI, 3*Math.PI/2][rand() % 4]
-		// hack for Christmas and Romantic Mode)
-		if (this.xmasMode === true)
-		{
-			enemy.frame = this.canvas.LoadTexture("data/box/box_xmas"+enemy.index+".gif");
-			enemy.damagedFrame = enemy.frame; // you can't hurt the merry
-		}
-		else if (this.romanticMode === true)
-		{
-			enemy.frame = this.canvas.LoadTexture("data/box/box_valentine.gif");
-			enemy.damagedFrame = enemy.frame; // you can't hurt the lovely
-			enemy.angle = [0, Math.PI/4, Math.PI/2, 3*Math.PI/4, Math.PI, 5*Math.PI/4, 3*Math.PI/2,7*Math.PI/4][rand() % 4]
-		}
-
-
+		enemy = this.AddBox();
 	}
 
 	if (this.spawnedEnemies % 10 == 0)
@@ -718,7 +734,6 @@ Game.prototype.AddEnemy = function()
 	}
 
 	console.debug(`Created enemy type ${enemy.GetName()}`)
-	this.AddEntity(enemy);
 	this.AddTimeout("AddEnemy", function() {
 		this.AddEnemy()
 	}.bind(this), enemyTimeout);

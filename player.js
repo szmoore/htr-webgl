@@ -105,7 +105,12 @@ Player.prototype.CollisionActions["Box"] = function(other, instigator, game)
 
 	if (this.IsStomping(other))
 	{
-		other.health -= 1;
+		var stompDamage = Math.min(other.health / 2, other.velocity[1] - this.velocity[1]) + 1.0;
+		other.health -= Math.max(0, stompDamage);
+		if (other.health <= 0) {
+			other.Die("stomped", this, game);
+			return false;
+		}
 		return true;
 	}
 
@@ -335,43 +340,4 @@ Player.prototype.GainLife = function(life, game)
 	game.GainLife();
 	//if (g_identityCookie)
 	//	this.PostStats("Gain life",game)
-}
-
-
-
-function Hat(position, velocity, acceleration, canvas, game)
-{
-	Entity.call(this, position, velocity, acceleration, canvas, "");
-	this.frame = canvas.LoadTexture("data/hats/hat1_big.gif");
-	this.name = "Hat";
-	this.ignoreCollisions["Roof"] = true;
-	this.ignoreCollisions["Cloud"] = true;
-	if (game)
-		game.Message("Get the hat!");
-}
-Hat.prototype = Object.create(Entity.prototype);
-Hat.prototype.constructor = Hat;
-Hat.prototype.CollisionActions = {};
-
-
-Hat.prototype.CollisionActions["Humphrey"] = function(other, instigator, game)
-{
-	other.GainLife(this, game);
-	game.UpdateDOM(other);
-	this.Die(other.GetName(), other, game);
-}
-
-Hat.prototype.CollisionActions["Hat"] = function(other,instigator, game)
-{
-	if (instigator)
-	{
-		this.position[1] = other.position[1] + 1.2*this.Height();
-	}
-}
-
-Hat.prototype.HandleCollision = function(other, instigator, game)
-{
-	Entity.prototype.HandleCollision.call(this, other, instigator, game);
-	if (other.GetName() === "Floor")
-		this.Die(this.GetName(), this, game);
 }
