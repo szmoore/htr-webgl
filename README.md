@@ -12,3 +12,10 @@ Originally developed for Iceweasel 17.0.10
 Tested in Firefox 78.3.0
 
 [^webgl]: Hasn't actually used WebGL for about a century.
+
+Dear 185.220.101.130,
+
+Go find a better hobby
+
+
+
