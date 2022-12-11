@@ -8,6 +8,7 @@ function Player(position, velocity, acceleration, canvas, spritePath)
 	Entity.call(this, position, velocity, acceleration, canvas, spritePath);
 	this.stomp = 0.2;
 	this.lives = 0;
+	this.jumpPeriod = 0;
 	this.name = "Humphrey";
 	this.spawn = [];
 	for (var i = 0; i < position.length; ++i)
@@ -34,11 +35,12 @@ Player.prototype.HandleKeys = function(keys)
 		//console.debug("Right");
 	}
 
-	if (this.canJump >= 0 && (keys[38] || keys[87])) // up or W
+	if (this.canJump > 0 && (keys[38] || keys[87]) && (this.step - this.lastJumpStep) >= this.jumpPeriod) // up or W
 	{
 		this.velocity[1] = this.jumpSpeed;
-		this.canJump = 0;
-		//console.debug("Jump");
+		this.canJump -= 1;
+		this.lastJumpStep = this.step;
+		console.debug(`Jump ${this.canJump}`);
 	}
 	if ((keys[40] || keys[83]) && this.velocity[1] > -5) // down or S
 		this.velocity[1] -= this.stomp;

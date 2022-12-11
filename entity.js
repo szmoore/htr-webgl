@@ -32,6 +32,11 @@ function Entity(position, velocity, acceleration, canvas, spritePath)
 	this.solid = true;
 
 	this.distanceMoved = 0;
+	// Time in steps the Entity has been alive
+	this.step = 0;
+	// Time when jumped
+	this.lastJumpStep = 0;
+	this.jumpPeriod = 0;
 
 	if (canvas)
 	{
@@ -222,6 +227,8 @@ Entity.prototype.Step = function(game)
 	{
 		for (var i =0; i < this.position.length; ++i) this.lastPosition[i] = this.position[i];
 	}
+	// Update step number, for timing purposes.
+	this.step += 1
 
 }
 
