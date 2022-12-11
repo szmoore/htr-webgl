@@ -62,8 +62,9 @@ Box.prototype.HandleCollision = function(other, instigator, game)
 
 	if (other.GetName() == "Box" && other.Top() > this.Top())
 	{
-
-		this.health -= Math.min(1.0, Math.abs(Math.random()*other.velocity[1]));
+		// Ensure boxes always take 2 hits minimum to open
+		this.health -= Math.min(0.99, Math.abs(Math.random()*other.velocity[1]));
+		this.frame = this.damagedFrame; // It's always damaged, change frame immediately i guess?
 		if (this.health <= 0)
 			this.Die();
 	}
@@ -80,7 +81,7 @@ Box.prototype.HandleCollision = function(other, instigator, game)
 Box.prototype.Die = function(reason, other, game) {
 	if (game && other && other === game.player) {
 		game.SpawnEntity(Carrot, this)
-		other.velocity[1] = -0.15*other.velocity[1];  // Bounce!
+		other.velocity[1] = -0.3*other.velocity[1];  // Bounce!
 	}
 	return Entity.prototype.Die.call(this, reason, other, game);
 }

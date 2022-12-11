@@ -392,7 +392,6 @@ Game.prototype.SetLevel = function(level)
 	for (var i = 0; i < Math.min(this.level*2,6); ++i) {
 		this.AddHat();
 	}
-	this.AddCarrot();
 
 
 	if (this.level == 2)
@@ -726,7 +725,11 @@ Game.prototype.AddEnemy = function()
 
 	if (this.spawnedEnemies % 10 == 0)
 	{
-		this.AddHat();
+		if (Math.random() >= 0.25) {
+			this.AddHat();
+		} else {
+			this.AddCarrot();
+		}
 	}
 
 	var enemyTimeout = this.stepRate*300/Math.min(Math.pow(this.level,0.5),1);

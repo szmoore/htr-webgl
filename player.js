@@ -8,7 +8,7 @@ function Player(position, velocity, acceleration, canvas, spritePath)
 	Entity.call(this, position, velocity, acceleration, canvas, spritePath);
 	this.stomp = 0.2;
 	this.lives = 0;
-	this.jumpPeriod = 0;
+	this.jumpPeriod = 13;
 	this.name = "Humphrey";
 	this.spawn = [];
 	for (var i = 0; i < position.length; ++i)

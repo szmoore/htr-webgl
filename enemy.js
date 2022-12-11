@@ -27,11 +27,12 @@ Enemy.prototype.CollisionActions = {}; // this is slightly whack
  */
 Enemy.prototype.TryToJump = function()
 {
-	if (this.canJump <= 0)
+	if (this.canJump <= 0 || (this.step - this.lastJumpStep) < this.jumpPeriod)
 		return;
 
 	this.canJump -= 1;
 	this.velocity[1] = this.jumpSpeed;
+	this.lastJumpStep = this.step;
 }
 
 /**
