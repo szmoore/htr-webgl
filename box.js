@@ -81,7 +81,7 @@ Box.prototype.Die = function(reason, other, game) {
 	if (game && other && other === game.player) {
 		var carrot = new Carrot(this.position, this.velocity, this.acceleration, game.canvas, game);
 		game.AddEntity(carrot);
-		other.velocity[1] = -0.75*other.velocity[1];  // Bounce!
+		other.velocity[1] = -0.3*other.velocity[1];  // Bounce!
 	}
 	return Entity.prototype.Die.call(this, reason, other, game);
 }
