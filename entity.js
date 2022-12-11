@@ -21,7 +21,7 @@ function Entity(position, velocity, acceleration, canvas, spritePath)
 		this.lastPosition[i] = this.position[i];
 	this.alive = true;
 
-	this.canJump = true;
+	this.canJump = 1;  // number of times allowed to jump
 	this.speed = 0.7;
 	this.stomp = 0.2;
 	this.jumpSpeed = 1.2;
@@ -332,10 +332,10 @@ Entity.prototype.CanJump = function(other)
 {
 	if (typeof(this.canJump) !== "undefined")
 	{
-		if (!other.canJump)
-			this.canJump = (other.Bottom() <= this.Top());
+		if (other.canJump <= 0)
+			this.canJump = 1*(other.Bottom() <= this.Top());
 		else
-			this.canJump = (this.Top() > other.Top());
+			this.canJump = 1*(this.Top() > other.Top());
 	}
 }
 
@@ -366,7 +366,7 @@ Entity.prototype.Bounce = function(n, reflect)
 		//this.lastPosition[j] = this.position[j];
 	}
 //	alert("velocity: ["+this.velocity+"]");
-	this.canJump = (typeof(this.canJump) !== "undefined")
+	this.canJump = 1*(typeof(this.canJump) !== "undefined")
 }
 
 /**
@@ -623,6 +623,7 @@ function Wall(bounds, name)
 	// I guess the Right (TM) way is to have a Mobile() entity type
 	//	So I don't have to delete random things. But hey it's Javascript.
 	delete this.canJump; // walls can't jump!
+	// wait, why can't walls jump, but clouds can?
 }
 Wall.prototype = Object.create(Entity.prototype);
 

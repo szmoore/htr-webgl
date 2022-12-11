@@ -27,10 +27,10 @@ Enemy.prototype.CollisionActions = {}; // this is slightly whack
  */
 Enemy.prototype.TryToJump = function()
 {
-	if (!this.canJump)
+	if (this.canJump <= 0)
 		return;
 
-	this.canJump = false;
+	this.canJump -= 1;
 	this.velocity[1] = this.jumpSpeed;
 }
 
@@ -170,7 +170,7 @@ function Fox(position, velocity, acceleration, canvas)
 	this.name = "Fox";
 	this.speed = 0.3;
 	this.jumpSpeed = 0.6;
-	this.canJump = false;
+	this.canJump = 0;
 }
 Fox.prototype = Object.create(Enemy.prototype);
 Fox.prototype.constructor = Fox;
@@ -184,7 +184,7 @@ function Ox(position, velocity, acceleration, canvas)
 
 	this.health = 7;
 	this.speed = 0.25;
-	this.canJump = true;
+	this.canJump = 1;
 	this.jumpSpeed = 0.5;
 	this.danceWidths = 2;
 	this.jumpWidths = 2;
@@ -246,7 +246,7 @@ function Wolf(position, velocity, acceleration, canvas)
 
 	this.health = 5;
 	this.speed = 0.4;
-	this.canJump = true;
+	this.canJump = 1;
 	this.jumpSpeed = 0.7;
 
 	this.jumpWidths = 3;
@@ -291,7 +291,7 @@ function Rox(position, velocity, canvas)
 
 	this.health = 5;
 	this.speed = 0.45;
-	this.canJump = true;
+	this.canJump = 1;
 	this.jumpSpeed = 0.4;
 	this.damping = 0.5;
 	this.jumpWidths = 3;

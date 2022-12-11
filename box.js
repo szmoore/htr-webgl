@@ -141,7 +141,8 @@ Cloud.prototype.CloudCollisionHandler = function(other, instigator, game)
 		this.position[1] += this.velocity[1]*this.delta/2000;
 		return false;
 	}
-	this.canJump = true;
+	// Wait, why can clouds jump again?
+	this.canJump = 1;
 	return true;
 }
 

@@ -57,9 +57,9 @@ Carrot.prototype.CollisionActions = {};
 
 Carrot.prototype.CollisionActions["Humphrey"] = function(other, instigator, game)
 {
-	if (other.canJump === false) {
-        other.canJump = true;
-    }
+	if (other.canJump >= 0) {
+		other.canJump = 1;
+	}
 	game.UpdateDOM(other);
 	this.Die(other.GetName(), other, game);
 }

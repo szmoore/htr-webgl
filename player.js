@@ -34,10 +34,10 @@ Player.prototype.HandleKeys = function(keys)
 		//console.debug("Right");
 	}
 
-	if (this.canJump && (keys[38] || keys[87])) // up or W
+	if (this.canJump >= 0 && (keys[38] || keys[87])) // up or W
 	{
 		this.velocity[1] = this.jumpSpeed;
-		this.canJump = false;
+		this.canJump = 0;
 		//console.debug("Jump");
 	}
 	if ((keys[40] || keys[83]) && this.velocity[1] > -5) // down or S
@@ -55,7 +55,7 @@ Player.prototype.Step = function(game)
 		delete this.hat;
 	}
 	// Hide the player's wings if they can't jump, or if they are wall running
-	this.wings.hidden = (this.canJump !== true || this.angle != 0);
+	this.wings.hidden = (this.canJump <= 0 || this.angle != 0);
 	this.wings.angle = this.angle;
 }
 
