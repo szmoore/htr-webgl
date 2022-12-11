@@ -339,10 +339,17 @@ Entity.prototype.CanJump = function(other)
 {
 	if (typeof(this.canJump) !== "undefined")
 	{
+		// If the other entity is capable of jumping, then it may either cancel or provide a jump to the current entity:
 		if (other.canJump <= 0)
-			this.canJump = 1*(other.Bottom() <= this.Top());
+		{
+			// other can't jump; then this can jump as long as any part of the other is below it
+			this.canJump = (other.Bottom() <= this.Top()) * Math.max(1, this.canJump)
+		}
 		else
-			this.canJump = 1*(this.Top() > other.Top());
+		{
+			// other can jump; then this can jump only if the *entire* of the other is below it
+			this.canJump = (this.Top() > other.Top()) * Math.max(1, this.canJump)
+		}
 	}
 }
 
