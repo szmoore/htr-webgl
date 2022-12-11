@@ -57,7 +57,7 @@ Carrot.prototype.CollisionActions = {};
 
 Carrot.prototype.CollisionActions["Humphrey"] = function(other, instigator, game)
 {
-	other.canJump = Math.min(other.canJump + 1, 2)
+	other.canJump = Math.min(other.canJump + 10, 10)
 	game.UpdateDOM(other);
 	this.Die(other.GetName(), other, game);
 }

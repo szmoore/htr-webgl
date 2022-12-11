@@ -392,6 +392,7 @@ Game.prototype.SetLevel = function(level)
 	for (var i = 0; i < Math.min(this.level*2,6); ++i) {
 		this.AddHat();
 	}
+	this.AddCarrot();
 
 
 	if (this.level == 2)
@@ -773,6 +774,19 @@ Game.prototype.AddHat = function()
 }
 
 /**
+ * Add a Carrot
+ */
+Game.prototype.AddCarrot = function()
+{
+	if (this.romanticMode) {
+		return this.AddEnemy();
+	}
+	var targetPlayer = this.GetTargetPlayer();
+	var carrot = new Carrot([targetPlayer.position[0], 1], [0,0], [0.8*this.gravity[0], 0.8*this.gravity[1]], this.canvas);
+	this.AddEntity(carrot);
+}
+
+/**
  * Add an Entity; optimises use of this.entities array
  */
 Game.prototype.AddEntity = function(entity)
@@ -804,6 +818,15 @@ Game.prototype.AddEntity = function(entity)
 	console.debug(`Adding new ${entity.GetName()}`);
 	this.entities.push(entity);
 	return entity;
+}
+
+/**
+ * Spawn new entity (given its constructor function) at another entity's position
+ */
+Game.prototype.SpawnEntity = function(constructor, other)
+{
+	var entity = new constructor(other.position, other.velocity, other.acceleration, this.canvas, this);
+	this.AddEntity(entity);
 }
 
 /**
