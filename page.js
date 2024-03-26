@@ -75,10 +75,26 @@ function InitPage(game)
 	}
 
 	// Look how smart I am, detecting (some) adblockers
+	// (This method used to work because having "ad" anywhere in the string was enough to block the element)
 	g_usingAdblocker = document.getElementById("br0whyuh8ad$$$s") ? false : true;
 	if (g_usingAdblocker) {
 		console.debug("External adblocker detected");
 		console.debug("That's cool, it's not like anyone pays me for them anyway");
+	} else {
+		// It seems people don't just detect "ad" literally anywhere in the DOM anymore
+		// maybe because it got too many false positives?
+		// Anyway this method might work. If it has time to load before the game. Maybe.
+		var image = new Image();
+		image.onload = () => {g_usingAdblocker = false};
+		image.onerror = () => {
+			console.debug("Detected adblocker from failed image load");
+			g_usingAdblocker = true;
+		};
+		image.oncancel = image.onerror;
+		image.onabort = image.onerror;
+		image.onsecuritypolicyviolation = image.onerror;
+		image.src = "data/adverts/adblock.svg"
+		// NOTE: There is also a fallback adblock detector block in the SplashScreen callback
 	}
 
 	document.getElementById("gameAndUI").style.display = "block";

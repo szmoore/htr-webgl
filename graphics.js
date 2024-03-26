@@ -138,6 +138,7 @@ Canvas.prototype.SplashScreen = function(imagePath, text, backColour, onload)
 	if (!backColour) backColour = [0,0,0,0.9];
 	screen.scale = [0.6, 0.6];
 	screen.bounds = {min:[-this.width/2, -this.height/2], max:[this.width/2, this.height/2]};
+	var altText = "don't you have anything better to do?";
 
 	var f = () => {
 		console.debug("Splash for", imagePath, onload);
@@ -163,7 +164,7 @@ Canvas.prototype.SplashScreen = function(imagePath, text, backColour, onload)
 
 			this.ctx.fillRect(0,0,this.width, this.height);
 
-			if (screen.frame)
+			if (screen.frame && screen.frame.img && screen.frame.img.width && screen.frame.img.height)
 			{
 				var drawWidth = screen.frame.img.width;
 				var drawHeight = screen.frame.img.height;
@@ -174,6 +175,17 @@ Canvas.prototype.SplashScreen = function(imagePath, text, backColour, onload)
 					drawHeight /= scale;
 				}
 				this.ctx.drawImage(screen.frame.img, this.width/2 - drawWidth/2, this.height/2 - drawHeight/2, drawWidth, drawHeight);
+			} else {
+				this.Clear();
+				// This should freak them out enough to turn off the adblocker
+				text = "Critical failure loading essential resource!";
+				text += "🔥🔥🔥"; // Test if they support UTF-8 or not
+				console.error(text)
+				// (Or tell me "your website is broken!")
+				// Hacky, but probably does the same thing the adblocker does...
+				g_usingAdblocker |= (imagePath && imagePath.indexOf("advert") >= 0);
+				altText = "(plz consider donating $50USD a month for quality humphrey the rabbit content without ads)"
+				console.warn(altText)
 			}
 			this.Text(text);
 
@@ -181,7 +193,7 @@ Canvas.prototype.SplashScreen = function(imagePath, text, backColour, onload)
 			this.ctx.font = String(fontSize)+"px Comic Sans";
 			this.ctx.fillStyle = "rgba(1,0,0,0.1)";
 			this.ctx.beginPath();
-			this.ctx.fillText("don't you have anything better to do?",this.width/16, 31*this.height/32	, 14*this.width/16);
+			this.ctx.fillText(altText,this.width/16, 31*this.height/32	, 14*this.width/16);
 		}
 
 
@@ -203,7 +215,11 @@ Canvas.prototype.SplashScreen = function(imagePath, text, backColour, onload)
 
 
 /**
- * Load texture
+ * Load texture with onload callback function
+ * NOTE: onload is also called if the image fails to load, or pretty much any other error
+ *
+ * I promise to oneday rewrite my entire codebase to use promises
+ * .catch(exception) => {NEVER}
  */
 Canvas.prototype.LoadTexture = function(imagePath, onload)
 {
@@ -239,6 +255,14 @@ Canvas.prototype.LoadTexture = function(imagePath, onload)
 		};
 	}
 
+	// Which of these are actually needed? Screw it just put them all
+	image.onerror = onload;
+	image.onabort = onload;  // I'm assuming Abort and Cancel are... "different" in a subtle and important way
+	image.oncancel = onload;
+	// Bad web developer pickup line #10284:
+	//  "Baby I'll let you violate my security policy any time you want"
+	image.onsecuritypolicyviolation = onload;
+
 	image.src = imagePath;
 	return this.textures[imagePath];
 }
@@ -248,6 +272,10 @@ Canvas.prototype.LoadTexture = function(imagePath, onload)
  */
 Canvas.prototype.HandleTextureLoaded = function(texData)
 {
+	if (!texData) {
+		console.warn("Skipped handling of missing texture data");
+		return;
+	}
 	image = texData.img;
 	texture = texData.tex;
  	if (this.gl && texture)
