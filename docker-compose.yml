@@ -1,0 +1,9 @@
+services:
+  # live development.
+  dev:
+    image: nginx:latest
+    ports:
+      # container:host
+      - 80:80
+    volumes:
+      - ./:/usr/share/nginx/html
