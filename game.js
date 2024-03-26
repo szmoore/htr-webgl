@@ -177,7 +177,7 @@ Game.prototype.AddTimeout = function(name, onTimeout, wait)
 {
 	if (!this.timeouts)
 		this.timeouts = {};
-	new Timeout(name, onTimeout, wait, this);
+	return new Timeout(name, onTimeout, wait, this);
 }
 
 Game.prototype.Pause = function(message,image	, colour)
@@ -741,14 +741,13 @@ Game.prototype.AddEnemy = function()
 	}
 
 	console.debug(`Created enemy type ${enemy.GetName()} - next AddEnemy in ${enemyTimeout}`)
-	this.AddTimeout("AddEnemy", function() {
+	var timeoutInstance = this.AddTimeout("AddEnemy", function() {
 		this.AddEnemy()
 	}.bind(this), enemyTimeout);
 	// Pause all timeouts
-	if (!this.running) {
-		// Um... why did we need to do it like this?
-		console.debug("Game not running after AddEnemy; force PauseExceptMainLoop");
-		this.PauseExceptMainLoop();
+	if (!this.running && timeoutInstance) {
+		console.debug("Game not running after AddEnemy; force pause the timeout");
+		timeoutInstance.Pause()
 	}
 }
 /**
