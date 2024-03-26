@@ -186,8 +186,7 @@ Game.prototype.Pause = function(message,image	, colour)
 		console.debug('Pause requested but game not running...');
 		return;
 	}
-
-	// console.debug(`Pause requested document focused: ${window.document.hasFocus()}`);
+	console.debug(`Pause requested document focused: ${window.document.hasFocus()}`);
 	delete this.stepTime;
 	this.running = false;
 	for (var t in this.timeouts)
@@ -217,21 +216,25 @@ Game.prototype.Pause = function(message,image	, colour)
 	} else {
 		this.canvas.Clear([1,0,0,1])
 	}
+	// We didn't have backticks in 2014
+	console.debug(`Pause completed. running=${this.running}`)
 }
 
 
 Game.prototype.Resume = function(forceUnblock)
 {
+	console.debug(`Resume requested, document focused: ${window.document.hasFocus()}`);
 	if (forceUnblock) {
 		this.blockResume = false;
 	}
-	// console.debug(`Resume requested, document focused: ${window.document.hasFocus()}`);
 	if (this.running || this.blockResume) {
+		console.debug("Resume was blocked. Remain paused")
 		return;
 	}
 
 	// Don't resume when settings are open
 	if (!this.settingsElement.hidden) {
+		console.debug("Resume blocked by settings panel.")
 		return;
 	}
 
@@ -271,7 +274,7 @@ Game.prototype.Resume = function(forceUnblock)
 		}
 	}
 	this.canvas.Clear(this.GetColour());
-
+	console.debug(`Resume completed. running=${this.running}`)
 
 }
 
@@ -737,12 +740,14 @@ Game.prototype.AddEnemy = function()
 		enemyTimeout -= (this.runTime / 100);
 	}
 
-	console.debug(`Created enemy type ${enemy.GetName()}`)
+	console.debug(`Created enemy type ${enemy.GetName()} - next AddEnemy in ${enemyTimeout}`)
 	this.AddTimeout("AddEnemy", function() {
 		this.AddEnemy()
 	}.bind(this), enemyTimeout);
 	// Pause all timeouts
 	if (!this.running) {
+		// Um... why did we need to do it like this?
+		console.debug("Game not running after AddEnemy; force PauseExceptMainLoop");
 		this.PauseExceptMainLoop();
 	}
 }
@@ -1212,25 +1217,36 @@ Game.prototype.MainLoop = function()
 		//	 don't give me that crap about callbacks being more elegant)
 
 		// ^ Leaving that comment from 2014 because in 2020 Javascript PROMISES to be better
+
+		// Using "var" JUST because someone told me "var is deprecated" but it isn't
+		// what's next, "operator assignment is deprecated" ?
+		var restartLevel = function() {
+			console.debug("Restarting level...");
+			this.SetLevel(this.level);
+			this.Resume();
+		}.bind(this)  // Using bind because if I change ONE callback to use arrow syntax, I will have to change all of them, so I'm in a BIND
+
+		// As much as I said I hated Javascript in the comments at the time,
+		// I actually prefer 2014 Javascript to 2024 Javascript, it has a charm to it.
+		//  An ugly charm to be sure, but it's not so stuck up about itself.
+
 		if (!this.settings.showAdverts)
 		{
 			deathCall = function() {
-				this.AddTimeout("Restart", function() {
-					this.SetLevel(this.level);
-					this.Resume();
-				}.bind(this),1000);
+				console.debug("Died. Restart level without advert.");
+				this.AddTimeout("Restart", restartLevel, 1000);
 			}
 		}
 		else
 		{
 			deathCall = function() {
+				console.debug("Died. Show advert then Restart level.");
 				this.AddTimeout("Advert", function() {
+					console.debug("Died. Begin advert splash screen")
 					this.canvas.SplashScreen(this.ChooseAdvert(), "",[1,1,1,1],
 					function() {
-							this.AddTimeout("Restart", function() {
-							this.SetLevel(this.level);
-							this.Resume();
-						}.bind(this),4000);
+						console.debug("Splashed advert. Restart Level.");
+						this.AddTimeout("Restart", restartLevel ,4000);
 					}.bind(this));
 				}.bind(this), 1000);
 			}
