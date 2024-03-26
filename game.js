@@ -268,10 +268,11 @@ Game.prototype.Resume = function(forceUnblock)
 		{
 			this.AddTimeout("AddCloud", function() {this.AddCloud()}.bind(this), this.stepRate*(1000 + Math.random()*2000));
 		}
+	}
 
-		if (!this.running) {
-			this.PauseExceptMainLoop();
-		}
+	if (!this.running) {
+		// Do we need this check?
+		this.PauseExceptMainLoop();
 	}
 	this.canvas.Clear(this.GetColour());
 	console.debug(`Resume completed. running=${this.running}`)
@@ -741,10 +742,11 @@ Game.prototype.AddEnemy = function()
 	}
 
 	console.debug(`Created enemy type ${enemy.GetName()} - next AddEnemy in ${enemyTimeout}`)
+	// Timeout for next call to this function:
 	var timeoutInstance = this.AddTimeout("AddEnemy", function() {
 		this.AddEnemy()
 	}.bind(this), enemyTimeout);
-	// Pause all timeouts
+	// Pause the timeout if the global game state is paused
 	if (!this.running && timeoutInstance) {
 		console.debug("Game not running after AddEnemy; force pause the timeout");
 		timeoutInstance.Pause()
